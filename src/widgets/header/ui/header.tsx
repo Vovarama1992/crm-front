@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
 import { Link } from 'react-router-dom'
 
-import { useSignOutMutation } from '@/entities/session'
 import { SignOutButton } from '@/features/auth/sign-out'
 import { ModeToggle } from '@/features/change-theme'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { cn } from '@/shared/lib/tailwind'
 import { Clock } from 'lucide-react'
-import { string } from 'zod'
 
 type User = {
   name: string
@@ -22,8 +20,6 @@ type HeaderProps = {
 export const Header = ({ className, user, ...rest }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [usdRate, setUsdRate] = useState<null | number>(null)
-
-  const [signout, { isLoading }] = useSignOutMutation()
 
   useEffect(() => {
     const intervalId = setInterval(() => {

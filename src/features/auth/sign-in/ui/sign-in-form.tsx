@@ -4,7 +4,6 @@ import type { ComponentPropsWithoutRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 
-import { useMeQuery } from '@/entities/session'
 import { useSignInMutation } from '@/entities/session'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { cn } from '@/shared/lib/tailwind'
@@ -44,7 +43,7 @@ export const SignInForm = ({ className, ...rest }: SignInFormProps) => {
       .unwrap()
       .then(response => {
         localStorage.setItem('token', response.access_token)
-        console.log('Token saved to localStorage:', response.access_token)
+
         navigate(ROUTER_PATHS.HOME, { replace: true })
         window.location.reload() // Перезагрузка страницы после навигации
       })

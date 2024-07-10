@@ -1,7 +1,4 @@
-import { Link } from 'react-router-dom'
-
 import { SignInForm } from '@/features/auth/sign-in'
-import { ROUTER_PATHS } from '@/shared/config/routes'
 import { Typography } from '@/shared/ui/typography'
 import { Card, CardContent, CardFooter, CardHeader } from '@/shared/ui-shad-cn/ui/card'
 

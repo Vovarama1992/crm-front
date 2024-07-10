@@ -3,7 +3,6 @@ import type { CreateShopFormData } from '../model/create-shop-schema'
 import type { ComponentPropsWithoutRef } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { useMeQuery } from '@/entities/session'
 import { useCreateShopMutation } from '@/entities/shop'
 import { cn } from '@/shared/lib/tailwind'
 import { TextField } from '@/shared/ui/text-field'
@@ -18,7 +17,6 @@ type CreateShopFormProps = Omit<ComponentPropsWithoutRef<'form'>, 'children' | '
 
 export const CreateShopForm = ({ className, ...rest }: CreateShopFormProps) => {
   const { toast } = useToast()
-  const { data: user } = useMeQuery()
 
   const {
     control,
@@ -36,7 +34,7 @@ export const CreateShopForm = ({ className, ...rest }: CreateShopFormProps) => {
   const [createShop, { isLoading }] = useCreateShopMutation()
 
   const onSubmit = handleSubmit(({ name }) => {
-    createShop({ name, owner: user?.id_user ?? 0 })
+    createShop({ name, owner: undefined ?? 0 })
       .unwrap()
       .then(res => {
         resetField('name')
