@@ -8,9 +8,19 @@ import { useSignUpMutation } from '@/entities/session'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { TextField } from '@/shared/ui/text-field'
 import { Button } from '@/shared/ui-shad-cn/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/ui-shad-cn/ui/select'
 import { useToast } from '@/shared/ui-shad-cn/ui/use-toast'
 import { DevTool } from '@hookform/devtools'
 import { zodResolver } from '@hookform/resolvers/zod'
+
+const roles = [
+  { name: 'Директор', value: 'Директор' },
+  { name: 'Бухгалтер', value: 'Бухгалтер' },
+  { name: 'РОП', value: 'РОП' },
+  { name: 'Закупщик', value: 'Закупщик' },
+  { name: 'Логист', value: 'Логист' },
+  { name: 'Менеджер', value: 'Менеджер' },
+]
 
 import { signUpSchema } from '../model/sign-up-schema'
 
@@ -97,19 +107,23 @@ export const SignUpForm = (props: SignUpFormProps) => {
         placeholder={'email@example.com'}
       />
 
-      <TextField
-        {...register('roleName')}
-        errorMessage={errors.roleName?.message}
-        label={'Роль'}
-        placeholder={'Ваша роль'}
-      />
-
       <TextField.Password
         {...register('password')}
         errorMessage={errors.password?.message}
         label={'Пароль'}
         placeholder={'******'}
       />
+
+      <Select {...register('roleName')}>
+        <SelectTrigger>Выберите роль</SelectTrigger>
+        <SelectContent>
+          {roles.map(role => (
+            <SelectItem key={role.value} value={role.value}>
+              {role.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Button
         className={'w-full mt-[35px] h-[40px]'}
