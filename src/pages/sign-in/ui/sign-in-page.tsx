@@ -6,7 +6,7 @@ export const SignInPage = () => {
   return (
     <div>
       <section>
-        <Card className={'max-w-[320px] ml-[30%] mt-5'}>
+        <Card className={'max-w-[320px] h-[300px] lg:h-[350px]  mt-5'}>
           <CardHeader>
             <Typography
               className={'text-center lg:text-[40px] text-gray-500 text-[40px]'}

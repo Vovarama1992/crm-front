@@ -48,7 +48,7 @@ export const RootLayout = () => {
   console.log('contextValue:', contextValue)
 
   const renderMain = (
-    <main className={'grow flex flex-col pt-[var(--header-height)]'}>
+    <main className={'grow flex flex-col justify-center items-center pt-[var(--header-height)]'}>
       <Outlet context={contextValue} />
     </main>
   )
