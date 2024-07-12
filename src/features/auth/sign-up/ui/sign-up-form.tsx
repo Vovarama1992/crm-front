@@ -15,12 +15,12 @@ import { DevTool } from '@hookform/devtools'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 const roles = [
+  { name: 'Менеджер', value: 'Менеджер' },
   { name: 'Директор', value: 'Директор' },
   { name: 'Бухгалтер', value: 'Бухгалтер' },
   { name: 'РОП', value: 'РОП' },
   { name: 'Закупщик', value: 'Закупщик' },
   { name: 'Логист', value: 'Логист' },
-  { name: 'Менеджер', value: 'Менеджер' },
 ]
 
 import { signUpSchema } from '../model/sign-up-schema'
@@ -57,13 +57,6 @@ export const SignUpForm = (props: SignUpFormProps) => {
   }
 
   const onSubmit = handleSubmit(({ email, middleName, name, password, roleName, surname }) => {
-    if (!roleName) {
-      alert('roleName is empty')
-    } else {
-      alert('roleName:' + roleName)
-
-      return
-    }
     signUp({ email, middleName, name, password, roleName, surname })
       .unwrap()
       .then(user => {
