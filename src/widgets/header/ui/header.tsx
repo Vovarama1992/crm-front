@@ -61,7 +61,9 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
         <div className={'flex md:ml-[-120px] items-center w-full justify-center '}>
           <Clock className={'w-6 h-6 text-gray-600'} />
           <span className={'ml-[10px] lg:mr-[160px] mr-[70px]'}> {formattedTime}</span>
-          <span>$ {usdRate ? `${usdRate.toFixed(2)} руб` : 'Загрузка...'}</span>
+          <span className={'inline-block flex flex-row'}>
+            $ {usdRate ? `${usdRate.toFixed(2)} руб` : 'Загрузка...'}
+          </span>
         </div>
 
         <div className={'flex flex-1 gap-2 md:justify-end items-center'}>
