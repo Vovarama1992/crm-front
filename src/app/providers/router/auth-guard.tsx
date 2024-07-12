@@ -7,8 +7,6 @@ import { ROUTER_PATHS } from '@/shared/config/routes'
 export const AuthGuard = () => {
   const { isAuthenticated, permissions } = useOutletContext<AuthContext>()
 
-  console.log('AuthGuard context:', { isAuthenticated, permissions })
-
   return isAuthenticated ? (
     <Outlet context={{ isAuthenticated, permissions }} />
   ) : (
