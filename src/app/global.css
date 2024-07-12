@@ -71,6 +71,7 @@
 @layer base {
   * {
     @apply border-border;
+    translate: no; 
   }
   body {
     @apply bg-background text-foreground;
@@ -79,6 +80,7 @@
 
 body {
   font-family: 'Inter', 'sans-serif';
+  translate: no; 
 }
 
 input::-ms-clear {

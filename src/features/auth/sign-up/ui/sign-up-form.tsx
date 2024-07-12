@@ -43,7 +43,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
       email: '',
       name: '',
       password: '',
-      roleName: '',
+      roleName: 'Менеджер',
       surname: '',
     },
     resolver: zodResolver(signUpSchema),
@@ -92,6 +92,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         {...register('name')}
         errorMessage={errors.name?.message}
         label={'Имя'}
+        onFocus={() => setValue('password', '')}
         placeholder={'Ваше имя'}
       />
 
@@ -99,6 +100,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         {...register('middleName')}
         errorMessage={errors.surname?.message}
         label={'Отчество'}
+        onFocus={() => setValue('password', '')}
         placeholder={'Ваше отчество'}
       />
 
@@ -106,6 +108,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         {...register('surname')}
         errorMessage={errors.surname?.message}
         label={'Фамилия'}
+        onFocus={() => setValue('password', '')}
         placeholder={'Ваша фамилия'}
       />
 
@@ -113,6 +116,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         {...register('email')}
         errorMessage={errors.email?.message}
         label={'Почта'}
+        onFocus={() => setValue('password', '')}
         placeholder={'email@example.com'}
       />
 
@@ -120,6 +124,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         {...register('password')}
         errorMessage={errors.password?.message}
         label={'Пароль'}
+        onFocus={() => setValue('password', '')}
         placeholder={'******'}
       />
 
