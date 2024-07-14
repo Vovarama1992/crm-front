@@ -49,7 +49,7 @@ export function EditableTable<TData>({
     updateData(updatedData)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, columnId: keyof TData) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       setEditIndex({ columnId: null, rowIndex: null })
     }
@@ -69,11 +69,11 @@ export function EditableTable<TData>({
       return (
         <Select
           menuPortalTarget={document.body}
-          onChange={selectedOption =>
+          onChange={(selectedOption: any) =>
             updateRowData(rowIndex, id as keyof TData, selectedOption!.value)
           }
           options={stageOptions}
-          styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+          styles={{ menuPortal: (base: any) => ({ ...base, zIndex: 9999 }) }}
           value={stageOptions.find(option => option.value === value)}
         />
       )
@@ -81,11 +81,11 @@ export function EditableTable<TData>({
       return (
         <Select
           menuPortalTarget={document.body}
-          onChange={selectedOption =>
+          onChange={(selectedOption: any) =>
             updateRowData(rowIndex, id as keyof TData, selectedOption!.value)
           }
           options={lossReasonOptions}
-          styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+          styles={{ menuPortal: (base: any) => ({ ...base, zIndex: 9999 }) }}
           value={lossReasonOptions.find(option => option.value === value)}
         />
       )
@@ -101,7 +101,7 @@ export function EditableTable<TData>({
               className={' inset-0 bg-green-500 w-[100%] h-full px-1 py-1 border rounded text-sm'}
               onBlur={() => setEditIndex({ columnId: null, rowIndex: null })}
               onChange={e => updateRowData(rowIndex, id as keyof TData, e.target.value)}
-              onKeyDown={e => handleKeyDown(e, rowIndex, id as keyof TData)}
+              onKeyDown={e => handleKeyDown(e)}
               type={'text'}
               value={value}
             />

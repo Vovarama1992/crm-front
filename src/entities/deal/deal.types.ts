@@ -4,7 +4,7 @@ export type DealDto = {
   counterparty: string
   dealVolume: number
   inn: number
-  lossReason: 'дорого' | 'другое' | 'недоработал' | 'нет раппорта' | 'пустомеля'
+  lossReason: 'дорого' | 'другое' | 'недоработал' | 'нет раппорта' | 'пустомеля' | null
   marginInRubles: number
   requestNumber: number
   stage:
