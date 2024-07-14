@@ -21,14 +21,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   })
 
   return (
-    <div className={'rounded-md border'}>
-      <Table>
-        <TableHeader>
+    <div className={'rounded-md w-[90%] border'}>
+      <Table className={'border-collapse w-full'}>
+        <TableHeader className={'bg-gray-200'}>
           {table.getHeaderGroups().map(headerGroup => (
-            <TableRow key={headerGroup.id}>
+            <TableRow className={'border-b border-black'} key={headerGroup.id}>
               {headerGroup.headers.map(header => {
                 return (
-                  <TableHead key={header.id}>
+                  <TableHead className={'border-r border-black p-2'} key={header.id}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -41,17 +41,24 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map(row => (
-              <TableRow data-state={row.getIsSelected() && 'selected'} key={row.id}>
+              <TableRow
+                className={'border-b border-black'}
+                data-state={row.getIsSelected() && 'selected'}
+                key={row.id}
+              >
                 {row.getVisibleCells().map(cell => (
-                  <TableCell key={cell.id}>
+                  <TableCell className={'border-r border-black p-2'} key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
               </TableRow>
             ))
           ) : (
-            <TableRow>
-              <TableCell className={'h-24 text-center'} colSpan={columns.length}>
+            <TableRow className={'border-b border-black'}>
+              <TableCell
+                className={'h-24 text-center border-r border-black p-2'}
+                colSpan={columns.length}
+              >
                 No results.
               </TableCell>
             </TableRow>

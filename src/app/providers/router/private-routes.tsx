@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 
 import { CommonSalesPage } from '@/pages/common-sales'
+import { SeeSelfPage } from '@/pages/contragents'
 import { DeparturesPage } from '@/pages/departures'
 import { FinancesPage } from '@/pages/finances'
 import { HomePage } from '@/pages/home'
@@ -9,7 +10,6 @@ import { ProcurementsPage } from '@/pages/procurements'
 import { SalaryReportsCommonPage } from '@/pages/salary-reports-common'
 import { SalaryReportsHimselfPage } from '@/pages/salary-reports-himself'
 import { SalaryReportsSellersPage } from '@/pages/salary-reports-sellers'
-import { SeeSelfPage } from '@/pages/see-self'
 import { SignUpPage } from '@/pages/sign-up'
 import { SummaryTablePage } from '@/pages/summary-table'
 import { SuppliersPage } from '@/pages/suppliers'
@@ -19,6 +19,7 @@ import { AuthGuard } from './auth-guard'
 
 const {
   COMMON_SALES,
+  CONTRAGENTS,
   DEPARTURES,
   FINANCES,
   HOME,
@@ -27,7 +28,6 @@ const {
   SALARY_REPORTS_COMMON,
   SALARY_REPORTS_HIMSELF,
   SALARY_REPORTS_SELLERS,
-  SEE_SELF,
   SIGN_UP,
   SUMMARY_TABLE,
   SUPPLIERS,
@@ -47,7 +47,7 @@ export const privateRoutes: RouteObject[] = [
 
       {
         element: <SeeSelfPage />,
-        path: SEE_SELF,
+        path: CONTRAGENTS,
       },
       {
         element: <SummaryTablePage />,

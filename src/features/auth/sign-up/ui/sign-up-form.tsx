@@ -28,7 +28,7 @@ import { signUpSchema } from '../model/sign-up-schema'
 type SignUpFormProps = Omit<ComponentPropsWithoutRef<'form'>, 'children' | 'onSubmit'>
 
 export const SignUpForm = (props: SignUpFormProps) => {
-  const [isRoleSelected, setRole] = useState(false)
+  const [isRoleSelected, setRole] = useState(true)
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -85,7 +85,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
     dirtyFields.password
 
   return (
-    <form className={'grid gap-4'} noValidate {...props} onSubmit={onSubmit}>
+    <form className={'grid gap-4'} noValidate translate={'no'} {...props} onSubmit={onSubmit}>
       <RoleSelect handleRoleChange={handleRoleChange} roles={roles} />
 
       <TextField
@@ -93,7 +93,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         errorMessage={errors.name?.message}
         label={'Имя'}
         onFocus={() => setValue('password', '')}
-        placeholder={'Ваше имя'}
+        placeholder={''}
       />
 
       <TextField
@@ -101,7 +101,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         errorMessage={errors.surname?.message}
         label={'Отчество'}
         onFocus={() => setValue('password', '')}
-        placeholder={'Ваше отчество'}
+        placeholder={''}
       />
 
       <TextField
@@ -109,7 +109,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         errorMessage={errors.surname?.message}
         label={'Фамилия'}
         onFocus={() => setValue('password', '')}
-        placeholder={'Ваша фамилия'}
+        placeholder={''}
       />
 
       <TextField.Email
@@ -117,7 +117,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         errorMessage={errors.email?.message}
         label={'Почта'}
         onFocus={() => setValue('password', '')}
-        placeholder={'email@example.com'}
+        placeholder={''}
       />
 
       <TextField.Password
@@ -125,7 +125,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
         errorMessage={errors.password?.message}
         label={'Пароль'}
         onFocus={() => setValue('password', '')}
-        placeholder={'******'}
+        placeholder={''}
       />
 
       <Button

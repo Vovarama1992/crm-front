@@ -7,6 +7,7 @@ import { Typography } from '@/shared/ui/typography'
 
 enum PermissionsEnum {
   COMMON_SALES = 'common_sales',
+  CONTRAGENTS = 'see_self',
   DEPARTURES = 'departures',
   FINANCES = 'finances',
   MY_SALES = 'my_sales',
@@ -14,13 +15,12 @@ enum PermissionsEnum {
   SALARY_REPORTS_COMMON = 'salary_reports_common',
   SALARY_REPORTS_HIMSELF = 'salary_reports_himself',
   SALARY_REPORTS_SELLERS = 'salary_reports_sellers',
-  SEE_SELF = 'see_self',
   SUMMARY_TABLE = 'summary_table',
   SUPPLIERS = 'suppliers',
 }
 
 const permissionLinks = [
-  { label: 'Моя страница', path: ROUTER_PATHS.SEE_SELF, permission: PermissionsEnum.SEE_SELF },
+  { label: 'Контрагент', path: ROUTER_PATHS.CONTRAGENTS, permission: PermissionsEnum.CONTRAGENTS },
   {
     label: 'Сводная таблица',
     path: ROUTER_PATHS.SUMMARY_TABLE,
@@ -64,7 +64,7 @@ export const HomePage = () => {
   const isDirector = permissions.finances
 
   return (
-    <div className={'h-screen flex items-center justify-center'}>
+    <div className={'h-screen flex items-center justify-center'} translate={'no'}>
       <div className={'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6'}>
         {permissionLinks.map(
           link =>
@@ -76,7 +76,10 @@ export const HomePage = () => {
                 key={link.permission}
                 to={link.path}
               >
-                <Typography className={'lg:text-[26px] text-[18px]'} variant={'link2'}>
+                <Typography
+                  className={'lg:text-[26px] text-[18px] decoration-skip-ink-none'}
+                  variant={'link1'}
+                >
                   {link.label}
                 </Typography>
               </Link>

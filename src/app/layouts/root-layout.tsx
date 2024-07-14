@@ -48,13 +48,17 @@ export const RootLayout = () => {
   console.log('contextValue:', contextValue)
 
   const renderMain = (
-    <main className={'grow flex flex-col justify-center items-center pt-[var(--header-height)]'}>
+    <main
+      className={
+        'grow flex  flex-col lg:justify-center lg:items-center justify-center items-center pt-[var(--header-height)]'
+      }
+    >
       <Outlet context={contextValue} />
     </main>
   )
 
   if (isLoading) {
-    return <div>Loading...</div> // Отображаем индикатор загрузки пока isLoading === true
+    return <div>Loading...</div> 
   }
 
   if (isAuthenticated) {
@@ -63,8 +67,9 @@ export const RootLayout = () => {
         <Header user={user} />
         <div
           className={
-            'px-8 h-screen flex-1 gap-5 md:grid md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)]'
+            'px-8 flex h-screen flex-1 gap-5 md:grid md:grid-cols-[220px_minmax(0,1fr)] lg:justify-center lg:items-center justify-center items-center lg:grid-cols-[220px_minmax(0,1fr)]'
           }
+          translate={'no'}
         >
           <Sidebar />
           {renderMain}
