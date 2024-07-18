@@ -1,1 +1,2 @@
-export * from './deal.types'
+export * from './deal.api'
+export type { DealDto } from './deal.types'

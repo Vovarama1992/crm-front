@@ -10,14 +10,10 @@ export const RootLayout = () => {
   const { data, isError, isLoading } = useMeQuery()
   const isAuthenticated = !isError && !isLoading
 
-  console.log('useMeQuery isError:', isError)
-  console.log('useMeQuery isLoading:', isLoading)
-  console.log('useMeQuery data:', data)
-  console.log('isAuthenticated:', isAuthenticated)
-
   if (isLoading) {
     return <div>Проверка ваших полномочий...</div>
   }
+
   const defaultPermissions = {
     common_sales: false,
     departures: false,
@@ -31,10 +27,9 @@ export const RootLayout = () => {
     summary_table: false,
     suppliers: false,
   }
-
   const roleName = data?.roleName || ''
-
   const contextValue: AuthContext = {
+    id: data?.id,
     isAuthenticated,
     permissions: data?.permissions || defaultPermissions,
     roleName,
@@ -44,8 +39,9 @@ export const RootLayout = () => {
   const user = data ? { name, surname } : undefined
 
   console.log('RootLayout rendered')
-  console.log('dataRoleName: ' + roleName)
+
   console.log('contextValue:', contextValue)
+  console.log('data:', data)
 
   const renderMain = (
     <main
@@ -58,7 +54,7 @@ export const RootLayout = () => {
   )
 
   if (isLoading) {
-    return <div>Loading...</div> 
+    return <div>Loading...</div>
   }
 
   if (isAuthenticated) {

@@ -1,1 +1,1 @@
-export { SalaryReportsCommonPage } from './ui/salary-reports-common-page'
+export { SalaryReportsPage } from './ui/salary-reports-common-page'

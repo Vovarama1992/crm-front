@@ -3,10 +3,10 @@ export type DealDto = {
   comment: string
   counterparty: string
   dealVolume: number
+  id: number
   inn: number
   lossReason: 'дорого' | 'другое' | 'недоработал' | 'нет раппорта' | 'пустомеля' | null
   marginInRubles: number
-  requestNumber: number
   stage:
     | 'выставлен счет'
     | 'отправлено КП'
@@ -15,4 +15,5 @@ export type DealDto = {
     | 'сделка закрыта'
     | 'счет оплачен'
   turnoverInRubles: number
+  user_id: number
 }

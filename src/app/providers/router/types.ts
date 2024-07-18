@@ -13,6 +13,7 @@ type Permissions = {
 }
 
 export type AuthContext = {
+  id: number | undefined
   isAuthenticated: boolean
   permissions: Permissions
   roleName: string

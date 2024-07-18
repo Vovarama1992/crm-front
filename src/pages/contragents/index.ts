@@ -1,1 +1,1 @@
-export { SeeSelfPage } from './ui/see-self.page'
+export { ContragentsPage } from './ui/contragents-page'

@@ -1,15 +1,13 @@
 import type { RouteObject } from 'react-router-dom'
 
 import { CommonSalesPage } from '@/pages/common-sales'
-import { SeeSelfPage } from '@/pages/contragents'
+import { ContragentsPage } from '@/pages/contragents'
 import { DeparturesPage } from '@/pages/departures'
 import { FinancesPage } from '@/pages/finances'
 import { HomePage } from '@/pages/home'
 import { MySalesPage } from '@/pages/my-sales'
 import { ProcurementsPage } from '@/pages/procurements'
-import { SalaryReportsCommonPage } from '@/pages/salary-reports-common'
-import { SalaryReportsHimselfPage } from '@/pages/salary-reports-himself'
-import { SalaryReportsSellersPage } from '@/pages/salary-reports-sellers'
+import { SalaryReportsPage } from '@/pages/salary-reports-common'
 import { SignUpPage } from '@/pages/sign-up'
 import { SummaryTablePage } from '@/pages/summary-table'
 import { SuppliersPage } from '@/pages/suppliers'
@@ -25,9 +23,8 @@ const {
   HOME,
   MY_SALES,
   PROCUREMENTS,
-  SALARY_REPORTS_COMMON,
-  SALARY_REPORTS_HIMSELF,
-  SALARY_REPORTS_SELLERS,
+  SALARY_REPORTS,
+
   SIGN_UP,
   SUMMARY_TABLE,
   SUPPLIERS,
@@ -46,7 +43,7 @@ export const privateRoutes: RouteObject[] = [
       },
 
       {
-        element: <SeeSelfPage />,
+        element: <ContragentsPage />,
         path: CONTRAGENTS,
       },
       {
@@ -57,18 +54,12 @@ export const privateRoutes: RouteObject[] = [
         element: <DeparturesPage />,
         path: DEPARTURES,
       },
+
       {
-        element: <SalaryReportsHimselfPage />,
-        path: SALARY_REPORTS_HIMSELF,
+        element: <SalaryReportsPage />,
+        path: SALARY_REPORTS,
       },
-      {
-        element: <SalaryReportsCommonPage />,
-        path: SALARY_REPORTS_COMMON,
-      },
-      {
-        element: <SalaryReportsSellersPage />,
-        path: SALARY_REPORTS_SELLERS,
-      },
+
       {
         element: <FinancesPage />,
         path: FINANCES,

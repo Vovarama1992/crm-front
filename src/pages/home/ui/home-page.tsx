@@ -2,6 +2,7 @@ import type { AuthContext } from '@/app/providers/router/types'
 
 import { Link, useOutletContext } from 'react-router-dom'
 
+import { useMeQuery } from '@/entities/session'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { Typography } from '@/shared/ui/typography'
 
@@ -12,9 +13,8 @@ enum PermissionsEnum {
   FINANCES = 'finances',
   MY_SALES = 'my_sales',
   PROCUREMENTS = 'procurements',
-  SALARY_REPORTS_COMMON = 'salary_reports_common',
-  SALARY_REPORTS_HIMSELF = 'salary_reports_himself',
-  SALARY_REPORTS_SELLERS = 'salary_reports_sellers',
+  SALARY_REPORTS = 'salary_reports_himself',
+
   SUMMARY_TABLE = 'summary_table',
   SUPPLIERS = 'suppliers',
 }
@@ -28,20 +28,11 @@ const permissionLinks = [
   },
   { label: 'Отправления', path: ROUTER_PATHS.DEPARTURES, permission: PermissionsEnum.DEPARTURES },
   {
-    label: 'Мои отчеты по зарплате ',
-    path: ROUTER_PATHS.SALARY_REPORTS_HIMSELF,
-    permission: PermissionsEnum.SALARY_REPORTS_HIMSELF,
+    label: 'Отчеты по зарплате ',
+    path: ROUTER_PATHS.SALARY_REPORTS,
+    permission: PermissionsEnum.SALARY_REPORTS,
   },
-  {
-    label: 'Общие отчеты по зарплате',
-    path: ROUTER_PATHS.SALARY_REPORTS_COMMON,
-    permission: PermissionsEnum.SALARY_REPORTS_COMMON,
-  },
-  {
-    label: 'Отчеты по зарплате (продавцы)',
-    path: ROUTER_PATHS.SALARY_REPORTS_SELLERS,
-    permission: PermissionsEnum.SALARY_REPORTS_SELLERS,
-  },
+
   { label: 'Доходы - расходы', path: ROUTER_PATHS.FINANCES, permission: PermissionsEnum.FINANCES },
   { label: 'Мои продажи', path: ROUTER_PATHS.MY_SALES, permission: PermissionsEnum.MY_SALES },
   {
@@ -56,12 +47,17 @@ const permissionLinks = [
 export const HomePage = () => {
   const context = useOutletContext<AuthContext>()
 
-  console.log('useOutletContext:', context)
+  console.log('useJsonOutletContext:', JSON.stringify(context))
 
-  const { permissions, roleName } = context
+  const { permissions } = context
 
-  console.log('roleName:', roleName)
-  const isDirector = permissions.finances
+  const { data } = useMeQuery()
+
+  const roleName = data?.roleName || ''
+
+  console.log('permissions: ' + permissions)
+  console.log('inHomeroleName:', roleName)
+  const isDirector = roleName == 'Директор'
 
   return (
     <div className={'h-screen flex items-center justify-center'} translate={'no'}>
