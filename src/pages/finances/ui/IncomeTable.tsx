@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 
 type Report = {
   margin: number // маржа
@@ -38,12 +38,6 @@ const calculatePlanPercentage = (actual: number, plan: number): string => {
 }
 
 const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange }) => {
-  const [editState, setEditState] = useState<{ [key: string]: boolean }>({})
-
-  const toggleEdit = (key: string) => {
-    setEditState({ ...editState, [key]: !editState[key] })
-  }
-
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     employeeIndex: number,

@@ -1,7 +1,7 @@
 import type { AuthContext } from '@/app/providers/router/types'
 
 import React, { useMemo, useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
 
 import { EditableTable } from '@/shared/ui/EditableTable'
 import { ColumnDef } from '@tanstack/react-table'
@@ -160,7 +160,6 @@ export const SummaryTablePage = () => {
 
   const isCommonViwer = permissions.summary_table
 
-
   const updateData = (newData: SummaryDto[]) => {
     console.log('Updated Data:', newData)
   }
@@ -176,8 +175,8 @@ export const SummaryTablePage = () => {
   const filteredData = useMemo(() => {
     return data.filter(
       summary =>
-        (!filterAccount || summary.account.toString().startsWith(filterAccount)) &&
-        (!filterCompany || summary.company.toLowerCase().startsWith(filterCompany.toLowerCase()))
+        (!filterAccount || summary.account.toString().includes(filterAccount)) &&
+        (!filterCompany || summary.company.toLowerCase().includes(filterCompany.toLowerCase()))
     )
   }, [filterAccount, filterCompany])
 
@@ -190,7 +189,7 @@ export const SummaryTablePage = () => {
   console.log('filtered: ' + filteredData.length)
 
   return (
-    <div className={'absolute left-[1%] top-[15%]'}>
+    <div className={'absolute w-[94vw] left-[1%] top-[15%]'}>
       <div className={'mb-4 ml-[10%]'}>
         <input
           className={'border rounded px-2 py-1 mr-2'}

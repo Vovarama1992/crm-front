@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 
-import { PurchaseOrder } from './PurchaseTable'
+import Modal from './Modal'
 import PurchaseTable from './PurchaseTable'
+import { PurchaseOrder } from './PurchaseTable'
 import { purchaseData } from './procurements'
 
 export const ProcurementsPage: React.FC = () => {
@@ -9,6 +10,8 @@ export const ProcurementsPage: React.FC = () => {
   const [searchManager, setSearchManager] = useState('')
   const [searchCustomer, setSearchCustomer] = useState('')
   const [priceRange, setPriceRange] = useState({ max: '', min: '' })
+  const [data, setData] = useState<PurchaseOrder[]>(purchaseData)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleSearchInvoiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchInvoice(e.target.value)
@@ -29,7 +32,11 @@ export const ProcurementsPage: React.FC = () => {
     })
   }
 
-  const filteredData = purchaseData.filter(order => {
+  const handleAddNewRecord = (newRecord: PurchaseOrder) => {
+    setData([...data, newRecord])
+  }
+
+  const filteredData = data.filter(order => {
     const matchesInvoice = order.customerInvoice.toLowerCase().includes(searchInvoice.toLowerCase())
     const matchesManager = order.manager.toLowerCase().includes(searchManager.toLowerCase())
     const matchesCustomer = order.customer.toLowerCase().includes(searchCustomer.toLowerCase())
@@ -86,7 +93,20 @@ export const ProcurementsPage: React.FC = () => {
         />
       </div>
 
+      <button
+        className={'bg-blue-500 ml-[100px] text-white px-4 py-2 rounded mb-4'}
+        onClick={() => setIsModalOpen(true)}
+      >
+        Добавить новую запись
+      </button>
+
       <PurchaseTable data={filteredData} />
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAddNewRecord}
+      />
     </div>
   )
 }

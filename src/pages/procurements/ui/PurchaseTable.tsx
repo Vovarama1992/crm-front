@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+/* eslint-disable no-nested-ternary */
 import React from 'react'
 
 export type PurchaseOrder = {
@@ -65,9 +67,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
         {data.map((order, index) => (
           <React.Fragment key={index}>
             <tr>
-              <td className={`border h-[200px] border-3 px-solid-black px-4 py-2`}>
-                {order.creationDate}
-              </td>
+              <td className={'border h-[200px] px-4 py-2'}>{order.creationDate}</td>
               <td className={'border px-4 py-2'}>{order.dealNumber}</td>
               <td className={'border px-4 py-2'}>{order.requestNumber}</td>
               <td className={'border px-4 py-2'}>{order.customer}</td>
@@ -120,7 +120,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
                       <th className={'border px-4 py-2 bg-gray-200'}>
                         Дата отгрузки по счету от поставщика
                       </th>
-                      <th className={'border px-4 py-2 bg-gray-200'}>Доставленно</th>
+                      <th className={'border px-4 py-2 bg-gray-200'}>Доставлено</th>
                       <th className={'border px-4 py-2 bg-gray-200'}>Дней до</th>
                       <th className={'border px-4 py-2 bg-gray-200'}>Комментарий</th>
                     </tr>

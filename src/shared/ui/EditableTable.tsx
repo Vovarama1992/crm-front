@@ -50,7 +50,7 @@ export function EditableTable<TData>({
 
   const updateRowData = (rowIndex: number, columnId: keyof TData, value: string) => {
     const updatedData = tableData.map((row, index) => {
-      if (index === rowIndex) {
+      if (index === rowIndex && row[columnId] !== value) {
         return { ...row, [columnId]: value }
       }
 
@@ -74,8 +74,10 @@ export function EditableTable<TData>({
       return acc
     }, {} as Partial<TData>)
 
-    setTableData([...tableData, newRow as TData])
-    updateData([...tableData, newRow as TData])
+    const newTableData = [...tableData, newRow as TData]
+
+    setTableData(newTableData)
+    updateData(newTableData)
   }
 
   const filteredColumns = columns.filter(
@@ -100,10 +102,10 @@ export function EditableTable<TData>({
       return <span className={'block w-full h-full px-2 py-1 text-sm'}>{value}</span>
     }
 
-    if (isEditable && selectOptions) {
+    if (isEditable) {
       const columnDef = columns.find(col => col.accessorKey === id)
       const cellType = columnDef?.meta?.type
-      const options = selectOptions[id]
+      const options = selectOptions && selectOptions[id]
 
       if (cellType === 'select' && options) {
         return (
@@ -156,7 +158,7 @@ export function EditableTable<TData>({
       }
     }
 
-    return null
+    return <span className={'block w-full h-full px-2 py-1 text-sm'}>{value}</span>
   }
 
   return (

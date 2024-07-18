@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react'
-import Select from 'react-select'
 
 import { DepartureDto } from '@/entities/departure'
 import { EditableTable } from '@/shared/ui/EditableTable'
@@ -159,16 +158,16 @@ export const DeparturesPage = () => {
   const filteredData = useMemo(() => {
     return data.filter(
       departure =>
-        (!filterNumber || departure.number.toString().startsWith(filterNumber)) &&
+        (!filterNumber || departure.number.toString().includes(filterNumber)) &&
         (!filterCounterparty ||
-          departure.counterparty_name.toLowerCase().startsWith(filterCounterparty.toLowerCase()))
+          departure.counterparty_name.toLowerCase().includes(filterCounterparty.toLowerCase()))
     )
   }, [filterNumber, filterCounterparty])
 
   console.log('filtered: ' + filteredData.length)
 
   return (
-    <div className={'absolute left-[1%] top-[15%]'}>
+    <div className={'absolute w-[94vw] left-[1%] top-[15%]'}>
       <div className={'mb-4 ml-[10%]'}>
         <input
           className={'border rounded px-2 py-1 mr-2'}

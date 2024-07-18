@@ -169,16 +169,16 @@ export const ContragentsPage = () => {
   const filteredData = useMemo(() => {
     return data.filter(
       deal =>
-        (!filterInn || deal.inn.toString().startsWith(filterInn)) &&
+        (!filterInn || deal.inn.toString().includes(filterInn)) &&
         (!filterCounterparty ||
-          deal.counterparty.toLowerCase().startsWith(filterCounterparty.toLowerCase()))
+          deal.counterparty.toLowerCase().includes(filterCounterparty.toLowerCase()))
     )
   }, [filterInn, filterCounterparty])
 
   console.log('filtered: ' + filteredData.length)
 
   return (
-    <div className={'absolute left-[1%] top-[15%]'}>
+    <div className={'absolute left-[1%] w-[94vw] top-[15%]'}>
       <div className={'mb-4 ml-[10%]'}>
         <input
           className={'border rounded px-2 py-1 mr-2'}

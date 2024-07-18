@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import * as React from 'react'
 import { forwardRef, useEffect } from 'react'
 
@@ -151,7 +152,6 @@ const CommandEmpty = forwardRef<
   return (
     <div
       className={cn('py-6 text-center text-sm', className)}
-      cmdk-empty={''}
       ref={forwardedRef}
       role={'presentation'}
       {...props}
