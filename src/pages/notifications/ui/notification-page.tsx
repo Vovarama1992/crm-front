@@ -1,6 +1,5 @@
-import React, { MouseEvent, useEffect, useState } from 'react'
+import { MouseEvent, useEffect, useState } from 'react'
 
-import { useMeQuery } from '@/entities/session'
 // Тип для уведомлений
 interface Notification {
   content: string
@@ -11,8 +10,6 @@ interface Notification {
 export function NotificationPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
-  const { data } = useMeQuery()
-  const userId = data?.id
 
   useEffect(() => {
     // Получаем уведомления из localStorage

@@ -89,17 +89,6 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange })
     }
   }
 
-  const calculateTotals = (field: keyof Report) => {
-    return data.reduce((total, employee) => {
-      return (
-        total +
-        employee.reports.reduce((monthTotal, report) => {
-          return monthTotal + (report[field] as number)
-        }, 0)
-      )
-    }, 0)
-  }
-
   const calculateMonthlyTotals = (field: keyof Report, month: string) => {
     return data.reduce((total, employee) => {
       const report = employee.reports.find(r => r.month === month)
@@ -132,7 +121,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange })
           </th>
         </tr>
         <tr>
-          {months.map((month, index) => (
+          {months.map((_, index) => (
             <React.Fragment key={index}>
               <th className={'border px-4 py-2 bg-gray-100'}>Оборот</th>
               <th className={'border px-4 py-2 bg-gray-100'}>Маржа</th>
