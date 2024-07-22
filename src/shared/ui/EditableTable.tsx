@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Select from 'react-select'
 
+import { useMeQuery } from '@/entities/session'
 import {
   Table,
   TableBody,
@@ -24,7 +25,10 @@ export interface CustomColumnDef<TData> extends Omit<ColumnDef<TData, unknown>, 
 interface DataTableProps<TData> {
   columns: CustomColumnDef<TData>[]
   data: TData[]
+  defaultRowGenerator?: () => any
+  onStageChange?: (selectedOption: any, rowIndex: number, columnId: keyof TData) => void
   selectOptions?: { [key: string]: { label: string; value: string }[] }
+  tablename: string
   updateData: (newData: TData[]) => void
   user_id: number
   userPermissions: { [key: string]: 'change' | 'create' | 'null' | 'see' }
@@ -33,7 +37,10 @@ interface DataTableProps<TData> {
 export function EditableTable<TData>({
   columns,
   data,
+  defaultRowGenerator,
+  onStageChange,
   selectOptions,
+  tablename,
   updateData,
   user_id,
   userPermissions,
@@ -44,11 +51,17 @@ export function EditableTable<TData>({
     rowIndex: null | number
   }>({ columnId: null, rowIndex: null })
 
+  const [changedValues, setChangedValues] = useState<Set<string>>(new Set())
+
+  const { data: userdata } = useMeQuery()
+  const { name, surname } = userdata || {}
+
   useEffect(() => {
     setTableData(data)
   }, [data])
 
   const updateRowData = (rowIndex: number, columnId: keyof TData, value: string) => {
+    // Обновляем данные таблицы
     const updatedData = tableData.map((row, index) => {
       if (index === rowIndex && row[columnId] !== value) {
         return { ...row, [columnId]: value }
@@ -57,8 +70,48 @@ export function EditableTable<TData>({
       return row
     })
 
+    // Сохраняем обновленные данные
     setTableData(updatedData)
     updateData(updatedData)
+
+    // Создаем уведомление
+  }
+
+  const handleBlur = (rowIndex: number, columnId: keyof TData) => {
+    if (editIndex.rowIndex === rowIndex && editIndex.columnId === columnId) {
+      const originalKey = `${rowIndex}-${String(columnId)}`
+
+      if (changedValues.has(originalKey)) {
+        const changedRow = tableData[rowIndex]
+        const oldValue = tableData[rowIndex][columnId]
+        const newValue = changedRow[columnId]
+
+        if (oldValue !== newValue) {
+          const newNotification = {
+            content: `${name} ${surname} изменил(а) значение в таблице "${tablename}". ${String(columnId)}: Изменено с "${oldValue}" на "${newValue}".`,
+            readBy: [],
+            title: `Изменение в таблице ${tablename}`,
+          }
+
+          const currentNotifications = JSON.parse(
+            localStorage.getItem('notifications') || '[]'
+          ) as Notification[]
+          const updatedNotifications = [...currentNotifications, newNotification]
+
+          localStorage.setItem('notifications', JSON.stringify(updatedNotifications))
+        }
+
+        setChangedValues(prev => {
+          const newSet = new Set(prev)
+
+          newSet.delete(originalKey)
+
+          return newSet
+        })
+      }
+
+      setEditIndex({ columnId: null, rowIndex: null })
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -68,16 +121,31 @@ export function EditableTable<TData>({
   }
 
   const handleAddRow = () => {
-    const newRow = columns.reduce((acc, column) => {
-      acc[column.accessorKey] = '' as TData[keyof TData]
+    const newRow = defaultRowGenerator
+      ? defaultRowGenerator()
+      : columns.reduce((acc, column) => {
+          acc[column.accessorKey] = '' as TData[keyof TData]
 
-      return acc
-    }, {} as Partial<TData>)
+          return acc
+        }, {} as Partial<TData>)
 
     const newTableData = [...tableData, newRow as TData]
 
     setTableData(newTableData)
     updateData(newTableData)
+
+    const newNotification = {
+      content: `${name} ${surname} добавил(а) новую запись в таблицу "${tablename}".`,
+      readBy: [],
+      title: `Добавление записи в таблицу ${tablename}`,
+    }
+
+    const currentNotifications = JSON.parse(
+      localStorage.getItem('notifications') || '[]'
+    ) as Notification[]
+    const updatedNotifications = [...currentNotifications, newNotification]
+
+    localStorage.setItem('notifications', JSON.stringify(updatedNotifications))
   }
 
   const filteredColumns = columns.filter(
@@ -94,7 +162,6 @@ export function EditableTable<TData>({
     const { id } = cell.column
     const value = cell.getValue()
     const permission = userPermissions[id]
-
     const row = tableData[rowIndex] as { user_id: number }
     const isEditable = permission === 'change' || row.user_id === user_id
 
@@ -111,9 +178,12 @@ export function EditableTable<TData>({
         return (
           <Select
             menuPortalTarget={document.body}
-            onChange={(selectedOption: any) =>
+            onChange={(selectedOption: any) => {
               updateRowData(rowIndex, id as keyof TData, selectedOption ? selectedOption.value : '')
-            }
+              if (onStageChange) {
+                onStageChange(selectedOption, rowIndex, id as keyof TData)
+              }
+            }}
             options={options}
             styles={{
               menu: (base: any) => ({
@@ -138,7 +208,7 @@ export function EditableTable<TData>({
                 className={
                   'inset-0 w-[100%] h-full px-1 py-1 border border-dashed border-teal-500 bg-teal-50 rounded text-sm'
                 }
-                onBlur={() => setEditIndex({ columnId: null, rowIndex: null })}
+                onBlur={() => handleBlur(rowIndex, id as keyof TData)} // Обработка потери фокуса
                 onChange={e => updateRowData(rowIndex, id as keyof TData, e.target.value)}
                 onKeyDown={e => handleKeyDown(e)}
                 type={'text'}
@@ -149,6 +219,7 @@ export function EditableTable<TData>({
                 className={
                   'block w-full h-full px-2 py-1 text-sm cursor-pointer bg-teal-50 border border-dashed border-teal-500 rounded'
                 }
+                onClick={() => setEditIndex({ columnId: id, rowIndex })}
               >
                 {value}
               </span>

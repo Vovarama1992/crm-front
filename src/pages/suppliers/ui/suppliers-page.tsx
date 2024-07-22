@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 
 import { useMeQuery } from '@/entities/session'
 
+import NewSupplierForm from './NewSupplierForm'
+
 // Пример данных поставщиков
 const supplierData = [
   {
@@ -61,6 +63,7 @@ export const SuppliersPage: React.FC = () => {
   const [searchContactPerson, setSearchContactPerson] = useState('')
   const [searchNotes, setSearchNotes] = useState('')
   const [editIndex, setEditIndex] = useState<{ column: string; row: number } | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
 
   const { data } = useMeQuery()
   const isDirector = data?.roleName === 'Директор'
@@ -82,6 +85,11 @@ export const SuppliersPage: React.FC = () => {
     )
 
     setTableData(updatedData)
+  }
+
+  const handleAddSupplier = (newSupplier: any) => {
+    setTableData(prevData => [...prevData, newSupplier])
+    setIsFormOpen(false)
   }
 
   const filteredData = tableData.filter(
@@ -267,6 +275,17 @@ export const SuppliersPage: React.FC = () => {
           ))}
         </tbody>
       </table>
+      {isDirector && (
+        <button
+          className={'mt-4 bg-blue-500 text-white px-4 py-2 rounded'}
+          onClick={() => setIsFormOpen(true)}
+        >
+          Добавить поставщика
+        </button>
+      )}
+      {isFormOpen && (
+        <NewSupplierForm onAddSupplier={handleAddSupplier} onClose={() => setIsFormOpen(false)} />
+      )}
     </div>
   )
 }

@@ -32,6 +32,39 @@ const calculateMarginPercentage = (margin: number, revenue: number): string => {
   return percentage.toFixed(2)
 }
 
+const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): number => {
+  return data.reduce((total, department) => {
+    return (
+      total +
+      department.employees.reduce((empTotal, employee) => {
+        return (
+          empTotal +
+          employee.reports.reduce((repTotal, report) => {
+            return repTotal + Number(report[field])
+          }, 0)
+        )
+      }, 0)
+    )
+  }, 0)
+}
+
+const calculateMonthlyTotal = (
+  data: DepartmentData[],
+  field: keyof Report,
+  month: string
+): number => {
+  return data.reduce((total, department) => {
+    return (
+      total +
+      department.employees.reduce((empTotal, employee) => {
+        const report = employee.reports.find(r => r.month === month)
+
+        return empTotal + (report ? Number(report[field]) : 0)
+      }, 0)
+    )
+  }, 0)
+}
+
 const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDataChange }) => {
   const [editState, setEditState] = React.useState<{ [key: string]: boolean }>({})
 
@@ -60,17 +93,6 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
     }
   }
 
-  const calculateTotals = (department: DepartmentData, field: keyof Report) => {
-    return department.employees.reduce((total, employee) => {
-      return (
-        total +
-        employee.reports.reduce((monthTotal, report) => {
-          return monthTotal + (report[field] as number)
-        }, 0)
-      )
-    }, 0)
-  }
-
   return (
     <table className={'table-auto w-full border-collapse'}>
       <thead>
@@ -81,6 +103,8 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
               {month}
             </th>
           ))}
+          <th className={'border px-4 py-2 bg-gray-100'}>Итоговый оборот за год</th>
+          <th className={'border px-4 py-2 bg-gray-100'}>Итоговая маржа за год</th>
         </tr>
       </thead>
       <tbody>
@@ -89,7 +113,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
             <tr>
               <td
                 className={'bg-gray-200 font-bold border px-4 py-2'}
-                colSpan={months.length * 3 + 1}
+                colSpan={months.length * 3 + 3}
               >
                 {department.department}
               </td>
@@ -105,6 +129,8 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                   </th>
                 </React.Fragment>
               ))}
+              <th className={'border px-4 py-2 bg-gray-100'}></th>
+              <th className={'border px-4 py-2 bg-gray-100'}></th>
             </tr>
             {department.employees.map((employee, employeeIndex) => (
               <tr key={employee.name}>
@@ -168,6 +194,12 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                     </React.Fragment>
                   )
                 })}
+                <td className={'border px-4 py-2'}>
+                  {employee.reports.reduce((total, report) => total + report.revenue, 0)}
+                </td>
+                <td className={'border px-4 py-2'}>
+                  {employee.reports.reduce((total, report) => total + report.margin, 0)}
+                </td>
               </tr>
             ))}
             <tr>
@@ -175,24 +207,63 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
               {months.map(month => (
                 <React.Fragment key={month}>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {calculateTotals(department, 'revenue')}
+                    {calculateMonthlyTotal(data, 'revenue', month)}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {calculateTotals(department, 'margin')}
+                    {calculateMonthlyTotal(data, 'margin', month)}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
                     {departmentIndex === 0
-                      ? calculateTotals(department, 'planned_margin')
+                      ? calculateMonthlyTotal(data, 'planned_margin', month)
                       : calculateMarginPercentage(
-                          calculateTotals(department, 'margin'),
-                          calculateTotals(department, 'revenue')
+                          calculateMonthlyTotal(data, 'margin', month),
+                          calculateMonthlyTotal(data, 'revenue', month)
                         ) + '%'}
                   </td>
                 </React.Fragment>
               ))}
+              <td className={'border px-4 py-2 font-bold'}>
+                {calculateYearlyTotal(data, 'revenue')}
+              </td>
+              <td className={'border px-4 py-2 font-bold'}>
+                {calculateYearlyTotal(data, 'margin')}
+              </td>
             </tr>
           </React.Fragment>
         ))}
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>Общая маржа</td>
+          {months.map(month => (
+            <td className={'border px-4 py-2 font-bold'} colSpan={3} key={month}>
+              {calculateMonthlyTotal(data, 'margin', month)}
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>Общий остаток маржи</td>
+          {months.map(month => {
+            const totalMargin = calculateMonthlyTotal(data, 'margin', month)
+            const totalRevenue = calculateMonthlyTotal(data, 'revenue', month)
+
+            return (
+              <td className={'border px-4 py-2 font-bold'} colSpan={3} key={month}>
+                {calculateMarginPercentage(totalMargin, totalRevenue) + '%'}
+              </td>
+            )
+          })}
+        </tr>
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>Маржа минус процент менеджеров</td>
+          {months.map(month => {
+            const totalMargin = calculateMonthlyTotal(data, 'margin', month)
+
+            return (
+              <td className={'border px-4 py-2 font-bold'} colSpan={3} key={month}>
+                {(totalMargin * 0.9).toFixed(2)}
+              </td>
+            )
+          })}
+        </tr>
       </tbody>
     </table>
   )

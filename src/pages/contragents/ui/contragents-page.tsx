@@ -1,8 +1,12 @@
+/* eslint-disable max-lines */
 import React, { useMemo, useState } from 'react'
 
 import { DealDto } from '@/entities/deal'
+import { useMeQuery } from '@/entities/session'
 import { EditableTable } from '@/shared/ui/EditableTable'
 import { ColumnDef } from '@tanstack/react-table'
+
+import NewDealForm from './NewDealForm'
 
 const stageOptions = [
   { label: 'отправлено КП', value: 'отправлено КП' },
@@ -125,7 +129,7 @@ const data: DealDto[] = [
   {
     closingDate: '2024-07-15',
     comment: 'Нет комментариев',
-    counterparty: 'ООО "АРомашшка"',
+    counterparty: 'ООО "АРомашка"',
     dealVolume: 1000000,
     id: 2,
     inn: 2234567890,
@@ -150,12 +154,40 @@ const data: DealDto[] = [
   },
 ]
 
+const employees = [
+  { id: 1, name: 'Сотрудник 1', role: 'Логист' },
+  { id: 2, name: 'Сотрудник 2', role: 'Логист' },
+  { id: 3, name: 'Сотрудник 3', role: 'Бухгалтер' },
+  { id: 4, name: 'Сотрудник 4', role: 'Закупщик' },
+  { id: 5, name: 'Сотрудник 5', role: 'РОП' },
+  { id: 6, name: 'Сотрудник 6', role: 'Директор' },
+  { id: 7, name: 'Сотрудник 7', role: 'Логист' },
+  { id: 8, name: 'Сотрудник 8', role: 'Логист' },
+  { id: 9, name: 'Сотрудник 9', role: 'Бухгалтер' },
+  { id: 10, name: 'Сотрудник 10', role: 'Закупщик' },
+  { id: 11, name: 'Сотрудник 11', role: 'РОП' },
+  { id: 12, name: 'Сотрудник 12', role: 'Директор' },
+]
+
 export const ContragentsPage = () => {
+  const { data: userData } = useMeQuery()
+  const userRole = userData?.roleName || ''
+  const userId = userData?.id || 1
+
+  const [deals, setDeals] = useState<DealDto[]>(data)
   const [filterInn, setFilterInn] = useState('')
   const [filterCounterparty, setFilterCounterparty] = useState('')
+  const [isDealFormOpen, setIsDealFormOpen] = useState(false)
+  const [initialFormData, setInitialFormData] = useState({
+    counterparty: '',
+    creationDate: '',
+    dealNumber: '',
+    inn: '',
+  })
+  const [selectedUserId, setSelectedUserId] = useState<number>(userId)
 
   const updateData = (newData: DealDto[]) => {
-    console.log('Updated Data:', newData)
+    setDeals(newData)
   }
 
   const handleFilterInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,15 +199,68 @@ export const ContragentsPage = () => {
   }
 
   const filteredData = useMemo(() => {
-    return data.filter(
+    return deals.filter(
       deal =>
+        deal.user_id === selectedUserId &&
         (!filterInn || deal.inn.toString().includes(filterInn)) &&
         (!filterCounterparty ||
           deal.counterparty.toLowerCase().includes(filterCounterparty.toLowerCase()))
     )
-  }, [filterInn, filterCounterparty])
+  }, [filterInn, filterCounterparty, selectedUserId, deals])
 
-  console.log('filtered: ' + filteredData.length)
+  const handleStageChange = (selectedOption: any, rowIndex: number, columnId: keyof DealDto) => {
+    const updatedData = [...deals]
+    const dealIndex = deals.findIndex(deal => deal.id === filteredData[rowIndex].id)
+
+    if (dealIndex !== -1) {
+      updatedData[dealIndex] = {
+        ...updatedData[dealIndex],
+        [columnId]: selectedOption.value,
+      }
+
+      setDeals(updatedData)
+
+      if (selectedOption.value === 'счет оплачен') {
+        const selectedDeal = updatedData[dealIndex]
+
+        setInitialFormData({
+          counterparty: selectedDeal.counterparty,
+          creationDate: new Date().toISOString().split('T')[0], // Текущая дата
+          dealNumber: selectedDeal.id.toString(),
+          inn: selectedDeal.inn.toString(),
+        })
+        setIsDealFormOpen(true)
+      }
+    }
+  }
+
+  const availableUsers = useMemo(() => {
+    if (userRole === 'Директор') {
+      return employees // Предполагаем, что массив employees определен где-то в коде
+    } else if (userRole === 'РОП') {
+      return employees.filter(employee => employee.role === 'Логист') // Фильтрация по отделу
+    } else {
+      return employees.filter(employee => employee.id === userId)
+    }
+  }, [userRole, userId])
+
+  const defaultRowGenerator = () => {
+    const maxId = Math.max(0, ...deals.map(deal => deal.id))
+
+    return {
+      closingDate: '',
+      comment: '',
+      counterparty: '',
+      dealVolume: 0,
+      id: maxId + 1,
+      inn: '',
+      lossReason: '',
+      marginInRubles: 0,
+      stage: stageOptions[0].value,
+      turnoverInRubles: 0,
+      user_id: selectedUserId,
+    }
+  }
 
   return (
     <div className={'absolute left-[1%] w-[94vw] top-[15%]'}>
@@ -194,15 +279,32 @@ export const ContragentsPage = () => {
           type={'text'}
           value={filterCounterparty}
         />
+        <select
+          className={'border rounded px-2 py-1 ml-2'}
+          onChange={e => setSelectedUserId(Number(e.target.value))}
+          value={selectedUserId}
+        >
+          {availableUsers.map(user => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
       </div>
       <EditableTable
         columns={columns}
         data={filteredData}
+        defaultRowGenerator={defaultRowGenerator}
+        onStageChange={handleStageChange}
         selectOptions={{ lossReason: lossReasonOptions, stage: stageOptions }}
+        tablename={'контрагенты'}
         updateData={updateData}
-        user_id={1}
+        user_id={userId}
         userPermissions={userPermissions}
       />
+      {isDealFormOpen && (
+        <NewDealForm initialData={initialFormData} onClose={() => setIsDealFormOpen(false)} />
+      )}
     </div>
   )
 }

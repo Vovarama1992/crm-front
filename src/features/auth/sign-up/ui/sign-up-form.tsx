@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 
 import { useSignUpMutation } from '@/entities/session'
+import { WorkerDto } from '@/entities/workers'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { RoleSelect } from '@/shared/ui/RoleSelect'
 import { TextField } from '@/shared/ui/text-field'
@@ -60,9 +61,33 @@ export const SignUpForm = (props: SignUpFormProps) => {
     signUp({ email, middleName, name, password, roleName, surname })
       .unwrap()
       .then(user => {
+        // Сохраняем сотрудника в localStorage
+        const workersData = JSON.parse(localStorage.getItem('workers') || '[]') as WorkerDto[]
+        const newWorker: WorkerDto = {
+          birthday: '', // Оставьте пустым или добавьте логику для его заполнения
+          cardNumber: '', // Оставьте пустым или добавьте логику для его заполнения
+          department: '', // Оставьте пустым или добавьте логику для его заполнения
+          dobNumber: '', // Оставьте пустым или добавьте логику для его заполнения
+          email,
+          hireDate: '', // Оставьте пустым или добавьте логику для его заполнения
+          manager: '', // Оставьте пустым или добавьте логику для его заполнения
+          mobile: '', // Оставьте пустым или добавьте логику для его заполнения
+          name,
+          position: '', // Оставьте пустым или добавьте логику для его заполнения
+          roleName,
+          salary: '', // Оставьте пустым или добавьте логику для его заполнения
+          table_id:
+            workersData.length > 0
+              ? Math.max(...workersData.map(worker => worker.table_id)) + 1
+              : 1,
+        }
+
+        workersData.push(newWorker)
+        localStorage.setItem('workers', JSON.stringify(workersData))
+
         toast({
-          description: `Мы отправили сообщение почту ${user.email}`,
-          title: 'Sign Up Success',
+          description: `Мы отправили сообщение на почту ${user.email}`,
+          title: 'Регистрация успешна',
           type: 'background',
         })
 
@@ -71,7 +96,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
       .catch(error => {
         toast({
           description: JSON.stringify(error.data),
-          title: 'Sign Up Error',
+          title: 'Ошибка регистрации',
           variant: 'destructive',
         })
       })

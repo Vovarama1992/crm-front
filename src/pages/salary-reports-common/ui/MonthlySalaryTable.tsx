@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { useMeQuery } from '@/entities/session'
+
 type Report = {
   earned: number
   month: string
@@ -22,13 +24,50 @@ type MonthlyReportTableProps = {
   data: DepartmentData[]
   months: string[]
   onDataChange: (newData: DepartmentData[]) => void
+  tablename: string
 }
 
 const MonthlyReportTable: React.FC<MonthlyReportTableProps> = ({ data, months, onDataChange }) => {
   const [editState, setEditState] = React.useState<{ [key: string]: boolean }>({})
 
-  const toggleEdit = (key: string) => {
-    setEditState({ ...editState, [key]: !editState[key] })
+  const { data: userdata } = useMeQuery()
+
+  const toggleEdit = (
+    fieldKey: string,
+    departmentIndex: number,
+    employeeIndex: number,
+    month: string
+  ) => {
+    setEditState(prevState => {
+      const newState = { ...prevState, [fieldKey]: !prevState[fieldKey] }
+
+      // Если переключаемся из режима редактирования в не-редактируемый
+      if (prevState[fieldKey] && !newState[fieldKey]) {
+        const employee = data[departmentIndex].employees[employeeIndex]
+        const report = employee.reports.find(r => r.month === month)
+
+        if (report) {
+          const oldValue = report[fieldKey as keyof Report]
+          const newValue = report[fieldKey as keyof Report] // Это значение уже обновлено через handleInputChange
+
+          // Создаем уведомление
+          const newNotification = {
+            content: `${userdata?.name || 'Неизвестный'} ${userdata?.surname || 'пользователь'} изменил(а) отчет сотрудника "${employee.name || 'Неизвестный сотрудник'}" за месяц "${month}". Поле "${fieldKey}" изменено с "${oldValue}" на "${newValue}".`,
+            title: `Изменение в отчете ${month}`,
+          }
+
+          // Обновляем уведомления в localStorage
+          const currentNotifications = JSON.parse(
+            localStorage.getItem('notifications') || '[]'
+          ) as Notification[]
+          const updatedNotifications = [...currentNotifications, newNotification]
+
+          localStorage.setItem('notifications', JSON.stringify(updatedNotifications))
+        }
+      }
+
+      return newState
+    })
   }
 
   const handleInputChange = (
@@ -47,7 +86,7 @@ const MonthlyReportTable: React.FC<MonthlyReportTableProps> = ({ data, months, o
 
       if (!isNaN(value)) {
         ;(report as any)[field] = value
-        onDataChange(newData)
+        onDataChange(newData) // Обновляем данные в состоянии
       }
     }
   }
@@ -101,7 +140,14 @@ const MonthlyReportTable: React.FC<MonthlyReportTableProps> = ({ data, months, o
                             {editState[`${keyPrefix}-${field}`] ? (
                               <input
                                 className={'w-full px-1 py-1 border-none'}
-                                onBlur={() => toggleEdit(`${keyPrefix}-${field}`)}
+                                onBlur={() =>
+                                  toggleEdit(
+                                    `${keyPrefix}-${field}`,
+                                    departmentIndex,
+                                    employeeIndex,
+                                    month
+                                  )
+                                }
                                 onChange={e =>
                                   handleInputChange(
                                     e,
@@ -118,7 +164,14 @@ const MonthlyReportTable: React.FC<MonthlyReportTableProps> = ({ data, months, o
                             ) : (
                               <span
                                 className={'block w-full h-full px-2 py-1 text-sm cursor-pointer'}
-                                onClick={() => toggleEdit(`${keyPrefix}-${field}`)}
+                                onClick={() =>
+                                  toggleEdit(
+                                    `${keyPrefix}-${field}`,
+                                    departmentIndex,
+                                    employeeIndex,
+                                    month
+                                  )
+                                }
                                 style={{ display: 'block', width: '100%' }}
                               >
                                 {report ? report[field as keyof Report] : '-'}

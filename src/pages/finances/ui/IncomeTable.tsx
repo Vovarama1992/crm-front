@@ -1,11 +1,11 @@
 import React from 'react'
 
 type Report = {
-  margin: number // маржа
+  margin: number
   month: string
-  planned_margin_q1: number // план по марже 1 квартал
-  planned_margin_year: number // годовой план
-  revenue: number // оборот
+  planned_margin_q1: number
+  planned_margin_year: number
+  revenue: number
 }
 
 type Employee = {
@@ -35,6 +35,37 @@ const calculatePlanPercentage = (actual: number, plan: number): string => {
   const percentage = (actual / plan) * 100
 
   return percentage.toFixed(2)
+}
+
+const calculateYearToDateTotal = (
+  data: Employee[],
+  field: keyof Report,
+  endMonth: string,
+  allMonths: string[]
+) => {
+  const endIndex = allMonths.indexOf(endMonth)
+
+  return data.reduce((total, employee) => {
+    return (
+      total +
+      employee.reports.reduce((monthTotal, report) => {
+        const monthIndex = allMonths.indexOf(report.month)
+
+        if (monthIndex <= endIndex) {
+          return monthTotal + (report[field] as number)
+        }
+
+        return monthTotal
+      }, 0)
+    )
+  }, 0)
+}
+
+const calculateAverageRevenue = (data: Employee[], endMonth: string, allMonths: string[]) => {
+  const endIndex = allMonths.indexOf(endMonth) + 1 // включаем выбранный месяц
+  const totalRevenue = calculateYearToDateTotal(data, 'revenue', endMonth, allMonths)
+
+  return (totalRevenue / endIndex).toFixed(2)
 }
 
 const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange }) => {
@@ -85,28 +116,30 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange })
             Фамилия
           </th>
           {months.map((month, index) => (
-            <th className={'border px-4 py-2 bg-gray-200'} colSpan={3} key={index}>
+            <th
+              className={'border px-4 py-2 bg-gray-200 border-b-2 border-black'}
+              colSpan={7}
+              key={index}
+            >
               {month}
             </th>
           ))}
           <th className={'border px-4 py-2 bg-gray-100'} rowSpan={2}>
-            План по марже 1 квартал
+            Сумма оборота с начала года
           </th>
           <th className={'border px-4 py-2 bg-gray-100'} rowSpan={2}>
-            % Выполнения плана 1 квартал
-          </th>
-          <th className={'border px-4 py-2 bg-gray-100'} rowSpan={2}>
-            Годовой план
-          </th>
-          <th className={'border px-4 py-2 bg-gray-100'} rowSpan={2}>
-            % Выполнения плана год
+            Средний оборот за месяц
           </th>
         </tr>
         <tr>
-          {months.map(index => (
+          {months.map((month, index) => (
             <React.Fragment key={index}>
               <th className={'border px-4 py-2 bg-gray-100'}>Оборот</th>
               <th className={'border px-4 py-2 bg-gray-100'}>Маржа</th>
+              <th className={'border px-4 py-2 bg-gray-100'}>План по марже 1 квартал</th>
+              <th className={'border px-4 py-2 bg-gray-100'}>% Выполнения плана 1 квартал</th>
+              <th className={'border px-4 py-2 bg-gray-100'}>Годовой план</th>
+              <th className={'border px-4 py-2 bg-gray-100'}>% Выполнения плана год</th>
               <th className={'border px-4 py-2 bg-gray-100'}>% Маржа</th>
             </React.Fragment>
           ))}
@@ -120,6 +153,8 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange })
               const report = employee.reports.find(r => r.month === month)
               const revenue = report ? report.revenue : 0
               const margin = report ? report.margin : 0
+              const planned_margin_q1 = report ? report.planned_margin_q1 : 0
+              const planned_margin_year = report ? report.planned_margin_year : 0
 
               return (
                 <React.Fragment key={index}>
@@ -140,26 +175,42 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange })
                     />
                   </td>
                   <td className={'border px-4 py-2'}>
+                    <input
+                      className={'w-full'}
+                      onChange={e =>
+                        handleInputChange(e, employeeIndex, month, 'planned_margin_q1')
+                      }
+                      type={'number'}
+                      value={planned_margin_q1}
+                    />
+                  </td>
+                  <td className={'border px-4 py-2'}>
+                    {calculatePlanPercentage(margin, planned_margin_q1)}%
+                  </td>
+                  <td className={'border px-4 py-2'}>
+                    <input
+                      className={'w-full'}
+                      onChange={e =>
+                        handleInputChange(e, employeeIndex, month, 'planned_margin_year')
+                      }
+                      type={'number'}
+                      value={planned_margin_year}
+                    />
+                  </td>
+                  <td className={'border px-4 py-2'}>
+                    {calculatePlanPercentage(margin, planned_margin_year)}%
+                  </td>
+                  <td className={'border px-4 py-2'}>
                     {calculateMarginPercentage(margin, revenue)}%
                   </td>
                 </React.Fragment>
               )
             })}
-            <td className={'border px-4 py-2'}>{employee.reports[0].planned_margin_q1}</td>
             <td className={'border px-4 py-2'}>
-              {calculatePlanPercentage(
-                employee.reports.reduce((total, report) => total + report.margin, 0),
-                employee.reports[0].planned_margin_q1
-              )}
-              %
+              {calculateYearToDateTotal(data, 'revenue', months[months.length - 1], months)}
             </td>
-            <td className={'border px-4 py-2'}>{employee.reports[0].planned_margin_year}</td>
             <td className={'border px-4 py-2'}>
-              {calculatePlanPercentage(
-                employee.reports.reduce((total, report) => total + report.margin, 0),
-                employee.reports[0].planned_margin_year
-              )}
-              %
+              {calculateAverageRevenue(data, months[months.length - 1], months)}
             </td>
           </tr>
         ))}
@@ -174,6 +225,26 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange })
                 {calculateMonthlyTotals('margin', month)}
               </td>
               <td className={'border px-4 py-2 font-bold'}>
+                {calculateMonthlyTotals('planned_margin_q1', month)}
+              </td>
+              <td className={'border px-4 py-2 font-bold'}>
+                {calculatePlanPercentage(
+                  calculateMonthlyTotals('margin', month),
+                  calculateMonthlyTotals('planned_margin_q1', month)
+                )}
+                %
+              </td>
+              <td className={'border px-4 py-2 font-bold'}>
+                {calculateMonthlyTotals('planned_margin_year', month)}
+              </td>
+              <td className={'border px-4 py-2 font-bold'}>
+                {calculatePlanPercentage(
+                  calculateMonthlyTotals('margin', month),
+                  calculateMonthlyTotals('planned_margin_year', month)
+                )}
+                %
+              </td>
+              <td className={'border px-4 py-2 font-bold'}>
                 {calculateMarginPercentage(
                   calculateMonthlyTotals('margin', month),
                   calculateMonthlyTotals('revenue', month)
@@ -182,21 +253,11 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months, onDataChange })
               </td>
             </React.Fragment>
           ))}
-          <td className={'border px-4 py-2 font-bold'}>{calculateTotals('planned_margin_q1')}</td>
           <td className={'border px-4 py-2 font-bold'}>
-            {calculatePlanPercentage(
-              calculateTotals('margin'),
-              calculateTotals('planned_margin_q1')
-            )}
-            %
+            {calculateYearToDateTotal(data, 'revenue', months[months.length - 1], months)}
           </td>
-          <td className={'border px-4 py-2 font-bold'}>{calculateTotals('planned_margin_year')}</td>
           <td className={'border px-4 py-2 font-bold'}>
-            {calculatePlanPercentage(
-              calculateTotals('margin'),
-              calculateTotals('planned_margin_year')
-            )}
-            %
+            {calculateAverageRevenue(data, months[months.length - 1], months)}
           </td>
         </tr>
       </tbody>

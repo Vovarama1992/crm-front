@@ -14,7 +14,7 @@ enum PermissionsEnum {
   MY_SALES = 'my_sales',
   PROCUREMENTS = 'procurements',
   SALARY_REPORTS = 'salary_reports_himself',
-
+  SALES_LIST = 'see_self',
   SUMMARY_TABLE = 'summary_table',
   SUPPLIERS = 'suppliers',
 }
@@ -39,6 +39,11 @@ const permissionLinks = [
     label: 'Общие продажи',
     path: ROUTER_PATHS.COMMON_SALES,
     permission: PermissionsEnum.COMMON_SALES,
+  },
+  {
+    label: 'Список продаж',
+    path: ROUTER_PATHS.SALES_LIST,
+    permission: PermissionsEnum.SALES_LIST,
   },
   { label: 'Поставщики', path: ROUTER_PATHS.SUPPLIERS, permission: PermissionsEnum.SUPPLIERS },
   { label: 'Закупки', path: ROUTER_PATHS.PROCUREMENTS, permission: PermissionsEnum.PROCUREMENTS },

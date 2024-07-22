@@ -209,6 +209,7 @@ export const SummaryTablePage = () => {
       <EditableTable
         columns={columns}
         data={filteredData}
+        tablename={'сводная таблица'}
         updateData={updateData}
         user_id={1}
         userPermissions={userPermissions}

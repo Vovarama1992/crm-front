@@ -191,6 +191,7 @@ export const DeparturesPage = () => {
           destination: destinationOptions,
           specific_destination: specificDestinationOptions,
         }}
+        tablename={'отправления'}
         updateData={updateData}
         user_id={1}
         userPermissions={userPermissions}
