@@ -74,8 +74,8 @@ const NewDealForm: React.FC<NewDealFormProps> = ({ initialData, onClose }) => {
   }
 
   return (
-    <div className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50'}>
-      <div className={'bg-white w-[80%] max-w-4xl p-6 rounded shadow-lg'}>
+    <div className={' inset-0 flex items-center justify-center bg-black bg-opacity-50'}>
+      <div className={'bg-white w-[20%] max-w-4xl p-6 rounded shadow-lg'}>
         <h2 className={'text-xl font-bold mb-4'}>Создание новой сделки</h2>
         <form onSubmit={handleSubmit}>
           <div className={'grid grid-cols-2 gap-4'}>
