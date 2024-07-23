@@ -27,7 +27,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
   const [formState, setFormState] = useState<WorkerDto>({
     birthday: existingWorker?.birthday || '',
     cardNumber: existingWorker?.cardNumber || '',
-
+    department: '',
     dobNumber: existingWorker?.dobNumber || '',
     email: existingWorker?.email || '',
     hireDate: existingWorker?.hireDate || '',

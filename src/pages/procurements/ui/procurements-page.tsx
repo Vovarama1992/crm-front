@@ -81,12 +81,6 @@ export const ProcurementsPage: React.FC = () => {
     setEditingIndex(null)
   }
 
-  const handleEditRecord = (record: PurchaseOrder, index: number) => {
-    setEditingOrder(record)
-    setEditingIndex(1)
-    setIsFormOpen(true)
-  }
-
   const filteredData = data.filter(order => {
     const matchesInvoice = order.customerInvoice.toLowerCase().includes(searchInvoice.toLowerCase())
     const matchesManager = order.manager.toLowerCase().includes(searchManager.toLowerCase())
