@@ -1,132 +1,220 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+
+import AddExpenseModal from './AddExpenseModal'
+import ReportDetailsModal from './ReportDetailsModal'
 
 type ExpenseReport = {
+  author: string
+  date: string
   expense: number
-  month: string
+  expense_id: number
   name: string
 }
 
-type ExpenseCategory = {
-  category: string
+type Subcategory = {
   reports: ExpenseReport[]
+  subcategory: string
+}
+
+type Category = {
+  category: string
+  subcategories: Subcategory[]
 }
 
 type ExpenseTableProps = {
-  data: ExpenseCategory[]
+  initialCategories: Category[]
   months: string[]
-  onDataChange: (newData: ExpenseCategory[]) => void
 }
 
-const ExpenseTable: React.FC<ExpenseTableProps> = ({ data, months, onDataChange }) => {
-  const [editState, setEditState] = useState<{ [key: string]: boolean }>({})
+const ExpenseTable: React.FC<ExpenseTableProps> = ({ initialCategories, months }) => {
+  const [categories, setCategories] = useState<Category[]>(initialCategories)
+  const [selectedCategory, setSelectedCategory] = useState<null | string>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<null | string>(null)
+  const [selectedReport, setSelectedReport] = useState<ExpenseReport | null>(null)
+  const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState<string>(months[new Date().getMonth()])
+  const [currentMaxId, setCurrentMaxId] = useState<number>(0)
+  const isReportInSelectedMonth = (report: ExpenseReport): boolean => {
+    const reportDate = new Date(report.date)
+    const reportMonth = reportDate.toLocaleString('ru-RU', { month: 'long' })
 
-  const toggleEdit = (key: string) => {
-    setEditState({ ...editState, [key]: !editState[key] })
+    return reportMonth === selectedMonth.toLowerCase()
   }
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    categoryIndex: number,
-    reportIndex: number,
-    month: string,
-    field: keyof ExpenseReport
+  useEffect(() => {
+    const maxId = initialCategories.reduce((maxId, category) => {
+      category.subcategories.forEach(subcat => {
+        subcat.reports.forEach(report => {
+          if (report.expense_id > maxId) {
+            maxId = report.expense_id
+          }
+        })
+      })
+
+      return maxId
+    }, 0)
+
+    setCurrentMaxId(maxId)
+  }, [initialCategories])
+
+  const handleAddExpense = () => {
+    setIsAddExpenseModalOpen(true)
+  }
+
+  const handleAddExpenseSave = (
+    newReport: ExpenseReport,
+    category: string,
+    subcategory: string
   ) => {
-    const newData = [...data]
-    const report = newData[categoryIndex].reports.find(
-      r => r.month === month && r.name === newData[categoryIndex].reports[reportIndex].name
-    )
+    setCurrentMaxId(prevMaxId => prevMaxId + 1)
+    const updatedCategories = categories.map(cat => {
+      if (cat.category === category) {
+        const updatedSubcategories = cat.subcategories.map(subcat => {
+          if (subcat.subcategory === subcategory) {
+            return { ...subcat, reports: [...subcat.reports, newReport] }
+          }
 
-    if (report) {
-      const value = parseFloat(e.target.value)
+          return subcat
+        })
 
-      if (!isNaN(value)) {
-        ;(report as any)[field] = value
-        onDataChange(newData)
+        return { ...cat, subcategories: updatedSubcategories }
       }
-    }
+
+      return cat
+    })
+
+    setCategories(updatedCategories)
+    setIsAddExpenseModalOpen(false)
   }
 
-  const calculateTotals = (categoryIndex: number, month: string) => {
-    return data[categoryIndex].reports
-      .filter(report => report.month === month)
-      .reduce((total, report) => total + (report.expense || 0), 0)
+  const handleUpdateReport = (updatedReport: ExpenseReport) => {
+    const updatedCategories = categories.map(cat => {
+      const updatedSubcategories = cat.subcategories.map(subcat => {
+        const updatedReports = subcat.reports.map(report =>
+          report.expense_id === updatedReport.expense_id ? updatedReport : report
+        )
+
+        return { ...subcat, reports: updatedReports }
+      })
+
+      return { ...cat, subcategories: updatedSubcategories }
+    })
+
+    setCategories(updatedCategories)
+  }
+
+  const handleReportClick = (report: ExpenseReport) => {
+    setSelectedReport(report)
+    setIsDetailModalOpen(true)
+  }
+
+  const calculateTotalForCategory = (category: Category) => {
+    return category.subcategories.reduce((total, subcat) => {
+      return total + calculateTotalForSubcategory(subcat)
+    }, 0)
+  }
+
+  const calculateTotalForSubcategory = (subcategory: Subcategory) => {
+    return subcategory.reports.reduce((total, report) => {
+      return total + report.expense
+    }, 0)
+  }
+
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category)
+    setSelectedSubcategory(null)
+  }
+
+  const handleSubcategoryClick = (subcategory: string) => {
+    setSelectedSubcategory(subcategory)
+  }
+
+  const handleMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedMonth(event.target.value)
   }
 
   return (
-    <table className={'table-auto w-full border-collapse'}>
-      <thead>
-        <tr>
-          <th className={'border px-4 py-2 bg-gray-100'}>Название</th>
+    <div>
+      <div className={'mb-4'}>
+        <label htmlFor={'monthSelect'}>Выберите месяц: </label>
+        <select
+          className={'border p-2'}
+          id={'monthSelect'}
+          onChange={handleMonthChange}
+          value={selectedMonth}
+        >
           {months.map(month => (
-            <th className={'border px-4 py-2 bg-gray-100'} key={month}>
+            <option key={month} value={month}>
               {month}
-            </th>
+            </option>
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((category, categoryIndex) => (
-          <React.Fragment key={category.category}>
-            <tr>
-              <td className={'bg-gray-200 font-bold border px-4 py-2'} colSpan={months.length + 1}>
-                {category.category}
-              </td>
-            </tr>
-            {category.reports
-              .filter(
-                (report, index, self) => self.findIndex(t => t.name === report.name) === index
-              )
-              .map((report, reportIndex) => (
-                <tr key={report.name}>
-                  <td className={'border px-4 py-2'}>{report.name}</td>
-                  {months.map(month => {
-                    const reportForMonth = category.reports.find(
-                      r => r.month === month && r.name === report.name
-                    )
-                    const expenseValue = reportForMonth ? reportForMonth.expense : 0
-                    const keyPrefix = `${categoryIndex}-${reportIndex}-${month}`
+        </select>
+      </div>
 
-                    return (
-                      <td className={'border px-4 py-2'} key={keyPrefix}>
-                        <div className={'w-full h-full'} style={{ minWidth: '100px' }}>
-                          {editState[`${keyPrefix}`] ? (
-                            <input
-                              className={'w-full px-1 py-1 border-none'}
-                              onBlur={() => toggleEdit(`${keyPrefix}`)}
-                              onChange={e =>
-                                handleInputChange(e, categoryIndex, reportIndex, month, 'expense')
-                              }
-                              style={{ width: '100%' }}
-                              type={'number'}
-                              value={expenseValue}
-                            />
-                          ) : (
-                            <span
-                              className={'block w-full h-full px-2 py-1 text-sm cursor-pointer'}
-                              onClick={() => toggleEdit(`${keyPrefix}`)}
-                              style={{ display: 'block', width: '100%' }}
-                            >
-                              {expenseValue}
-                            </span>
-                          )}
-                        </div>
+      <table className={'table-auto w-full border-collapse'}>
+        <thead>
+          <tr>
+            <th className={'border px-4 py-2 bg-gray-100'}>Категория</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map(category => (
+            <React.Fragment key={category.category}>
+              <tr onClick={() => handleCategoryClick(category.category)}>
+                <td className={'border px-4 py-2 cursor-pointer'}>{category.category}</td>
+                <td className={'border px-4 py-2'}>{calculateTotalForCategory(category)}</td>
+              </tr>
+              {selectedCategory === category.category &&
+                category.subcategories.map(subcategory => (
+                  <React.Fragment key={subcategory.subcategory}>
+                    <tr onClick={() => handleSubcategoryClick(subcategory.subcategory)}>
+                      <td className={'border px-4 py-2 pl-8 cursor-pointer'}>
+                        {subcategory.subcategory}
                       </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            <tr>
-              <td className={'border px-4 py-2 font-bold'}>Итого</td>
-              {months.map(month => (
-                <td className={'border px-4 py-2 font-bold'} key={month}>
-                  {calculateTotals(categoryIndex, month)}
-                </td>
-              ))}
-            </tr>
-          </React.Fragment>
-        ))}
-      </tbody>
-    </table>
+                      <td className={'border px-4 py-2'}>
+                        {calculateTotalForSubcategory(subcategory)}
+                      </td>
+                    </tr>
+                    {selectedSubcategory === subcategory.subcategory &&
+                      subcategory.reports.map(
+                        report =>
+                          isReportInSelectedMonth(report) && (
+                            <tr key={report.expense_id} onClick={() => handleReportClick(report)}>
+                              <td className={'border px-4 py-2 pl-16 cursor-pointer'}>
+                                {report.name}
+                              </td>
+                              <td className={'border px-4 py-2'}>{report.expense}</td>
+                            </tr>
+                          )
+                      )}
+                  </React.Fragment>
+                ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+
+      <button className={'mt-4 p-2 bg-blue-500 text-white rounded'} onClick={handleAddExpense}>
+        Добавить расход
+      </button>
+
+      <AddExpenseModal
+        categories={categories}
+        currentMaxId={currentMaxId}
+        isOpen={isAddExpenseModalOpen}
+        onClose={() => setIsAddExpenseModalOpen(false)}
+        onSave={handleAddExpenseSave}
+      />
+
+      <ReportDetailsModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        onSave={handleUpdateReport}
+        report={selectedReport}
+      />
+    </div>
   )
 }
 

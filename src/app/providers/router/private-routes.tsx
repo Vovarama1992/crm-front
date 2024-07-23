@@ -12,6 +12,7 @@ import { ProcurementsPage } from '@/pages/procurements'
 import { SalaryReportsPage } from '@/pages/salary-reports-common'
 import { SalesListPage } from '@/pages/sales-list'
 import { SignUpPage } from '@/pages/sign-up'
+import { StructurePage } from '@/pages/structure'
 import { SummaryTablePage } from '@/pages/summary-table'
 import { SuppliersPage } from '@/pages/suppliers'
 import { WorkersPage } from '@/pages/workers'
@@ -32,6 +33,7 @@ const {
   SALARY_REPORTS,
   SALES_LIST,
   SIGN_UP,
+  STRUCTURE,
   SUMMARY_TABLE,
   SUPPLIERS,
   WORKERS,
@@ -55,6 +57,10 @@ export const privateRoutes: RouteObject[] = [
       {
         element: <NotificationPage />,
         path: NOTIFICATIONS,
+      },
+      {
+        element: <StructurePage />,
+        path: STRUCTURE,
       },
 
       {

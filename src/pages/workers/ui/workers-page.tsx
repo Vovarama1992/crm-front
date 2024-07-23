@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { useMeQuery } from '@/entities/session'
 import { WorkerDto } from '@/entities/workers'
+import { ROUTER_PATHS } from '@/shared/config/routes'
 
 import EmployeeTable from './EmployeeTable'
 
@@ -42,19 +44,26 @@ export const WorkersPage: React.FC = () => {
 
   return (
     <div className={'absolute left-[15%] top-[15%]'}>
-      <div>
-        <input
-          onChange={handleSearchNameChange}
-          placeholder={'Поиск по ФИО'}
-          type={'text'}
-          value={searchName}
-        />
-        <input
-          onChange={handleSearchEmailChange}
-          placeholder={'Поиск по почте'}
-          type={'text'}
-          value={searchEmail}
-        />
+      <div className={'flex justify-between items-center mb-4'}>
+        <div>
+          <input
+            className={'mr-2 p-1 border'}
+            onChange={handleSearchNameChange}
+            placeholder={'Поиск по ФИО'}
+            type={'text'}
+            value={searchName}
+          />
+          <input
+            className={'p-1 border'}
+            onChange={handleSearchEmailChange}
+            placeholder={'Поиск по почте'}
+            type={'text'}
+            value={searchEmail}
+          />
+        </div>
+        <Link className={'p-2 bg-blue-500 text-white rounded'} to={ROUTER_PATHS.STRUCTURE}>
+          Структура компании
+        </Link>
       </div>
 
       <EmployeeTable roleName={roleName} workers={filteredWorkers} />

@@ -16,6 +16,14 @@ const specificDestinationOptions = [
   { label: 'до двери', value: 'до двери' },
 ]
 
+const statusOptions = [
+  { label: 'Отправлено все', value: 'Отправлено все' },
+  { label: 'Отправлено частично', value: 'Отправлено частично' },
+  { label: 'Доставлено все', value: 'Доставлено все' },
+  { label: 'Доставлено частично', value: 'Доставлено частично' },
+  { label: 'Проблема', value: 'Проблема' },
+]
+
 interface CustomColumnMeta {
   options?: { label: string; value: string }[]
   type?: 'input' | 'select'
@@ -31,12 +39,14 @@ const userPermissions: { [key: string]: 'change' | 'null' | 'see' } = {
   comment: 'change',
   counterparty_name: 'change',
   create: 'see',
+  createdBy: 'see',
   departure_date: 'see',
   destination: 'change',
   final_amount: 'change',
   manager: 'see',
   number: 'see',
   specific_destination: 'change',
+  status: 'change',
   tracking_number: 'change',
   transport_company: 'change',
 }
@@ -108,6 +118,18 @@ const columns: CustomColumnDef<DepartureDto>[] = [
     header: 'Комментарий',
     meta: { type: 'input' },
   },
+  {
+    accessorKey: 'status',
+    cell: info => info.getValue(),
+    header: 'Статус',
+    meta: { options: statusOptions, type: 'select' },
+  },
+  {
+    accessorKey: 'createdBy',
+    cell: info => info.getValue(),
+    header: 'Кто создал',
+    meta: { type: 'input' },
+  },
 ]
 
 const data: DepartureDto[] = [
@@ -115,12 +137,14 @@ const data: DepartureDto[] = [
     arrival_date: '2024-07-12',
     comment: 'Комментарий 1',
     counterparty_name: 'ООО Ромашка',
+    createdBy: 'Алексей Смирнов',
     departure_date: '2024-07-10',
     destination: 'До клиента',
     final_amount: 5000,
     manager: 'Иван Иванов',
     number: 1,
     specific_destination: 'до двери',
+    status: 'Отправлено все',
     tracking_number: 123456789,
     transport_company: 'Деловые Линии',
   },
@@ -128,12 +152,14 @@ const data: DepartureDto[] = [
     arrival_date: '2024-07-13',
     comment: 'Комментарий 2',
     counterparty_name: 'АО Ландыш',
+    createdBy: 'Мария Иванова',
     departure_date: '2024-07-11',
     destination: '',
     final_amount: null,
     manager: 'Петр Петров',
     number: 2,
     specific_destination: 'до терминала',
+    status: 'Отправлено частично',
     tracking_number: null,
     transport_company: 'ПЭК',
   },
@@ -190,6 +216,7 @@ export const DeparturesPage = () => {
         selectOptions={{
           destination: destinationOptions,
           specific_destination: specificDestinationOptions,
+          status: statusOptions,
         }}
         tablename={'отправления'}
         updateData={updateData}
@@ -199,3 +226,5 @@ export const DeparturesPage = () => {
     </div>
   )
 }
+
+export default DeparturesPage

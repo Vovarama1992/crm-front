@@ -12,6 +12,7 @@ export const ROUTER_PATHS = {
   SALES_LIST: '/sales-list',
   SIGN_IN: '/sign-in',
   SIGN_UP: '/sign-up',
+  STRUCTURE: '/structure',
   SUMMARY_TABLE: '/summary-table',
   SUPPLIERS: '/suppliers',
   WORKERS: '/workers',

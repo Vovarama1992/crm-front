@@ -27,11 +27,11 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
   const [formState, setFormState] = useState<WorkerDto>({
     birthday: existingWorker?.birthday || '',
     cardNumber: existingWorker?.cardNumber || '',
-    department: existingWorker?.department || '',
+
     dobNumber: existingWorker?.dobNumber || '',
     email: existingWorker?.email || '',
     hireDate: existingWorker?.hireDate || '',
-    manager: existingWorker?.manager || '',
+    margin_percent: existingWorker?.margin_percent || 0.1,
     mobile: existingWorker?.mobile || '',
     name: existingWorker?.name || '',
     position: existingWorker?.position || '',
@@ -113,11 +113,11 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
         </svg>
       </button>
       <div className={'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
-        <div className={'flex flex-col'}>
+        <div className={'flex  flex-col'}>
           <label className={'text-gray-700 text-sm'}>ФИО</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'name'}
@@ -131,7 +131,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           <label className={'text-gray-700 text-sm'}>Должность</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'position'}
@@ -145,7 +145,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           <label className={'text-gray-700 text-sm'}>Почта</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'email'}
@@ -159,7 +159,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           <label className={'text-gray-700 text-sm'}>Добавочный номер</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'dobNumber'}
@@ -173,7 +173,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           <label className={'text-gray-700 text-sm'}>Мобильный</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'mobile'}
@@ -184,10 +184,24 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           />
         </div>
         <div className={'flex flex-col'}>
+          <label className={'text-gray-700 text-sm'}>Процент маржи</label>
+          <input
+            className={
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
+            }
+            disabled={!isDirector}
+            name={'margin_percent'}
+            onChange={handleChange}
+            required
+            type={'text'}
+            value={formState.margin_percent}
+          />
+        </div>
+        <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Дата рождения</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'birthday'}
@@ -201,7 +215,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           <label className={'text-gray-700 text-sm'}>Номер карты для перевода</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'cardNumber'}
@@ -214,7 +228,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           <label className={'text-gray-700 text-sm'}>Адрес</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'address'}
@@ -227,7 +241,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           <label className={'text-gray-700 text-sm'}>Дата принятия на работу</label>
           <input
             className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
             disabled={!isDirector}
             name={'hireDate'}
@@ -236,40 +250,15 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             value={formState.hireDate || ''}
           />
         </div>
-        <div className={'flex flex-col'}>
-          <label className={'text-gray-700 text-sm'}>Отдел</label>
-          <input
-            className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
-            }
-            disabled={!isDirector}
-            name={'department'}
-            onChange={handleChange}
-            type={'text'}
-            value={formState.department || ''}
-          />
-        </div>
-        <div className={'flex flex-col'}>
-          <label className={'text-gray-700 text-sm'}>Имя менеджера</label>
-          <input
-            className={
-              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
-            }
-            disabled={!isDirector}
-            name={'manager'}
-            onChange={handleChange}
-            type={'text'}
-            value={formState.manager || ''}
-          />
-        </div>
+
         <div className={'flex flex-col col-span-full'}>
           <label className={'text-gray-700 text-sm'}>Роль</label>
-          <div className={'space-y-1'}>
+          <div className={'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2'}>
             {ROLES.map(role => (
-              <div className={'flex items-center'} key={role}>
+              <div className={'flex items-center space-x-2'} key={role}>
                 <input
                   checked={formState.roleName === role}
-                  className={'mr-2'}
+                  className={'form-checkbox'}
                   disabled={!isDirector}
                   onChange={handleRoleChange}
                   type={'checkbox'}

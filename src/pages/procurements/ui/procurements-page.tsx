@@ -83,7 +83,7 @@ export const ProcurementsPage: React.FC = () => {
 
   const handleEditRecord = (record: PurchaseOrder, index: number) => {
     setEditingOrder(record)
-    setEditingIndex(index)
+    setEditingIndex(1)
     setIsFormOpen(true)
   }
 
@@ -120,7 +120,7 @@ export const ProcurementsPage: React.FC = () => {
   })
 
   return (
-    <div className={'absolute left-[5%] top-[5%]'}>
+    <div className={'absolute left-[15%] top-[15%]'}>
       <h2 className={'text-xl font-bold mt-4'}>Таблица закупок</h2>
 
       <div className={'ml-[100px] filters mb-4'}>
@@ -200,7 +200,7 @@ export const ProcurementsPage: React.FC = () => {
         Добавить новую запись
       </button>
 
-      <PurchaseTable data={filteredData} onEditRecord={handleEditRecord} />
+      <PurchaseTable data={filteredData} />
 
       {isFormOpen && editingOrder && editingIndex && (
         <EditableForm
