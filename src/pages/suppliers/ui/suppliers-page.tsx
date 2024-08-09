@@ -1,4 +1,4 @@
-import type { CreateSupplierDto, SupplierDto } from '@/entities/departure/departure.types'
+import type { CreateSupplierDto } from '@/entities/departure/departure.types'
 
 import React, { useState } from 'react'
 

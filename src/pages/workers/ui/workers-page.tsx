@@ -24,12 +24,6 @@ export const WorkersPage: React.FC = () => {
     }
   }, [workersData])
 
-  const filteredWorkers = workers.filter(
-    worker =>
-      worker.name.toLowerCase().includes(searchName.toLowerCase()) &&
-      worker.email.toLowerCase().includes(searchEmail.toLowerCase())
-  )
-
   const handleSearchNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchName(e.target.value)
   }

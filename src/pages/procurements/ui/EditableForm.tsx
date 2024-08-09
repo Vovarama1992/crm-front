@@ -173,7 +173,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
 
           <h3 className={'text-lg font-medium'}>Строки счета</h3>
           <div className={'space-y-2'}>
-            {invoiceLines.map((line, index) => (
+            {invoiceLines.map(line => (
               <div className={'grid grid-cols-6 gap-4'} key={line.id}>
                 <div>
                   <label className={'block text-sm font-medium'}>Артикул</label>
@@ -235,7 +235,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
 
           <h3 className={'text-lg font-medium'}>Строки поставщика</h3>
           <div className={'space-y-2'}>
-            {supplierLines.map((line, index) => (
+            {supplierLines.map(line => (
               <div className={'grid grid-cols-6 gap-4'} key={line.id}>
                 <div>
                   <label className={'block text-sm font-medium'}>Артикул</label>
@@ -333,7 +333,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
 
           <h3 className={'text-lg font-medium'}>Строки логистики</h3>
           <div className={'space-y-2'}>
-            {logisticsLines.map((line, index) => (
+            {logisticsLines.map(line => (
               <div className={'grid grid-cols-3 gap-4'} key={line.id}>
                 <div>
                   <label className={'block text-sm font-medium'}>Дата</label>

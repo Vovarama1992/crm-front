@@ -123,7 +123,7 @@ export const ContragentsPage = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredData.map((deal, rowIndex) => (
+          {filteredData.map(deal => (
             <tr key={deal.id}>
               <td className={'border px-4 py-2'}>{deal.counterparty.name}</td>
               <td className={'border px-4 py-2'}>{deal.counterparty.inn}</td>

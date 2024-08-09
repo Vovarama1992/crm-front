@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
 
 import { useGetAllPurchasesQuery } from '@/entities/deal'
-import { PurchaseDto } from '@/entities/deal/deal.types'
 
 import PurchaseTable from './PurchaseTable'
 
 export const ProcurementsPage: React.FC = () => {
-  const { data: purchaseData = [], refetch } = useGetAllPurchasesQuery()
+  const { data: purchaseData = [] } = useGetAllPurchasesQuery()
   const [searchInvoice, setSearchInvoice] = useState('')
   const [searchManager, setSearchManager] = useState('')
   const [searchCustomer, setSearchCustomer] = useState('')

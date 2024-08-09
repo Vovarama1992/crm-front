@@ -100,16 +100,6 @@ export const HomePage = () => {
     setQuestion('')
   }
 
-  const handleSatisfaction = async (satisfied: boolean) => {
-    const dialogueId = Number(localStorage.getItem('dialogueId'))
-
-    if (satisfied && dialogueId) {
-      await closeDialogue({ dialogueId })
-      localStorage.removeItem('dialogueId')
-      setIsOpen(false)
-    }
-  }
-
   return (
     <div className={'h-screen flex flex-col items-center justify-center'} translate={'no'}>
       <div className={'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6'}>

@@ -2,11 +2,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { useEffect, useMemo, useState } from 'react'
 
-import {
-  useCreateSalaryMutation,
-  useGetUserSalariesQuery,
-  useUpdateSalaryMutation,
-} from '@/entities/salary'
+import { useCreateSalaryMutation, useGetUserSalariesQuery } from '@/entities/salary'
 import { useMeQuery } from '@/entities/session'
 
 import MonthlySalaryTable from './MonthlySalaryTable'
@@ -48,7 +44,7 @@ type DepartmentData = {
 
 export const SalaryReportsPage: React.FC = () => {
   const { data: userdata } = useMeQuery()
-  const { data: salaries, isLoading } = useGetUserSalariesQuery(userdata?.id || 0)
+  const { data: salaries } = useGetUserSalariesQuery(userdata?.id || 0)
   const [createSalary] = useCreateSalaryMutation()
   const [data, setData] = useState<DepartmentData[]>([])
   const [startMonthIndex, setStartMonthIndex] = useState(0)

@@ -52,13 +52,12 @@ export const FinancesPage: React.FC = () => {
   const startDate = `${selectedYear}-01-01`
   const endDate = `${selectedYear}-12-31`
 
-  const { data: turnoverAndMarginData, isLoading: isLoadingTurnoverAndMargin } =
-    useGetAllUsersMonthlyTurnoverAndMarginQuery({
-      endDate,
-      startDate,
-    })
+  const { data: turnoverAndMarginData } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
+    endDate,
+    startDate,
+  })
 
-  const { data: expensesData, isLoading: isLoadingExpenses } = useGetAllExpensesQuery()
+  const { data: expensesData } = useGetAllExpensesQuery()
 
   const [incomeData, setIncomeData] = useState<Employee[]>([])
 

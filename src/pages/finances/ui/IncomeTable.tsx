@@ -53,7 +53,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months }) => {
         </tr>
       </thead>
       <tbody>
-        {data.map((employee, employeeIndex) => (
+        {data.map(employee => (
           <tr key={employee.name}>
             <td className={'border px-4 py-2'}>{employee.name}</td>
             {months.map((month, index) => {

@@ -54,13 +54,6 @@ type ReportData = {
   yearlyProfitPlan: number
 }
 
-type WorkerData = {
-  department_id: number
-  id: number
-  margin_percent: number
-  name: string
-}
-
 export const CommonSalesPage: React.FC = () => {
   const [startMonthIndex, setStartMonthIndex] = useState(0)
   const [endMonthIndex, setEndMonthIndex] = useState(months.length - 1)
@@ -86,11 +79,10 @@ export const CommonSalesPage: React.FC = () => {
 
   const { data: workers } = useGetWorkersQuery()
 
-  const { data: reportsData, isLoading: salesLoading } =
-    useGetAllUsersMonthlyTurnoverAndMarginQuery({
-      endDate: endDateString,
-      startDate: startDateString,
-    })
+  const { data: reportsData } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
+    endDate: endDateString,
+    startDate: startDateString,
+  })
 
   console.log('reports: ' + JSON.stringify(reportsData))
 
