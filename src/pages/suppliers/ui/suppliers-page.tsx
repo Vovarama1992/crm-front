@@ -1,61 +1,17 @@
+import type { CreateSupplierDto, SupplierDto } from '@/entities/departure/departure.types'
+
 import React, { useState } from 'react'
 
+import {
+  useCreateSupplierMutation,
+  useGetSuppliersQuery,
+  useUpdateSupplierMutation,
+} from '@/entities/departure/departure.api'
 import { useMeQuery } from '@/entities/session'
 
 import NewSupplierForm from './NewSupplierForm'
 
-// Пример данных поставщиков
-const supplierData = [
-  {
-    address: 'ул. Ленина, д. 1, г. Москва',
-    contactPerson: 'Иванов Иван Иванович',
-    email: 'supplier1@example.com',
-    name: 'ООО "Поставщик 1"',
-    notes: 'Поставщик мебели',
-    phone: '+7 (495) 123-45-67',
-    website: 'https://supplier1.ru',
-  },
-  {
-    address: 'ул. Пушкина, д. 2, г. Санкт-Петербург',
-    contactPerson: 'Петров Петр Петрович',
-    email: 'supplier2@example.com',
-    name: 'ООО "Поставщик 2"',
-    notes: 'Поставщик электроники',
-    phone: '+7 (812) 234-56-78',
-    website: 'https://supplier2.ru',
-  },
-  {
-    address: 'ул. Горького, д. 3, г. Казань',
-    contactPerson: 'Сидоров Сидор Сидорович',
-    email: 'supplier3@example.com',
-    name: 'ООО "Поставщик 3"',
-    notes: 'Поставщик продуктов питания',
-    phone: '+7 (843) 123-45-67',
-    website: 'https://supplier3.ru',
-  },
-  {
-    address: 'ул. Крупской, д. 4, г. Новосибирск',
-    contactPerson: 'Кузнецов Кузьма Кузьмич',
-    email: 'supplier4@example.com',
-    name: 'ООО "Поставщик 4"',
-    notes: 'Поставщик строительных материалов',
-    phone: '+7 (383) 234-56-78',
-    website: 'https://supplier4.ru',
-  },
-  {
-    address: 'ул. Мира, д. 5, г. Екатеринбург',
-    contactPerson: 'Николаев Николай Николаевич',
-    email: 'supplier5@example.com',
-    name: 'ООО "Поставщик 5"',
-    notes: 'Поставщик медицинских товаров',
-    phone: '+7 (343) 345-67-89',
-    website: 'https://supplier5.ru',
-  },
-  // Добавьте больше данных по необходимости
-]
-
 export const SuppliersPage: React.FC = () => {
-  const [tableData, setTableData] = useState(supplierData)
   const [searchName, setSearchName] = useState('')
   const [searchAddress, setSearchAddress] = useState('')
   const [searchPhone, setSearchPhone] = useState('')
@@ -65,8 +21,12 @@ export const SuppliersPage: React.FC = () => {
   const [editIndex, setEditIndex] = useState<{ column: string; row: number } | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
 
-  const { data } = useMeQuery()
-  const isDirector = data?.roleName === 'Директор'
+  const { data: meData } = useMeQuery()
+  const { data: suppliersData, refetch } = useGetSuppliersQuery()
+  const [createSupplier] = useCreateSupplierMutation()
+  const [updateSupplier] = useUpdateSupplierMutation()
+
+  const isDirector = meData?.roleName === 'Директор'
 
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -77,29 +37,33 @@ export const SuppliersPage: React.FC = () => {
 
   const handleEditChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    rowIndex: number,
+    supplierId: number,
     column: string
   ) => {
-    const updatedData = tableData.map((row, index) =>
-      index === rowIndex ? { ...row, [column]: e.target.value } : row
-    )
+    const updatedValue = e.target.value
 
-    setTableData(updatedData)
+    updateSupplier({ data: { [column]: updatedValue }, id: supplierId })
+      .unwrap()
+      .then(() => refetch())
   }
 
-  const handleAddSupplier = (newSupplier: any) => {
-    setTableData(prevData => [...prevData, newSupplier])
-    setIsFormOpen(false)
+  const handleAddSupplier = (newSupplier: CreateSupplierDto) => {
+    createSupplier(newSupplier)
+      .unwrap()
+      .then(() => {
+        refetch()
+        setIsFormOpen(false)
+      })
   }
 
-  const filteredData = tableData.filter(
+  const filteredData = suppliersData?.filter(
     supplier =>
       supplier.name.toLowerCase().includes(searchName.toLowerCase()) &&
       supplier.address.toLowerCase().includes(searchAddress.toLowerCase()) &&
       supplier.phone.toLowerCase().includes(searchPhone.toLowerCase()) &&
       supplier.email.toLowerCase().includes(searchEmail.toLowerCase()) &&
       supplier.contactPerson.toLowerCase().includes(searchContactPerson.toLowerCase()) &&
-      supplier.notes.toLowerCase().includes(searchNotes.toLowerCase())
+      supplier.note?.toLowerCase().includes(searchNotes.toLowerCase())
   )
 
   return (
@@ -162,15 +126,15 @@ export const SuppliersPage: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredData.map((supplier, index) => (
-            <tr key={index}>
+          {filteredData?.map((supplier, index) => (
+            <tr key={supplier.id}>
               <td className={'border w-[100px] px-4 py-2'}>
                 {isDirector && editIndex?.row === index && editIndex.column === 'name' ? (
                   <input
                     autoFocus
                     className={'w-[90%]'}
                     onBlur={() => setEditIndex(null)}
-                    onChange={e => handleEditChange(e, index, 'name')}
+                    onChange={e => handleEditChange(e, supplier.id, 'name')}
                     type={'text'}
                     value={supplier.name}
                   />
@@ -186,7 +150,7 @@ export const SuppliersPage: React.FC = () => {
                     autoFocus
                     className={'w-full'}
                     onBlur={() => setEditIndex(null)}
-                    onChange={e => handleEditChange(e, index, 'address')}
+                    onChange={e => handleEditChange(e, supplier.id, 'address')}
                     type={'text'}
                     value={supplier.address}
                   />
@@ -204,7 +168,7 @@ export const SuppliersPage: React.FC = () => {
                     autoFocus
                     className={'w-full'}
                     onBlur={() => setEditIndex(null)}
-                    onChange={e => handleEditChange(e, index, 'phone')}
+                    onChange={e => handleEditChange(e, supplier.id, 'phone')}
                     type={'text'}
                     value={supplier.phone}
                   />
@@ -220,7 +184,7 @@ export const SuppliersPage: React.FC = () => {
                     autoFocus
                     className={'w-full'}
                     onBlur={() => setEditIndex(null)}
-                    onChange={e => handleEditChange(e, index, 'email')}
+                    onChange={e => handleEditChange(e, supplier.id, 'email')}
                     type={'text'}
                     value={supplier.email}
                   />
@@ -241,7 +205,7 @@ export const SuppliersPage: React.FC = () => {
                     autoFocus
                     className={'w-full'}
                     onBlur={() => setEditIndex(null)}
-                    onChange={e => handleEditChange(e, index, 'contactPerson')}
+                    onChange={e => handleEditChange(e, supplier.id, 'contactPerson')}
                     type={'text'}
                     value={supplier.contactPerson}
                   />
@@ -261,13 +225,13 @@ export const SuppliersPage: React.FC = () => {
                     autoFocus
                     className={'w-full'}
                     onBlur={() => setEditIndex(null)}
-                    onChange={e => handleEditChange(e, index, 'notes')}
+                    onChange={e => handleEditChange(e, supplier.id, 'notes')}
                     type={'text'}
-                    value={supplier.notes}
+                    value={supplier.note}
                   />
                 ) : (
                   <span onClick={() => isDirector && setEditIndex({ column: 'notes', row: index })}>
-                    {supplier.notes}
+                    {supplier.note}
                   </span>
                 )}
               </td>

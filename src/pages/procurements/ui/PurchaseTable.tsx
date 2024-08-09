@@ -1,60 +1,56 @@
 import React, { useState } from 'react'
 
-import EditableForm, { PurchaseOrder } from './EditableForm'
+import { PurchaseDto } from '@/entities/deal/deal.types'
 
-type PurchaseTableProps = {
-  data: PurchaseOrder[]
+import EditableForm from './EditableForm'
+
+interface PurchaseTableProps {
+  data: PurchaseDto[]
 }
 
 const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
-  const [editRecord, setEditRecord] = useState<PurchaseOrder | null>(null)
-  const [editIndex, setEditIndex] = useState<null | number>(null)
+  const [editingOrder, setEditingOrder] = useState<PurchaseDto | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
 
-  const handleEditRecord = (record: PurchaseOrder, index: number) => {
-    setEditRecord(record)
-    setEditIndex(index)
+  const handleEditClick = (purchase: PurchaseDto) => {
+    setEditingOrder(purchase)
+    setIsFormOpen(true)
   }
 
-  const handleSaveRecord = (updatedRecord: PurchaseOrder, index: number) => {
-    data[index] = updatedRecord
-    setEditRecord(null)
-    setEditIndex(null)
-  }
-
-  const handleCancelEdit = () => {
-    setEditRecord(null)
-    setEditIndex(null)
+  const handleFormSave = () => {
+    setIsFormOpen(false)
+    setEditingOrder(null)
   }
 
   return (
-    <div>
+    <div className={'overflow-auto'}>
       <table className={'table-auto w-full border-collapse'}>
         <thead>
           <tr>
-            <th className={'border px-4 py-2 bg-gray-100'}>Дата создания</th>
             <th className={'border px-4 py-2 bg-gray-100'}>№ сделки</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Номер запроса</th>
-            <th className={'border px-4 py-2 bg-gray-100'}>Заказчик</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>Заказчик (ID)</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Счет заказчику</th>
-            <th className={'border px-4 py-2 bg-gray-100'}>Менеджер</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>Менеджер (ID)</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Крайняя дата поставки</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Действия</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((order, index) => (
-            <tr key={index}>
-              <td className={'border px-4 py-2'}>{order.creationDate}</td>
-              <td className={'border px-4 py-2'}>{order.dealNumber}</td>
-              <td className={'border px-4 py-2'}>{order.requestNumber}</td>
-              <td className={'border px-4 py-2'}>{order.customer}</td>
-              <td className={'border px-4 py-2'}>{order.customerInvoice}</td>
-              <td className={'border px-4 py-2'}>{order.manager}</td>
-              <td className={'border px-4 py-2'}>{order.deliveryDeadline}</td>
+          {data.map(purchase => (
+            <tr key={purchase.id}>
+              <td className={'border px-4 py-2'}>{purchase.dealId}</td>
+              <td className={'border px-4 py-2'}>{purchase.requestNumber}</td>
+              <td className={'border px-4 py-2'}>{purchase.counterpartyId}</td>
+              <td className={'border px-4 py-2'}>{purchase.invoiceToCustomer}</td>
+              <td className={'border px-4 py-2'}>{purchase.userId}</td>
+              <td className={'border px-4 py-2'}>
+                {new Date(purchase.deliveryDeadline).toLocaleDateString()}
+              </td>
               <td className={'border px-4 py-2'}>
                 <button
                   className={'bg-blue-500 text-white px-2 py-1 rounded'}
-                  onClick={() => handleEditRecord(order, index)}
+                  onClick={() => handleEditClick(purchase)}
                 >
                   Редактировать
                 </button>
@@ -63,12 +59,12 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
           ))}
         </tbody>
       </table>
-      {editRecord && editIndex !== null && (
+
+      {isFormOpen && editingOrder && (
         <EditableForm
-          index={editIndex}
-          initialValue={editRecord}
-          onCancel={handleCancelEdit}
-          onSave={handleSaveRecord}
+          initialValue={editingOrder}
+          onCancel={() => setIsFormOpen(false)}
+          onSave={handleFormSave}
         />
       )}
     </div>

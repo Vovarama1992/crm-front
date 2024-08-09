@@ -1,18 +1,16 @@
 import React, { useState } from 'react'
 
-import EditableForm, { PurchaseOrder } from './EditableForm'
+import { useGetAllPurchasesQuery } from '@/entities/deal'
+import { PurchaseDto } from '@/entities/deal/deal.types'
+
 import PurchaseTable from './PurchaseTable'
-import { purchaseData } from './procurements'
 
 export const ProcurementsPage: React.FC = () => {
+  const { data: purchaseData = [], refetch } = useGetAllPurchasesQuery()
   const [searchInvoice, setSearchInvoice] = useState('')
   const [searchManager, setSearchManager] = useState('')
   const [searchCustomer, setSearchCustomer] = useState('')
   const [priceRange, setPriceRange] = useState({ max: '', min: '' })
-  const [data, setData] = useState<PurchaseOrder[]>(purchaseData)
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editingOrder, setEditingOrder] = useState<PurchaseOrder | null>(null)
-  const [editingIndex, setEditingIndex] = useState<null | number>(null)
   const [completedDealsOnly, setCompletedDealsOnly] = useState(false)
   const [issuesOnly, setIssuesOnly] = useState(false)
   const [unpaidSupplierInvoicesOnly, setUnpaidSupplierInvoicesOnly] = useState(false)
@@ -30,9 +28,11 @@ export const ProcurementsPage: React.FC = () => {
   }
 
   const handlePriceRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+
     setPriceRange({
       ...priceRange,
-      [e.target.name]: e.target.value,
+      [name]: value,
     })
   }
 
@@ -48,68 +48,33 @@ export const ProcurementsPage: React.FC = () => {
     }
   }
 
-  const handleAddNewRecord = () => {
-    const maxIndex = data.length > 0 ? Math.max(...data.map((_, idx) => idx)) : -1
-
-    setEditingOrder({
-      creationDate: '',
-      customer: '',
-      customerInvoice: '',
-      dealNumber: '',
-      deliveryDeadline: '',
-      invoiceLines: [],
-      logisticsLines: [],
-      manager: '',
-      requestNumber: '',
-      supplierLines: [],
-    })
-    setEditingIndex(maxIndex + 1)
-    setIsFormOpen(true)
-  }
-
-  const handleSave = (newRecord: PurchaseOrder, index: null | number) => {
-    if (index === null) {
-      setData([...data, newRecord])
-    } else {
-      const updatedData = [...data]
-
-      updatedData[index] = newRecord
-      setData(updatedData)
-    }
-    setIsFormOpen(false)
-    setEditingOrder(null)
-    setEditingIndex(null)
-  }
-
-  const filteredData = data.filter(order => {
-    const matchesInvoice = order.customerInvoice.toLowerCase().includes(searchInvoice.toLowerCase())
-    const matchesManager = order.manager.toLowerCase().includes(searchManager.toLowerCase())
-    const matchesCustomer = order.customer.toLowerCase().includes(searchCustomer.toLowerCase())
-
-    const orderTotalPrice = order.invoiceLines.reduce((sum, line) => sum + line.totalPrice, 0)
+  // Фильтрация данных
+  const filteredData = purchaseData.filter(purchase => {
+    const matchesInvoice = purchase.requestNumber
+      .toLowerCase()
+      .includes(searchInvoice.toLowerCase())
+    const matchesManager = searchManager === '' || purchase.userId === parseInt(searchManager, 10)
+    const matchesCustomer =
+      searchCustomer === '' || purchase.counterpartyId === parseInt(searchCustomer, 10)
     const matchesPriceRange =
-      (!priceRange.min || orderTotalPrice >= parseFloat(priceRange.min)) &&
-      (!priceRange.max || orderTotalPrice <= parseFloat(priceRange.max))
+      (!priceRange.min || purchase.invoiceToCustomer >= parseFloat(priceRange.min)) &&
+      (!priceRange.max || purchase.invoiceToCustomer <= parseFloat(priceRange.max))
 
-    const isCompletedDeal = order.supplierLines.every(line => line.delivered)
-    const hasIssues =
-      order.supplierLines.some(line => {
-        const currentDate = new Date()
-        const shipmentDate = new Date(line.shipmentDate)
-
-        return currentDate > shipmentDate && !line.delivered
-      }) || new Date() > new Date(order.deliveryDeadline)
-
-    const hasUnpaidInvoices = order.supplierLines.some(line => !line.paymentDate)
+    // Фильтрация по чекбоксам на основе связанных сущностей
+    const matchesCompletedDealsOnly =
+      !completedDealsOnly || purchase.logisticsLines.some(line => line.date && line.amount)
+    const matchesIssuesOnly = !issuesOnly || purchase.supplierLines.some(line => !line.delivered)
+    const matchesUnpaidSupplierInvoicesOnly =
+      !unpaidSupplierInvoicesOnly || purchase.supplierLines.some(line => !line.paymentDate)
 
     return (
       matchesInvoice &&
       matchesManager &&
       matchesCustomer &&
       matchesPriceRange &&
-      (!completedDealsOnly || isCompletedDeal) &&
-      (!issuesOnly || hasIssues) &&
-      (!unpaidSupplierInvoicesOnly || hasUnpaidInvoices)
+      matchesCompletedDealsOnly &&
+      matchesIssuesOnly &&
+      matchesUnpaidSupplierInvoicesOnly
     )
   })
 
@@ -128,14 +93,14 @@ export const ProcurementsPage: React.FC = () => {
         <input
           className={'border p-2 mr-2'}
           onChange={handleSearchManagerChange}
-          placeholder={'Поиск по менеджеру'}
+          placeholder={'Поиск по менеджеру (ID)'}
           type={'text'}
           value={searchManager}
         />
         <input
           className={'border p-2 mr-2'}
           onChange={handleSearchCustomerChange}
-          placeholder={'Поиск по заказчику'}
+          placeholder={'Поиск по заказчику (ID)'}
           type={'text'}
           value={searchCustomer}
         />
@@ -187,23 +152,7 @@ export const ProcurementsPage: React.FC = () => {
         </label>
       </div>
 
-      <button
-        className={'bg-blue-500 ml-[100px] text-white px-4 py-2 rounded mb-4'}
-        onClick={handleAddNewRecord}
-      >
-        Добавить новую запись
-      </button>
-
       <PurchaseTable data={filteredData} />
-
-      {isFormOpen && editingOrder && editingIndex && (
-        <EditableForm
-          index={editingIndex}
-          initialValue={editingOrder}
-          onCancel={() => setIsFormOpen(false)}
-          onSave={handleSave}
-        />
-      )}
     </div>
   )
 }

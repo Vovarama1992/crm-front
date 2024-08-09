@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from 'react'
 
+import { ExpenseDto } from '@/entities/deal/deal.types'
+
 import AddExpenseModal from './AddExpenseModal'
 import ReportDetailsModal from './ReportDetailsModal'
 
-type ExpenseReport = {
-  author: string
-  date: string
-  expense: number
-  expense_id: number
-  name: string
-}
-
 type Subcategory = {
-  reports: ExpenseReport[]
+  reports: ExpenseDto[]
   subcategory: string
 }
 
@@ -22,77 +16,70 @@ type Category = {
 }
 
 type ExpenseTableProps = {
-  initialCategories: Category[]
+  expenses: ExpenseDto[]
   months: string[]
 }
 
-const ExpenseTable: React.FC<ExpenseTableProps> = ({ initialCategories, months }) => {
-  const [categories, setCategories] = useState<Category[]>(initialCategories)
+const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
+  const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<null | string>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<null | string>(null)
-  const [selectedReport, setSelectedReport] = useState<ExpenseReport | null>(null)
+  const [selectedReport, setSelectedReport] = useState<ExpenseDto | null>(null)
   const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState<string>(months[new Date().getMonth()])
-  const [currentMaxId, setCurrentMaxId] = useState<number>(0)
-  const isReportInSelectedMonth = (report: ExpenseReport): boolean => {
+
+  useEffect(() => {
+    const structuredCategories: Category[] = []
+
+    expenses.forEach(expense => {
+      const categoryIndex = structuredCategories.findIndex(cat => cat.category === expense.category)
+
+      if (categoryIndex === -1) {
+        structuredCategories.push({
+          category: expense.category,
+          subcategories: [
+            {
+              reports: [expense],
+              subcategory: expense.subcategory,
+            },
+          ],
+        })
+      } else {
+        const subcategoryIndex = structuredCategories[categoryIndex].subcategories.findIndex(
+          subcat => subcat.subcategory === expense.subcategory
+        )
+
+        if (subcategoryIndex === -1) {
+          structuredCategories[categoryIndex].subcategories.push({
+            reports: [expense],
+            subcategory: expense.subcategory,
+          })
+        } else {
+          structuredCategories[categoryIndex].subcategories[subcategoryIndex].reports.push(expense)
+        }
+      }
+    })
+
+    setCategories(structuredCategories)
+  }, [expenses])
+
+  const isReportInSelectedMonth = (report: ExpenseDto): boolean => {
     const reportDate = new Date(report.date)
     const reportMonth = reportDate.toLocaleString('ru-RU', { month: 'long' })
 
     return reportMonth === selectedMonth.toLowerCase()
   }
 
-  useEffect(() => {
-    const maxId = initialCategories.reduce((maxId, category) => {
-      category.subcategories.forEach(subcat => {
-        subcat.reports.forEach(report => {
-          if (report.expense_id > maxId) {
-            maxId = report.expense_id
-          }
-        })
-      })
-
-      return maxId
-    }, 0)
-
-    setCurrentMaxId(maxId)
-  }, [initialCategories])
-
   const handleAddExpense = () => {
     setIsAddExpenseModalOpen(true)
   }
 
-  const handleAddExpenseSave = (
-    newReport: ExpenseReport,
-    category: string,
-    subcategory: string
-  ) => {
-    setCurrentMaxId(prevMaxId => prevMaxId + 1)
-    const updatedCategories = categories.map(cat => {
-      if (cat.category === category) {
-        const updatedSubcategories = cat.subcategories.map(subcat => {
-          if (subcat.subcategory === subcategory) {
-            return { ...subcat, reports: [...subcat.reports, newReport] }
-          }
-
-          return subcat
-        })
-
-        return { ...cat, subcategories: updatedSubcategories }
-      }
-
-      return cat
-    })
-
-    setCategories(updatedCategories)
-    setIsAddExpenseModalOpen(false)
-  }
-
-  const handleUpdateReport = (updatedReport: ExpenseReport) => {
+  const handleUpdateReport = (updatedReport: ExpenseDto) => {
     const updatedCategories = categories.map(cat => {
       const updatedSubcategories = cat.subcategories.map(subcat => {
         const updatedReports = subcat.reports.map(report =>
-          report.expense_id === updatedReport.expense_id ? updatedReport : report
+          report.id === updatedReport.id ? updatedReport : report
         )
 
         return { ...subcat, reports: updatedReports }
@@ -104,7 +91,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ initialCategories, months }
     setCategories(updatedCategories)
   }
 
-  const handleReportClick = (report: ExpenseReport) => {
+  const handleReportClick = (report: ExpenseDto) => {
     setSelectedReport(report)
     setIsDetailModalOpen(true)
   }
@@ -181,7 +168,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ initialCategories, months }
                       subcategory.reports.map(
                         report =>
                           isReportInSelectedMonth(report) && (
-                            <tr key={report.expense_id} onClick={() => handleReportClick(report)}>
+                            <tr key={report.id} onClick={() => handleReportClick(report)}>
                               <td className={'border px-4 py-2 pl-16 cursor-pointer'}>
                                 {report.name}
                               </td>
@@ -202,10 +189,8 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ initialCategories, months }
 
       <AddExpenseModal
         categories={categories}
-        currentMaxId={currentMaxId}
         isOpen={isAddExpenseModalOpen}
         onClose={() => setIsAddExpenseModalOpen(false)}
-        onSave={handleAddExpenseSave}
       />
 
       <ReportDetailsModal

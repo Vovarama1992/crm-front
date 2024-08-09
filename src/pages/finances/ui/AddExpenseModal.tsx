@@ -1,15 +1,11 @@
 import React, { useState } from 'react'
 
-type ExpenseReport = {
-  author: string
-  date: string
-  expense: number
-  expense_id: number
-  name: string
-}
+import { useCreateExpenseMutation } from '@/entities/deal'
+import { CreateExpenseDto } from '@/entities/deal/deal.types'
+import { useMeQuery } from '@/entities/session'
 
 type Subcategory = {
-  reports: ExpenseReport[]
+  reports: CreateExpenseDto[]
   subcategory: string
 }
 
@@ -20,41 +16,50 @@ type Category = {
 
 type AddExpenseModalProps = {
   categories: Category[]
-  currentMaxId: number
   isOpen: boolean
   onClose: () => void
-  onSave: (newReport: ExpenseReport, category: string, subcategory: string) => void
 }
 
-const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
-  categories,
-  currentMaxId,
-  isOpen,
-  onClose,
-  onSave,
-}) => {
+const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, isOpen, onClose }) => {
   const [newCategory, setNewCategory] = useState<string>('')
   const [newSubcategory, setNewSubcategory] = useState<string>('')
   const [expenseName, setExpenseName] = useState<string>('')
   const [expenseAmount, setExpenseAmount] = useState<number>(0)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('')
-  const [author, setAuthor] = useState<string>('')
   const [date, setDate] = useState<string>('')
 
-  const handleSave = () => {
-    const newReport: ExpenseReport = {
-      author,
-      date,
-      expense: expenseAmount,
-      expense_id: currentMaxId + 1,
-      name: expenseName,
-    }
+  const { data } = useMeQuery()
+  const userId = data?.id
+
+  const [createExpense] = useCreateExpenseMutation()
+
+  const handleSave = async () => {
     const category = newCategory || selectedCategory
     const subcategory = newSubcategory || selectedSubcategory
 
-    onSave(newReport, category, subcategory)
-    onClose()
+    if (!userId) {
+      return
+    }
+
+    // Преобразуем дату в формат ISO-8601 с включением времени
+    const formattedDate = new Date(date).toISOString()
+
+    const newReport: CreateExpenseDto = {
+      category,
+      date: formattedDate,
+      expense: expenseAmount,
+      name: expenseName,
+      subcategory,
+      userId,
+    }
+
+    try {
+      await createExpense(newReport).unwrap()
+      onClose()
+    } catch (error) {
+      console.error('Failed to create expense', error)
+    }
   }
 
   const categoryOptions = categories.map(cat => (
@@ -103,7 +108,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             <label className={'block'}>Подкатегория</label>
             <select
               className={'border p-2 w-full'}
-              disabled={!selectedCategory}
               onChange={e => setSelectedSubcategory(e.target.value)}
               value={selectedSubcategory}
             >
@@ -112,7 +116,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </select>
             <input
               className={'border p-2 w-full mt-2'}
-              disabled={!selectedCategory}
               onChange={e => setNewSubcategory(e.target.value)}
               placeholder={'Или введите новую подкатегорию'}
               value={newSubcategory}
@@ -134,15 +137,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               onChange={e => setExpenseAmount(parseFloat(e.target.value))}
               type={'number'}
               value={expenseAmount}
-            />
-          </div>
-          <div>
-            <label className={'block'}>Автор</label>
-            <input
-              className={'border p-2 w-full'}
-              onChange={e => setAuthor(e.target.value)}
-              type={'text'}
-              value={author}
             />
           </div>
           <div>

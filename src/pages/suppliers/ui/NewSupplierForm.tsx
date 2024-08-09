@@ -1,7 +1,9 @@
+import type { CreateSupplierDto } from '@/entities/departure/departure.types'
+
 import React, { useState } from 'react'
 
 type NewSupplierFormProps = {
-  onAddSupplier: (newSupplier: any) => void
+  onAddSupplier: (newSupplier: CreateSupplierDto) => void
   onClose: () => void
 }
 
@@ -16,7 +18,15 @@ const NewSupplierForm: React.FC<NewSupplierFormProps> = ({ onAddSupplier, onClos
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const newSupplier = { address, contactPerson, email, name, notes, phone, website }
+    const newSupplier: CreateSupplierDto = {
+      address,
+      contactPerson,
+      email,
+      name,
+      note: notes,
+      phone,
+      website,
+    }
 
     onAddSupplier(newSupplier)
   }

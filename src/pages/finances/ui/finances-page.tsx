@@ -1,9 +1,13 @@
 /* eslint-disable max-lines */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+
+import {
+  useGetAllExpensesQuery,
+  useGetAllUsersMonthlyTurnoverAndMarginQuery,
+} from '@/entities/deal'
 
 import ExpenseTable from './ExpenseTable'
 import IncomeTable from './IncomeTable'
-import initialCategories from './initialExpenses'
 
 const months = [
   'Январь',
@@ -22,72 +26,69 @@ const months = [
 
 const years = [2020, 2021, 2022, 2023, 2024]
 
-type Report = {
-  margin: number
-  margin_percent: number
+type FlatReport = {
+  completionPercent: number
+  marginAmount: number
+  marginPercent: number
   month: string
-  planned_margin_year: number
-  revenue: number
+  totalMargin: number
+  totalTurnover: number
+  userId: number
+  year: number
+  yearlyProfitPlan: number
 }
 
 type Employee = {
   name: string
-  reports: Report[]
+  reports: FlatReport[]
 }
-
-const generateRandomIncomeReports = (): Report[] => {
-  return months.map(month => {
-    const revenue = getRandomNumber(50000, 100000)
-    const margin = getRandomNumber(10000, 50000)
-    const margin_percent = Math.random()
-    const planned_margin_year = getRandomNumber(100000, 300000)
-
-    return {
-      margin,
-      margin_percent,
-      month,
-      planned_margin_year,
-      revenue,
-    }
-  })
-}
-
-const generateRandomEmployees = (numEmployees: number): Employee[] => {
-  const employees: Employee[] = []
-
-  for (let i = 0; i < numEmployees; i++) {
-    employees.push({
-      name: `Сотрудник ${i + 1}`,
-      reports: generateRandomIncomeReports(),
-    })
-  }
-
-  return employees
-}
-
-const getRandomNumber = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-const initialEmployeeData: Employee[] = generateRandomEmployees(10)
 
 export const FinancesPage: React.FC = () => {
-  const [incomeData, setIncomeData] = useState(initialEmployeeData)
-  const [selectedYear, setSelectedYear] = useState<'' | number>('')
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
   const [selectedQuarter, setSelectedQuarter] = useState<'' | number>('')
   const [startMonthIndex, setStartMonthIndex] = useState<number>(0)
   const [endMonthIndex, setEndMonthIndex] = useState<number>(11)
 
-  const handleIncomeDataChange = (newData: Employee[]) => {
-    setIncomeData(newData)
-  }
+  const startDate = `${selectedYear}-01-01`
+  const endDate = `${selectedYear}-12-31`
+
+  const { data: turnoverAndMarginData, isLoading: isLoadingTurnoverAndMargin } =
+    useGetAllUsersMonthlyTurnoverAndMarginQuery({
+      endDate,
+      startDate,
+    })
+
+  const { data: expensesData, isLoading: isLoadingExpenses } = useGetAllExpensesQuery()
+
+  const [incomeData, setIncomeData] = useState<Employee[]>([])
+
+  useEffect(() => {
+    if (turnoverAndMarginData) {
+      const employeeData: Employee[] = turnoverAndMarginData.map(userData => ({
+        name: `User ${userData.userId}`,
+        reports: userData.monthlyData.map((monthlyData: any) => ({
+          completionPercent: monthlyData.completionPercent,
+          marginAmount: monthlyData.marginAmount,
+          marginPercent: monthlyData.marginPercent,
+          month: months[monthlyData.month - 1],
+          totalMargin: monthlyData.totalMargin,
+          totalTurnover: monthlyData.totalTurnover,
+          userId: userData.userId,
+          year: monthlyData.year,
+          yearlyProfitPlan: monthlyData.yearlyProfitPlan,
+        })),
+      }))
+
+      setIncomeData(employeeData)
+    }
+  }, [turnoverAndMarginData, selectedYear])
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(Number(event.target.value) || '')
+    setSelectedYear(Number(event.target.value))
   }
 
   const handleQuarterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const quarter = Number(event.target.value) || ''
+    const quarter = Number(event.target.value)
 
     setSelectedQuarter(quarter)
 
@@ -96,6 +97,9 @@ export const FinancesPage: React.FC = () => {
 
       setStartMonthIndex(quarterStartMonth)
       setEndMonthIndex(quarterStartMonth + 2)
+    } else {
+      setStartMonthIndex(0)
+      setEndMonthIndex(11)
     }
   }
 
@@ -133,7 +137,6 @@ export const FinancesPage: React.FC = () => {
             onChange={handleYearChange}
             value={selectedYear || ''}
           >
-            <option value={''}>Все</option>
             {years.map((year, index) => (
               <option key={index} value={year}>
                 {year}
@@ -191,17 +194,11 @@ export const FinancesPage: React.FC = () => {
 
       <h2 className={'text-xl font-bold mt-4'}>Таблица доходов</h2>
       <div>
-        <IncomeTable
-          data={incomeData}
-          months={selectedMonths}
-          onDataChange={handleIncomeDataChange}
-        />
+        <IncomeTable data={incomeData} months={selectedMonths} />
       </div>
 
       <h2 className={'text-xl font-bold mt-4'}>Таблица расходов</h2>
-      <div>
-        <ExpenseTable initialCategories={initialCategories} months={selectedMonths} />
-      </div>
+      <ExpenseTable expenses={expensesData || []} months={selectedMonths} />
     </div>
   )
 }

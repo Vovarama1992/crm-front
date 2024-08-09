@@ -1,5 +1,10 @@
+/* eslint-disable max-lines */
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react'
+
+import { useGetAllUsersMonthlyTurnoverAndMarginQuery } from '@/entities/deal'
+import { WorkerDto } from '@/entities/workers'
+import { useGetDepartmentsQuery, useGetWorkersQuery } from '@/entities/workers'
 
 import CommonSalesTable from './CommonSalesTable'
 
@@ -18,100 +23,158 @@ const months = [
   'Декабрь',
 ]
 
-type SalesReport = {
+type Report = {
   margin: number // маржа
   month: string
   planned_margin: number // план маржа
   revenue: number // оборот
 }
 
-type SalesEmployee = {
+type Employee = {
   name: string
-  reports: SalesReport[]
+  reports: Report[]
 }
 
-type SalesDepartmentData = {
+type DepartmentData = {
   department: string
-  employees: SalesEmployee[]
+  employees: Employee[]
 }
 
-const getRandomNumber = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min
+type MonthlyData = {
+  month: string
+  totalMargin: number
+  totalTurnover: number
+  year: number
 }
 
-const generateRandomSalesReports = (): SalesReport[] => {
-  return months.map(month => {
-    const revenue = getRandomNumber(50000, 100000)
-    const margin = getRandomNumber(10000, 50000)
-    const planned_margin = getRandomNumber(15000, 60000)
-
-    return {
-      margin,
-      month,
-      planned_margin,
-      revenue,
-    }
-  })
+type ReportData = {
+  marginPercent: number
+  monthlyData: MonthlyData[]
+  userId: number
+  yearlyProfitPlan: number
 }
 
-const generateRandomSalesEmployees = (numEmployees: number): SalesEmployee[] => {
-  const employees: SalesEmployee[] = []
-
-  for (let i = 0; i < numEmployees; i++) {
-    employees.push({
-      name: `Сотрудник ${i + 1}`,
-      reports: generateRandomSalesReports(),
-    })
-  }
-
-  return employees
+type WorkerData = {
+  department_id: number
+  id: number
+  margin_percent: number
+  name: string
 }
-
-const generateRandomSalesDepartments = (numDepartments: number): SalesDepartmentData[] => {
-  const departments: SalesDepartmentData[] = []
-
-  for (let i = 0; i < numDepartments; i++) {
-    departments.push({
-      department:
-        i === 0
-          ? 'Сотрудники без мотивации на продажи'
-          : i === numDepartments - 1
-            ? 'Продажи не относящиеся к отделу продаж'
-            : `Отдел ${i + 1}`,
-      employees: generateRandomSalesEmployees(getRandomNumber(5, 10)),
-    })
-  }
-
-  return departments
-}
-
-const salesData: SalesDepartmentData[] = generateRandomSalesDepartments(10)
 
 export const CommonSalesPage: React.FC = () => {
-  const [data, setData] = useState(salesData)
   const [startMonthIndex, setStartMonthIndex] = useState(0)
   const [endMonthIndex, setEndMonthIndex] = useState(months.length - 1)
-  const [selectedYear, setSelectedYear] = useState<'' | string>('')
+  const [selectedYear, setSelectedYear] = useState(2024)
   const [selectedQuarter, setSelectedQuarter] = useState<'' | string>('')
 
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('Все')
+  const getStartDate = (year: number, monthIndex: number): string => {
+    const startDate = new Date(Number(year), monthIndex, 1)
 
-  const handleDataChange = (newData: SalesDepartmentData[]) => {
+    return startDate.toISOString().split('T')[0]
+  }
+
+  const getEndDate = (year: number, monthIndex: number): string => {
+    const endDate = new Date(Number(year), monthIndex + 1, 0)
+
+    return endDate.toISOString().split('T')[0]
+  }
+
+  const startDateString = getStartDate(selectedYear, startMonthIndex)
+  const endDateString = getEndDate(selectedYear, endMonthIndex)
+
+  const { data: departments } = useGetDepartmentsQuery()
+
+  const { data: workers } = useGetWorkersQuery()
+
+  const { data: reportsData, isLoading: salesLoading } =
+    useGetAllUsersMonthlyTurnoverAndMarginQuery({
+      endDate: endDateString,
+      startDate: startDateString,
+    })
+
+  console.log('reports: ' + JSON.stringify(reportsData))
+
+  const completed: DepartmentData[] =
+    departments?.map(dep => {
+      const employees: Employee[] =
+        workers
+          ?.filter((worker: WorkerDto) => worker.department_id === dep.id)
+          .map((worker: WorkerDto) => {
+            const reports: Report[] =
+              reportsData
+                ?.filter((report: ReportData) => report.userId === worker.id)
+                .flatMap((report: ReportData) =>
+                  report.monthlyData.map(monthlyReport => ({
+                    margin: monthlyReport.totalMargin,
+                    month: monthlyReport.month,
+                    planned_margin: worker.margin_percent
+                      ? worker.margin_percent * monthlyReport.totalMargin
+                      : 0,
+                    revenue: monthlyReport.totalTurnover,
+                  }))
+                ) || []
+
+            return {
+              name: worker.name,
+              reports: reports,
+            }
+          }) || []
+
+      return {
+        department: dep.name,
+        employees: employees,
+      }
+    }) || []
+
+  // Добавляем департамент для сотрудников без мотивации на продажи
+  const employeesWithoutDepartment: Employee[] =
+    workers
+      ?.filter((worker: WorkerDto) => worker.department_id === null)
+      .map((worker: WorkerDto) => {
+        const reports: Report[] =
+          reportsData
+            ?.filter((report: ReportData) => report.userId === worker.id)
+            .flatMap((report: ReportData) =>
+              report.monthlyData.map((monthlyReport: any) => ({
+                margin: monthlyReport.totalMargin,
+                month: months[parseInt(monthlyReport.month) - 1],
+                planned_margin: worker.margin_percent
+                  ? worker.margin_percent * monthlyReport.totalMargin
+                  : 0,
+                revenue: monthlyReport.totalTurnover,
+              }))
+            ) || []
+
+        return {
+          name: worker.name,
+          reports: reports,
+        }
+      }) || []
+
+  if (employeesWithoutDepartment.length > 0) {
+    completed.push({
+      department: 'Сотрудники без мотивации на продажи',
+      employees: employeesWithoutDepartment,
+    })
+  }
+  console.log('completed: ' + JSON.stringify(completed))
+
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('Все')
+  const [data, setData] = useState(completed)
+
+  const handleDataChange = (newData: DepartmentData[]) => {
     setData(newData)
   }
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(event.target.value)
-    setSelectedQuarter('')
-    setStartMonthIndex(0)
-    setEndMonthIndex(months.length - 1)
+    setSelectedYear(Number(event.target.value))
   }
 
   const handleQuarterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const quarter = event.target.value
 
     setSelectedQuarter(quarter)
-    setSelectedYear('')
+
     if (quarter === '1') {
       setStartMonthIndex(0)
       setEndMonthIndex(2)
@@ -141,8 +204,6 @@ export const CommonSalesPage: React.FC = () => {
         setStartMonthIndex(monthIndex)
       }
     }
-    setSelectedYear('')
-    setSelectedQuarter('')
   }
 
   const handleDepartmentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -152,8 +213,8 @@ export const CommonSalesPage: React.FC = () => {
   const selectedMonths = months.slice(startMonthIndex, endMonthIndex + 1)
   const filteredData =
     selectedDepartment === 'Все'
-      ? data
-      : data.filter(dept => dept.department === selectedDepartment)
+      ? completed
+      : completed.filter(dept => dept.department === selectedDepartment)
 
   return (
     <div className={'absolute left-[5%] top-[9%]'}>

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react'
 
 type ExpenseReport = {
-  author: string
+  category: string
   date: string
   expense: number
-  expense_id: number
+  id: number
   name: string
+  subcategory: string
+  userId: number // Добавлено поле userId
 }
 
 type ReportDetailsModalProps = {
@@ -55,13 +57,13 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
         <h2 className={'text-xl mb-4'}>Детали расхода</h2>
         <div className={'flex flex-col space-y-4'}>
           <div>
-            <label className={'block'}>Автор</label>
+            <label className={'block'}>userId</label>
             <input
               className={'border p-2 w-full'}
-              name={'author'}
+              name={'userId'}
               onChange={handleChange}
               type={'text'}
-              value={editableReport.author}
+              value={editableReport.userId}
             />
           </div>
           <div>

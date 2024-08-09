@@ -1,575 +1,380 @@
 /* eslint-disable max-lines */
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
-export type InvoiceLine = {
-  article: string
-  comment: string
-  description: string
-  quantity: number
-  totalPrice: number
-  unitPrice: number
-}
-
-export type SupplierLine = {
-  article: string
-  comment: string
-  daysToDeliver: number
-  delivered: boolean
-  description: string
-  paymentDate: string
-  purchaseAmount: number
-  quantity: number
-  shipmentDate: string
-  supplier: string
-  supplierInvoice: string
-}
-
-export type LogisticsLine = {
-  amount: number
-  carrier: string
-  date: string
-  description: string
-}
-
-export type PurchaseOrder = {
-  creationDate: string
-  customer: string
-  customerInvoice: string
-  dealNumber: string
-  deliveryDeadline: string
-  invoiceLines: InvoiceLine[]
-  logisticsLines: LogisticsLine[]
-  manager: string
-  requestNumber: string
-  supplierLines: SupplierLine[]
-}
+import {
+  useGetInvoiceLinesByPurchaseIdQuery,
+  useGetLogisticsLinesByPurchaseIdQuery,
+  useGetSupplierLinesByPurchaseIdQuery,
+  useUpdateInvoiceLineMutation,
+  useUpdateLogisticsLineMutation,
+  useUpdatePurchaseMutation,
+  useUpdateSupplierLineMutation,
+} from '@/entities/deal'
+import { PurchaseDto } from '@/entities/deal/deal.types'
 
 interface EditableFormProps {
-  index: number
-  initialValue: PurchaseOrder
+  initialValue: PurchaseDto
   onCancel: () => void
-  onSave: (value: PurchaseOrder, index: number) => void
+  onSave: () => void
 }
 
-const EditableForm: React.FC<EditableFormProps> = ({ index, initialValue, onCancel, onSave }) => {
-  const [formData, setFormData] = useState<PurchaseOrder>(initialValue)
+const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onSave }) => {
+  const { data: invoiceLines = [] } = useGetInvoiceLinesByPurchaseIdQuery(initialValue.id)
+  const { data: supplierLines = [] } = useGetSupplierLinesByPurchaseIdQuery(initialValue.id)
+  const { data: logisticsLines = [] } = useGetLogisticsLinesByPurchaseIdQuery(initialValue.id)
 
-  useEffect(() => {
-    setFormData(initialValue)
-  }, [initialValue])
+  const [updatePurchase] = useUpdatePurchaseMutation()
+  const [updateInvoiceLine] = useUpdateInvoiceLineMutation()
+  const [updateSupplierLine] = useUpdateSupplierLineMutation()
+  const [updateLogisticsLine] = useUpdateLogisticsLineMutation()
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
-  }
-
-  const handleInvoiceLineChange = (lineIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    const newInvoiceLines = [...formData.invoiceLines]
-
-    newInvoiceLines[lineIndex] = {
-      ...newInvoiceLines[lineIndex],
-      [name]: value,
-    }
-    setFormData({
-      ...formData,
-      invoiceLines: newInvoiceLines,
-    })
-  }
-
-  const handleSupplierLineChange = (lineIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    const newSupplierLines = [...formData.supplierLines]
-
-    newSupplierLines[lineIndex] = {
-      ...newSupplierLines[lineIndex],
-      [name]: value,
-    }
-    setFormData({
-      ...formData,
-      supplierLines: newSupplierLines,
-    })
-  }
-
-  const handleLogisticsLineChange = (lineIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    const newLogisticsLines = [...formData.logisticsLines]
-
-    newLogisticsLines[lineIndex] = {
-      ...newLogisticsLines[lineIndex],
-      [name]: value,
-    }
-    setFormData({
-      ...formData,
-      logisticsLines: newLogisticsLines,
-    })
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData, index)
-    onCancel()
+
+    const formData = new FormData(e.target as HTMLFormElement)
+
+    const purchaseData = {
+      counterpartyId: initialValue.counterpartyId, // Наследуется
+      dealId: initialValue.dealId, // Наследуется
+      deliveryDeadline: formData.get('deliveryDeadline')
+        ? new Date(formData.get('deliveryDeadline') as string).toISOString()
+        : initialValue.deliveryDeadline, // Обновляем, если было изменено
+      id: initialValue.id, // Наследуется
+      invoiceToCustomer:
+        Number(formData.get('invoiceToCustomer')) || initialValue.invoiceToCustomer, // Обновляем, если было изменено
+      requestNumber: (formData.get('requestNumber') as string) || initialValue.requestNumber, // Преобразуем в строку и обновляем, если было изменено
+      userId: initialValue.userId, // Наследуется
+    }
+
+    try {
+      // Обновляем основную сущность Purchase
+      await updatePurchase({ data: purchaseData, id: purchaseData.id }).unwrap()
+
+      // Обновляем связанные сущности
+      await Promise.all(
+        invoiceLines.map(line =>
+          updateInvoiceLine({
+            data: {
+              ...line,
+              articleNumber: formData.get(`invoiceLine_articleNumber_${line.id}`) as string,
+              comment: formData.get(`invoiceLine_comment_${line.id}`) as string,
+              description: formData.get(`invoiceLine_description_${line.id}`) as string,
+              quantity: Number(formData.get(`invoiceLine_quantity_${line.id}`)),
+              totalPrice: Number(formData.get(`invoiceLine_totalPrice_${line.id}`)),
+              unitPrice: Number(formData.get(`invoiceLine_unitPrice_${line.id}`)),
+            },
+            id: line.id,
+          }).unwrap()
+        )
+      )
+
+      await Promise.all(
+        supplierLines.map(line =>
+          updateSupplierLine({
+            data: {
+              ...line,
+              articleNumber: formData.get(`supplierLine_articleNumber_${line.id}`) as string,
+              comment: formData.get(`supplierLine_comment_${line.id}`) as string,
+              delivered: formData.get(`supplierLine_delivered_${line.id}`) === 'on',
+              description: formData.get(`supplierLine_description_${line.id}`) as string,
+              paymentDate: line.paymentDate ? new Date(line.paymentDate).toISOString() : '',
+              quantity: Number(formData.get(`supplierLine_quantity_${line.id}`)),
+              shipmentDate: line.shipmentDate ? new Date(line.shipmentDate).toISOString() : '',
+              supplierId: Number(formData.get(`supplierLine_supplierId_${line.id}`)),
+              supplierInvoice: formData.get(`supplierLine_supplierInvoice_${line.id}`) as string,
+              totalPurchaseAmount: Number(
+                formData.get(`supplierLine_totalPurchaseAmount_${line.id}`)
+              ),
+            },
+            id: line.id,
+          }).unwrap()
+        )
+      )
+
+      await Promise.all(
+        logisticsLines.map(line =>
+          updateLogisticsLine({
+            data: {
+              ...line,
+              amount: Number(formData.get(`logisticsLine_amount_${line.id}`)),
+              carrier: formData.get(`logisticsLine_carrier_${line.id}`) as string,
+              date: line.date
+                ? new Date(formData.get(`logisticsLine_date_${line.id}`) as string).toISOString()
+                : '',
+              description: formData.get(`logisticsLine_description_${line.id}`) as string,
+            },
+            id: line.id,
+          }).unwrap()
+        )
+      )
+
+      onSave()
+    } catch (error) {
+      console.error('Error updating purchase order:', error)
+    }
   }
 
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50'}>
       <div className={'bg-white p-6 rounded shadow-lg max-h-[90vh] overflow-auto w-[90vw]'}>
         <form className={'space-y-4'} onSubmit={handleSubmit}>
-          <div>
-            <label className={'block text-sm font-medium'}>Дата создания</label>
-            <input
-              className={'border p-2 w-full'}
-              name={'creationDate'}
-              onChange={handleChange}
-              type={'date'}
-              value={formData.creationDate}
-            />
+          <h3 className={'text-lg font-medium'}>Основная информация</h3>
+          <div className={'grid grid-cols-2 gap-4'}>
+            <div>
+              <label className={'block text-sm font-medium'}>Номер запроса</label>
+              <input
+                className={'border p-2 w-full'}
+                defaultValue={initialValue.requestNumber}
+                name={'requestNumber'}
+                type={'text'}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Заказчик (ID)</label>
+              <input
+                className={'border p-2 w-full'}
+                defaultValue={initialValue.counterpartyId}
+                name={'counterpartyId'}
+                type={'number'}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Счет заказчику</label>
+              <input
+                className={'border p-2 w-full'}
+                defaultValue={initialValue.invoiceToCustomer}
+                name={'invoiceToCustomer'}
+                type={'number'}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Менеджер (ID)</label>
+              <input
+                className={'border p-2 w-full'}
+                defaultValue={initialValue.userId}
+                name={'userId'}
+                type={'number'}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Крайняя дата поставки</label>
+              <input
+                className={'border p-2 w-full'}
+                defaultValue={
+                  initialValue.deliveryDeadline
+                    ? new Date(initialValue.deliveryDeadline).toISOString().substring(0, 10)
+                    : ''
+                }
+                name={'deliveryDeadline'}
+                type={'date'}
+              />
+            </div>
           </div>
-          <div>
-            <label className={'block text-sm font-medium'}>№ сделки</label>
-            <input
-              className={'border p-2 w-full'}
-              name={'dealNumber'}
-              onChange={handleChange}
-              type={'text'}
-              value={formData.dealNumber}
-            />
-          </div>
-          <div>
-            <label className={'block text-sm font-medium'}>Номер запроса</label>
-            <input
-              className={'border p-2 w-full'}
-              name={'requestNumber'}
-              onChange={handleChange}
-              type={'text'}
-              value={formData.requestNumber}
-            />
-          </div>
-          <div>
-            <label className={'block text-sm font-medium'}>Заказчик</label>
-            <input
-              className={'border p-2 w-full'}
-              name={'customer'}
-              onChange={handleChange}
-              type={'text'}
-              value={formData.customer}
-            />
-          </div>
-          <div>
-            <label className={'block text-sm font-medium'}>Счет заказчику</label>
-            <input
-              className={'border p-2 w-full'}
-              name={'customerInvoice'}
-              onChange={handleChange}
-              type={'text'}
-              value={formData.customerInvoice}
-            />
-          </div>
-          <div>
-            <label className={'block text-sm font-medium'}>Менеджер</label>
-            <input
-              className={'border p-2 w-full'}
-              name={'manager'}
-              onChange={handleChange}
-              type={'text'}
-              value={formData.manager}
-            />
-          </div>
-          <div>
-            <label className={'block text-sm font-medium'}>Крайняя дата поставки</label>
-            <input
-              className={'border p-2 w-full'}
-              name={'deliveryDeadline'}
-              onChange={handleChange}
-              type={'date'}
-              value={formData.deliveryDeadline}
-            />
-          </div>
+
           <h3 className={'text-lg font-medium'}>Строки счета</h3>
-          <div className={'overflow-auto'}>
-            <table className={'min-w-full divide-y divide-gray-200'}>
-              <thead className={'bg-gray-50'}>
-                <tr>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Артикул
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Описание
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Кол-во
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Стоимость продажи единицы
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Сумма продажи (RUB)
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Комментарий
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={'bg-white divide-y divide-gray-200'}>
-                {formData.invoiceLines.map((line, lineIndex) => (
-                  <tr key={lineIndex}>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'article'}
-                        onChange={e => handleInvoiceLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.article}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'description'}
-                        onChange={e => handleInvoiceLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.description}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'quantity'}
-                        onChange={e => handleInvoiceLineChange(lineIndex, e)}
-                        type={'number'}
-                        value={line.quantity}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'unitPrice'}
-                        onChange={e => handleInvoiceLineChange(lineIndex, e)}
-                        type={'number'}
-                        value={line.unitPrice}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'totalPrice'}
-                        onChange={e => handleInvoiceLineChange(lineIndex, e)}
-                        type={'number'}
-                        value={line.totalPrice}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'comment'}
-                        onChange={e => handleInvoiceLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.comment}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className={'space-y-2'}>
+            {invoiceLines.map((line, index) => (
+              <div className={'grid grid-cols-6 gap-4'} key={line.id}>
+                <div>
+                  <label className={'block text-sm font-medium'}>Артикул</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.articleNumber}
+                    name={`invoiceLine_articleNumber_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Описание</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.description}
+                    name={`invoiceLine_description_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Кол-во</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.quantity}
+                    name={`invoiceLine_quantity_${line.id}`}
+                    type={'number'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Цена за ед.</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.unitPrice}
+                    name={`invoiceLine_unitPrice_${line.id}`}
+                    type={'number'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Общая сумма</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.totalPrice}
+                    name={`invoiceLine_totalPrice_${line.id}`}
+                    type={'number'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Комментарий</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.comment || ''}
+                    name={`invoiceLine_comment_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
+
           <h3 className={'text-lg font-medium'}>Строки поставщика</h3>
-          <div className={'overflow-auto'}>
-            <table className={'min-w-full divide-y divide-gray-200'}>
-              <thead className={'bg-gray-50'}>
-                <tr>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Артикул
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Описание
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Кол-во
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Поставщик
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Счет от поставщика
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Сумма закупки (RUB)
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Дата оплаты счета поставщику
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Дата отгрузки по счету от поставщика
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Доставлено
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Дней до
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Комментарий
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={'bg-white divide-y divide-gray-200'}>
-                {formData.supplierLines.map((line, lineIndex) => (
-                  <tr key={lineIndex}>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'article'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.article}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'description'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.description}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'quantity'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'number'}
-                        value={line.quantity}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'supplier'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.supplier}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'supplierInvoice'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.supplierInvoice}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'purchaseAmount'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'number'}
-                        value={line.purchaseAmount}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'paymentDate'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'date'}
-                        value={line.paymentDate}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'shipmentDate'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'date'}
-                        value={line.shipmentDate}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'delivered'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.delivered ? 'да' : 'нет'}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'daysToDeliver'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'number'}
-                        value={line.daysToDeliver}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'comment'}
-                        onChange={e => handleSupplierLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.comment}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className={'space-y-2'}>
+            {supplierLines.map((line, index) => (
+              <div className={'grid grid-cols-6 gap-4'} key={line.id}>
+                <div>
+                  <label className={'block text-sm font-medium'}>Артикул</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.articleNumber}
+                    name={`supplierLine_articleNumber_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Описание</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.description}
+                    name={`supplierLine_description_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Кол-во</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.quantity}
+                    name={`supplierLine_quantity_${line.id}`}
+                    type={'number'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>ID поставщика</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.supplierId}
+                    name={`supplierLine_supplierId_${line.id}`}
+                    type={'number'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Счет поставщика</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.supplierInvoice}
+                    name={`supplierLine_supplierInvoice_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Сумма закупки</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.totalPurchaseAmount}
+                    name={`supplierLine_totalPurchaseAmount_${line.id}`}
+                    type={'number'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Дата оплаты</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.paymentDate.substring(0, 10)}
+                    name={`supplierLine_paymentDate_${line.id}`}
+                    type={'date'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Дата отгрузки</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.shipmentDate.substring(0, 10)}
+                    name={`supplierLine_shipmentDate_${line.id}`}
+                    type={'date'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Доставлено</label>
+                  <input
+                    className={'border p-2'}
+                    defaultChecked={line.delivered}
+                    name={`supplierLine_delivered_${line.id}`}
+                    type={'checkbox'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Комментарий</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.comment || ''}
+                    name={`supplierLine_comment_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
+
           <h3 className={'text-lg font-medium'}>Строки логистики</h3>
-          <div className={'overflow-auto'}>
-            <table className={'min-w-full divide-y divide-gray-200'}>
-              <thead className={'bg-gray-50'}>
-                <tr>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Дата
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Описание
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Перевозчик
-                  </th>
-                  <th
-                    className={
-                      'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                    }
-                  >
-                    Сумма
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={'bg-white divide-y divide-gray-200'}>
-                {formData.logisticsLines.map((line, lineIndex) => (
-                  <tr key={lineIndex}>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'date'}
-                        onChange={e => handleLogisticsLineChange(lineIndex, e)}
-                        type={'date'}
-                        value={line.date}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'description'}
-                        onChange={e => handleLogisticsLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.description}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'carrier'}
-                        onChange={e => handleLogisticsLineChange(lineIndex, e)}
-                        type={'text'}
-                        value={line.carrier}
-                      />
-                    </td>
-                    <td className={'px-4 py-2'}>
-                      <input
-                        className={'border p-2 w-full'}
-                        name={'amount'}
-                        onChange={e => handleLogisticsLineChange(lineIndex, e)}
-                        type={'number'}
-                        value={line.amount}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className={'space-y-2'}>
+            {logisticsLines.map((line, index) => (
+              <div className={'grid grid-cols-3 gap-4'} key={line.id}>
+                <div>
+                  <label className={'block text-sm font-medium'}>Дата</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={new Date(line.date).toISOString().substring(0, 10)}
+                    name={`logisticsLine_date_${line.id}`}
+                    type={'date'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Описание</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.description}
+                    name={`logisticsLine_description_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Перевозчик</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.carrier}
+                    name={`logisticsLine_carrier_${line.id}`}
+                    type={'text'}
+                  />
+                </div>
+                <div>
+                  <label className={'block text-sm font-medium'}>Сумма</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.amount}
+                    name={`logisticsLine_amount_${line.id}`}
+                    type={'number'}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
+
           <div className={'mt-4 flex justify-end space-x-4'}>
             <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
               Сохранить

@@ -2,10 +2,11 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { WorkerDto } from '@/entities/workers'
+import { useFireWorkerMutation } from '@/entities/workers'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 
 import ConfirmModal from './ConfirmModal'
-import WorkerForm from './WorkerForm' // Импортируйте ConfirmModal
+import WorkerForm from './WorkerForm'
 
 type EmployeeTableProps = {
   roleName: string
@@ -13,6 +14,8 @@ type EmployeeTableProps = {
 }
 
 const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
+  const [deleteWorker] = useFireWorkerMutation()
+
   const [selectedWorker, setSelectedWorker] = useState<WorkerDto | undefined>(undefined)
   const [open, setOpen] = useState(false)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
@@ -23,38 +26,16 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
     setConfirmModalOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (workerIdToDelete !== undefined) {
-      // Получаем массив работников из localStorage
-      const workersData = JSON.parse(localStorage.getItem('workers') || '[]') as WorkerDto[]
-
-      // Находим работника, которого нужно удалить
-      const workerToDelete = workersData.find(worker => worker.table_id === workerIdToDelete)
-
-      if (workerToDelete) {
-        // Обновляем массив работников, удаляя работника
-        const updatedWorkers = workersData.filter(worker => worker.table_id !== workerIdToDelete)
-
-        localStorage.setItem('workers', JSON.stringify(updatedWorkers))
-
-        // Получаем массив уволенных работников из localStorage
-        const firedWorkers = JSON.parse(localStorage.getItem('firedworkers') || '[]') as Omit<
-          WorkerDto,
-          'table_id'
-        >[]
-
-        // Создаем новый объект работника без ID
-        const { table_id, ...workerWithoutId } = workerToDelete
-
-        // Добавляем работника в список уволенных
-        firedWorkers.push(workerWithoutId)
-        localStorage.setItem('firedworkers', JSON.stringify(firedWorkers))
+      try {
+        await deleteWorker(workerIdToDelete).unwrap()
+        setConfirmModalOpen(false)
+        setWorkerIdToDelete(undefined)
+      } catch (error) {
+        console.error('Failed to delete the worker:', error)
       }
     }
-
-    // Закрываем модалку подтверждения удаления
-    setConfirmModalOpen(false)
-    setWorkerIdToDelete(undefined)
   }
 
   const handleViewDetails = (worker: WorkerDto) => {
@@ -116,7 +97,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
             >
               Дата рождения
             </th>
-            {roleName === 'director' && (
+            {roleName === 'Директор' && (
               <th
                 className={
                   'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
@@ -125,7 +106,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                 Карта для перевода
               </th>
             )}
-            {roleName === 'director' && (
+            {roleName === 'Директор' && (
               <th
                 className={
                   'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
@@ -138,7 +119,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
         </thead>
         <tbody className={'bg-white divide-y divide-gray-200'}>
           {workers.map((worker, i) => (
-            <tr key={worker.table_id}>
+            <tr key={worker.id}>
               <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'}>
                 {i + 1}
               </td>
@@ -179,7 +160,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                 <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium'}>
                   <button
                     className={'text-red-600 hover:text-red-900'}
-                    onClick={() => handleFireWorker(worker.table_id)}
+                    onClick={() => handleFireWorker(worker.id)}
                   >
                     Уволить
                   </button>
@@ -224,7 +205,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
         isOpen={confirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        workerId={workerIdToDelete || -1} // Передайте workerId
+        workerId={workerIdToDelete || -1}
       />
     </div>
   )

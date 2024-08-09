@@ -1,207 +1,180 @@
 import React, { useState } from 'react'
 
+import { useCreateDealMutation } from '@/entities/deal/deal.api'
+import { CreateDealDto } from '@/entities/deal/deal.types'
 import { useMeQuery } from '@/entities/session'
 
-type NewDealFormProps = {
-  initialData: {
-    counterparty: string
-    creationDate: string
-    dealNumber: string
-    inn: string
-  }
-  onClose: () => void
-}
+const stageOptions = [
+  { label: 'выставлен счет', value: 'INVOICE_SENT' },
+  { label: 'отправлено КП', value: 'QUOTE_SENT' },
+  { label: 'проигран', value: 'LOST' },
+  { label: 'работа с возражениями(бюрократия)', value: 'WORKING_WITH_OBJECTIONS' },
+  { label: 'сделка закрыта', value: 'DEAL_CLOSED' },
+  { label: 'счет оплачен', value: 'INVOICE_PAID' },
+]
 
-const NewDealForm: React.FC<NewDealFormProps> = ({ initialData, onClose }) => {
-  const [dealNumber, setDealNumber] = useState(initialData.dealNumber)
-  const [creationDate, setCreationDate] = useState(initialData.creationDate)
-  const [deadline, setDeadline] = useState('')
-  const [paymentTerms, setPaymentTerms] = useState('')
-  const [prepaymentAmount, setPrepaymentAmount] = useState('')
-  const [paidNow, setPaidNow] = useState('')
-  const [isFinalAmount, setIsFinalAmount] = useState(false)
-  const [totalSaleAmount, setTotalSaleAmount] = useState('')
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
-  const [requestNumber, setRequestNumber] = useState('')
-  const [isIndependentDeal, setIsIndependentDeal] = useState(false)
+const lossReasonOptions = [
+  { label: 'дорого', value: 'EXPENSIVE' },
+  { label: 'пустомеля', value: 'EMPTY_TALK' },
+  { label: 'нет раппорта', value: 'NO_REPORT' },
+  { label: 'недоработал', value: 'DID_NOT_WORK' },
+  { label: 'другое', value: 'OTHER' },
+]
 
+const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { data: userData } = useMeQuery()
-  const { name, surname } = userData || {}
+  const userId = userData?.id || 1
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [createDeal] = useCreateDealMutation()
+  const [formData, setFormData] = useState<CreateDealDto>({
+    closeDate: null,
+    comment: '',
+    counterpartyName: '',
+    dealType: 'PURCHASE',
+    lossReason: 'EXPENSIVE',
+    marginRub: 0,
+    stage: 'INVOICE_SENT',
+    turnoverRub: 0,
+    userId,
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: name === 'marginRub' || name === 'turnoverRub' ? Number(value) : value,
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    try {
+      const dataToSend = {
+        ...formData,
+        closeDate: formData.closeDate ? new Date(formData.closeDate).toISOString() : null,
+      }
 
-    const newDeal = {
-      counterparty: initialData.counterparty,
-      createdBy: `${name} ${surname}`,
-      creationDate,
-      deadline,
-      dealNumber,
-      inn: initialData.inn,
-      invoiceFile,
-      isFinalAmount,
-      isIndependentDeal,
-      paidNow,
-      paymentTerms,
-      prepaymentAmount,
-      requestNumber,
-      totalSaleAmount,
+      await createDeal(dataToSend).unwrap()
+      setFormData({
+        closeDate: null,
+        comment: '',
+        counterpartyName: '',
+        dealType: 'PURCHASE',
+        lossReason: 'EXPENSIVE',
+        marginRub: 0,
+        stage: 'INVOICE_SENT',
+        turnoverRub: 0,
+        userId,
+      })
+      onClose()
+    } catch (error) {
+      console.error('Error creating deal:', error)
     }
-
-    // Логика для сохранения данных сделки
-    console.log('Saving new deal:', newDeal)
-
-    // Создание уведомления
-    const newNotification = {
-      content: `${name} ${surname} создал(а) новую сделку. 
-                Номер сделки: ${dealNumber}, 
-                Контрагент: ${initialData.counterparty}, 
-                Сумма: ${totalSaleAmount}`,
-      readBy: [],
-      title: 'Создание новой сделки',
-    }
-
-    const currentNotifications = JSON.parse(
-      localStorage.getItem('notifications') || '[]'
-    ) as Notification[]
-    const updatedNotifications = [...currentNotifications, newNotification]
-
-    localStorage.setItem('notifications', JSON.stringify(updatedNotifications))
-
-    // Здесь можно добавить логику для отправки данных на сервер
-
-    onClose()
   }
 
   return (
-    <div className={' inset-0 flex items-center justify-center bg-black bg-opacity-50'}>
-      <div className={'bg-white w-[20%] max-w-4xl p-6 rounded shadow-lg'}>
+    <div className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50'}>
+      <div className={'bg-white w-full max-w-4xl p-6 rounded shadow-lg'}>
         <h2 className={'text-xl font-bold mb-4'}>Создание новой сделки</h2>
         <form onSubmit={handleSubmit}>
           <div className={'grid grid-cols-2 gap-4'}>
             <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Номер сделки</label>
+              <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
               <input
                 className={'w-full border p-2 rounded'}
-                onChange={e => setDealNumber(e.target.value)}
+                name={'counterpartyName'}
+                onChange={handleChange}
                 required
                 type={'text'}
-                value={dealNumber}
+                value={formData.counterpartyName}
               />
             </div>
             <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Дата создания</label>
+              <label className={'block text-sm font-bold mb-1'}>Оборот в рублях</label>
               <input
                 className={'w-full border p-2 rounded'}
-                onChange={e => setCreationDate(e.target.value)}
+                name={'turnoverRub'}
+                onChange={handleChange}
                 required
+                type={'number'}
+                value={formData.turnoverRub}
+              />
+            </div>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-bold mb-1'}>Маржа в рублях</label>
+              <input
+                className={'w-full border p-2 rounded'}
+                name={'marginRub'}
+                onChange={handleChange}
+                required
+                type={'number'}
+                value={formData.marginRub}
+              />
+            </div>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-bold mb-1'}>Стадия сделки</label>
+              <select
+                className={'w-full border p-2 rounded'}
+                name={'stage'}
+                onChange={handleChange}
+                required
+                value={formData.stage}
+              >
+                {stageOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-bold mb-1'}>Тип сделки</label>
+              <select
+                className={'w-full border p-2 rounded'}
+                name={'dealType'}
+                onChange={handleChange}
+                required
+                value={formData.dealType}
+              >
+                <option value={'PURCHASE'}>Закупка</option>
+                <option value={'SALE'}>Продажа</option>
+              </select>
+            </div>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-bold mb-1'}>Причина проигрыша</label>
+              <select
+                className={'w-full border p-2 rounded'}
+                name={'lossReason'}
+                onChange={handleChange}
+                value={formData.lossReason || ''}
+              >
+                <option value={''}>Выберите причину</option>
+                {lossReasonOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={'mb-4 col-span-2'}>
+              <label className={'block text-sm font-bold mb-1'}>Комментарий</label>
+              <input
+                className={'w-full border p-2 rounded'}
+                name={'comment'}
+                onChange={handleChange}
+                type={'text'}
+                value={formData.comment || ''}
+              />
+            </div>
+            <div className={'mb-4 col-span-2'}>
+              <label className={'block text-sm font-bold mb-1'}>Дата закрытия</label>
+              <input
+                className={'w-full border p-2 rounded'}
+                name={'closeDate'}
+                onChange={handleChange}
                 type={'date'}
-                value={creationDate}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Крайняя дата поставки</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                onChange={e => setDeadline(e.target.value)}
-                required
-                type={'date'}
-                value={deadline}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>ИНН контрагента</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                readOnly
-                type={'text'}
-                value={initialData.inn}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Название контрагента</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                readOnly
-                type={'text'}
-                value={initialData.counterparty}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Формы и условия оплаты</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                onChange={e => setPaymentTerms(e.target.value)}
-                required
-                type={'text'}
-                value={paymentTerms}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Сумма предоплаты</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                onChange={e => setPrepaymentAmount(e.target.value)}
-                required
-                type={'number'}
-                value={prepaymentAmount}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Оплачено сейчас (в рублях)</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                onChange={e => setPaidNow(e.target.value)}
-                required
-                type={'number'}
-                value={paidNow}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Финальная сумма</label>
-              <input
-                checked={isFinalAmount}
-                className={'ml-2'}
-                onChange={e => setIsFinalAmount(e.target.checked)}
-                type={'checkbox'}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Общая сумма продажи</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                onChange={e => setTotalSaleAmount(e.target.value)}
-                required
-                type={'number'}
-                value={totalSaleAmount}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Файл счета или спецификации</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                onChange={e => setInvoiceFile(e.target.files ? e.target.files[0] : null)}
-                required
-                type={'file'}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Номер запроса</label>
-              <input
-                className={'w-full border p-2 rounded'}
-                onChange={e => setRequestNumber(e.target.value)}
-                required
-                type={'text'}
-                value={requestNumber}
-              />
-            </div>
-            <div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Самостоятельная сделка</label>
-              <input
-                checked={isIndependentDeal}
-                className={'ml-2'}
-                onChange={e => setIsIndependentDeal(e.target.checked)}
-                type={'checkbox'}
+                value={formData.closeDate || ''}
               />
             </div>
           </div>

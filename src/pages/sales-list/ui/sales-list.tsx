@@ -1,106 +1,25 @@
 /* eslint-disable max-lines */
-import React, { useMemo, useState } from 'react'
+import type { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
 
+import React, { useEffect, useMemo, useState } from 'react'
+
+import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
 import { useMeQuery } from '@/entities/session'
+import { useGetWorkersQuery } from '@/entities/workers'
 
-type Sale = {
-  date: string
-  deliveryStatus: string
-  from: string
-  id: number
-  item: string
-  logistics: string
-  margin: number
-  purchase: string
-  revenue: number
-  sale: string
-  signingStatus: string
-  userId: number
+const translatedDeliveryStage: Record<DeliveryStage, string> = {
+  IN_STOCK: 'На складе',
+  ITEM_DELIVERED_FULL: 'Доставлен товар весь',
+  ITEM_DELIVERED_PARTIAL: 'Доставлен товар частично',
+  ITEM_SENT: 'Отправлен товар',
+  PURCHASED_FOR_ORDER: 'Закуплено под заказ',
+  RETURN: 'Возврат',
 }
 
-const salesData: Sale[] = [
-  {
-    date: '2024-01-01',
-    deliveryStatus: 'Закуплено под заказ',
-    from: 'Supplier 1',
-    id: 1,
-    item: 'Item 1',
-    logistics: 'Logistics 1',
-    margin: 100,
-    purchase: 'Purchase 1',
-    revenue: 500,
-    sale: 'Sale 1',
-    signingStatus: 'Подписано в ЭДО',
-    userId: 1,
-  },
-  {
-    date: '2024-01-15',
-    deliveryStatus: 'На складе',
-    from: 'Supplier 2',
-    id: 2,
-    item: 'Item 2',
-    logistics: 'Logistics 2',
-    margin: 200,
-    purchase: 'Purchase 2',
-    revenue: 1000,
-    sale: 'Sale 2',
-    signingStatus: 'Подписано на бумаге',
-    userId: 2,
-  },
-  {
-    date: '2024-02-01',
-    deliveryStatus: 'Отправлен товар',
-    from: 'Supplier 3',
-    id: 3,
-    item: 'Item 3',
-    logistics: 'Logistics 3',
-    margin: 150,
-    purchase: 'Purchase 3',
-    revenue: 750,
-    sale: 'Sale 3',
-    signingStatus: 'Подписано в ЭДО',
-    userId: 1,
-  },
-  {
-    date: '2024-07-05',
-    deliveryStatus: 'Доставлен товар весь',
-    from: 'Supplier 4',
-    id: 4,
-    item: 'Item 4',
-    logistics: 'Logistics 4',
-    margin: 300,
-    purchase: 'Purchase 4',
-    revenue: 1500,
-    sale: 'Sale 4',
-    signingStatus: 'Подписано на бумаге',
-    userId: 3,
-  },
-  {
-    date: '2024-07-20',
-    deliveryStatus: 'Доставлен товар частично',
-    from: 'Supplier 5',
-    id: 5,
-    item: 'Item 5',
-    logistics: 'Logistics 5',
-    margin: 250,
-    purchase: 'Purchase 5',
-    revenue: 1250,
-    sale: 'Sale 5',
-    signingStatus: 'Подписано в ЭДО',
-    userId: 4,
-  },
-]
-
-const deliveryOptions = [
-  'Закуплено под заказ',
-  'На складе',
-  'Отправлен товар',
-  'Доставлен товар весь',
-  'Доставлен товар частично',
-  'Возврат',
-]
-
-const signingOptions = ['Подписано в ЭДО', 'Подписано на бумаге']
+const translatedSigningStage: Record<SigningStage, string> = {
+  SIGNED_IN_EDO: 'Подписано в ЭДО',
+  SIGNED_ON_PAPER: 'Подписано на бумаге',
+}
 
 const months = [
   { label: 'Январь', value: 1 },
@@ -117,32 +36,27 @@ const months = [
   { label: 'Декабрь', value: 12 },
 ]
 
-const employees = [
-  { id: 1, name: 'Сотрудник 1', role: 'Логист' },
-  { id: 2, name: 'Сотрудник 2', role: 'Логист' },
-  { id: 3, name: 'Сотрудник 3', role: 'Бухгалтер' },
-  { id: 4, name: 'Сотрудник 4', role: 'Закупщик' },
-  { id: 5, name: 'Сотрудник 5', role: 'РОП' },
-  { id: 6, name: 'Сотрудник 6', role: 'Директор' },
-]
-
 export const SalesListPage = () => {
-  const [sales, setSales] = useState<Sale[]>(salesData)
-  const { data } = useMeQuery()
-  const userRole = data?.roleName || ''
-  const userId = data?.id || null
+  const { data: meData } = useMeQuery()
+  const { data: salesData } = useGetAllSalesQuery()
+  const { data: workersData } = useGetWorkersQuery()
+  const [updateSale] = useUpdateSaleMutation()
+  const userRole = meData?.roleName || ''
+  const userId = meData?.id || null
   const percent = 0.1
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(userId)
-  const [selectedStartMonth, setSelectedStartMonth] = useState<string>('7') // Изначально выбран июль
-  const [selectedEndMonth, setSelectedEndMonth] = useState<string>('7') // Изначально выбран июль
+  const [selectedStartMonth, setSelectedStartMonth] = useState<string>('8') // Изначально выбран июль
+  const [selectedEndMonth, setSelectedEndMonth] = useState<string>('8') // Изначально выбран июль
   const [selectedYear, setSelectedYear] = useState<string>('2024') // Изначально выбран 2024 год
 
-  const handleInputChange = (id: number, field: string, value: string) => {
-    setSales(prevSales =>
-      prevSales.map(sale => (sale.id === id ? { ...sale, [field]: value } : sale))
-    )
-  }
+  const [sales, setSales] = useState<SaleDto[]>([])
+
+  useEffect(() => {
+    if (salesData) {
+      setSales(salesData)
+    }
+  }, [salesData])
 
   const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
@@ -162,12 +76,20 @@ export const SalesListPage = () => {
     setSelectedYear(event.target.value)
   }
 
+  const handleUpdateSale = (id: number, field: string, value: string) => {
+    updateSale({ id, sale: { [field]: value } }).then(() => {
+      setSales(prevSales =>
+        prevSales.map(sale => (sale.id === id ? { ...sale, [field]: value } : sale))
+      )
+    })
+  }
+
   const filteredSalesByMonth = useMemo(() => {
     const startMonth = Number(selectedStartMonth)
     const endMonth = Number(selectedEndMonth)
     const year = Number(selectedYear)
 
-    const salesByMonth: Record<string, Sale[]> = {}
+    const salesByMonth: Record<string, SaleDto[]> = {}
 
     sales.forEach(sale => {
       const saleDate = new Date(sale.date)
@@ -191,18 +113,18 @@ export const SalesListPage = () => {
   }, [sales, selectedStartMonth, selectedEndMonth, selectedYear, selectedEmployee])
 
   const salesStatsByMonth = useMemo(() => {
-    const statsByMonth: Record<string, { earned: number; margin: number; revenue: number }> = {}
+    const statsByMonth: Record<string, { earned: number; margin: number; saleAmount: number }> = {}
 
     Object.entries(filteredSalesByMonth).forEach(([key, sales]) => {
       statsByMonth[key] = sales.reduce(
         (acc, sale) => {
-          acc.margin += sale.margin
-          acc.revenue += sale.revenue
-          acc.earned += sale.margin * percent
+          acc.margin += sale.margin || 0
+          acc.saleAmount += sale.saleAmount || 0
+          acc.earned += (sale.margin || 0) * percent
 
           return acc
         },
-        { earned: 0, margin: 0, revenue: 0 }
+        { earned: 0, margin: 0, saleAmount: 0 }
       )
     })
 
@@ -243,7 +165,7 @@ export const SalesListPage = () => {
           <select onChange={handleEmployeeChange} value={selectedEmployee || ''}>
             <option value={'self'}>Я сам</option>
             <option value={''}>Все</option>
-            {employees.map(employee => (
+            {workersData?.map(employee => (
               <option key={employee.id} value={employee.id}>
                 {employee.name}
               </option>
@@ -263,19 +185,20 @@ export const SalesListPage = () => {
                   {[
                     'Номер продажи',
                     'Дата',
-                    'Что',
-                    'От кого',
-                    'Логистика',
-                    'Закупка',
-                    'Продажа',
-                    'Зашло',
+                    'ID контрагента',
+                    'ID сделки',
+                    'Номер счета',
+                    'Стоимость логистики',
+                    'Закупочная стоимость',
+                    'Стоимость продажи',
                     'Маржа',
+                    'ID пользователя',
                     'Стадия доставки',
                     'Стадия подписания',
                   ].map(header => (
                     <th
                       className={
-                        'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[9.09%]'
+                        'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
                       }
                       key={header}
                     >
@@ -291,137 +214,64 @@ export const SalesListPage = () => {
                       {sale.id}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'date', e.target.value)}
-                          type={'date'}
-                          value={sale.date}
-                        />
-                      ) : (
-                        sale.date
-                      )}
+                      {sale.date}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'item', e.target.value)}
-                          type={'text'}
-                          value={sale.item}
-                        />
-                      ) : (
-                        sale.item
-                      )}
+                      {sale.counterpartyId}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'from', e.target.value)}
-                          type={'text'}
-                          value={sale.from}
-                        />
-                      ) : (
-                        sale.from
-                      )}
+                      {sale.dealId}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'logistics', e.target.value)}
-                          type={'text'}
-                          value={sale.logistics}
-                        />
-                      ) : (
-                        sale.logistics
-                      )}
+                      {sale.invoiceNumber || '—'}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'purchase', e.target.value)}
-                          type={'text'}
-                          value={sale.purchase}
-                        />
-                      ) : (
-                        sale.purchase
-                      )}
+                      {sale.logisticsCost || '—'}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'sale', e.target.value)}
-                          type={'text'}
-                          value={sale.sale}
-                        />
-                      ) : (
-                        sale.sale
-                      )}
+                      {sale.purchaseCost || '—'}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'revenue', e.target.value)}
-                          type={'number'}
-                          value={sale.revenue}
-                        />
-                      ) : (
-                        sale.revenue
-                      )}
+                      {sale.saleAmount || '—'}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' ? (
-                        <input
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleInputChange(sale.id, 'margin', e.target.value)}
-                          type={'number'}
-                          value={sale.margin}
-                        />
-                      ) : (
-                        sale.margin
-                      )}
+                      {sale.margin || '—'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {sale.userId}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                       {userRole === 'Директор' || userRole === 'Закупщик' ? (
                         <select
                           className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e =>
-                            handleInputChange(sale.id, 'deliveryStatus', e.target.value)
-                          }
-                          value={sale.deliveryStatus}
+                          onChange={e => handleUpdateSale(sale.id, 'deliveryStage', e.target.value)}
+                          value={sale.deliveryStage || ''}
                         >
-                          {deliveryOptions.map(option => (
-                            <option key={option} value={option}>
-                              {option}
+                          {Object.entries(translatedDeliveryStage).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
                             </option>
                           ))}
                         </select>
                       ) : (
-                        sale.deliveryStatus
+                        translatedDeliveryStage[sale.deliveryStage as DeliveryStage] || '—'
                       )}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                       {userRole === 'Директор' || userRole === 'Бухгалтер' ? (
                         <select
                           className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e =>
-                            handleInputChange(sale.id, 'signingStatus', e.target.value)
-                          }
-                          value={sale.signingStatus}
+                          onChange={e => handleUpdateSale(sale.id, 'signingStage', e.target.value)}
+                          value={sale.signingStage || ''}
                         >
-                          {signingOptions.map(option => (
-                            <option key={option} value={option}>
-                              {option}
+                          {Object.entries(translatedSigningStage).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
                             </option>
                           ))}
                         </select>
                       ) : (
-                        sale.signingStatus
+                        translatedSigningStage[sale.signingStage as SigningStage] || '—'
                       )}
                     </td>
                   </tr>
@@ -435,7 +285,7 @@ export const SalesListPage = () => {
               </div>
               <div className={'flex-1 text-center'}>
                 <p className={'font-semibold'}>Оборот</p>
-                <p>{salesStatsByMonth[key].revenue}</p>
+                <p>{salesStatsByMonth[key].saleAmount}</p>
               </div>
               <div className={'flex-1 text-center'}>
                 <p className={'font-semibold'}>Заработал</p>

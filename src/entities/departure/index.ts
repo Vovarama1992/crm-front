@@ -1,1 +1,1 @@
-export type { DepartureDto } from './departure.types'
+export type { CreateDepartureDto, DepartureDto } from './departure.types'

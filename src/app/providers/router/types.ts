@@ -1,13 +1,11 @@
 type Permissions = {
   common_sales: boolean
+  contragents: boolean
   departures: boolean
   finances: boolean
   my_sales: boolean
   procurements: boolean
-  salary_reports_common: boolean
-  salary_reports_himself: boolean
-  salary_reports_sellers: boolean
-  see_self: boolean
+  salary_reports: boolean
   summary_table: boolean
   suppliers: boolean
 }

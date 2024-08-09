@@ -1,8 +1,9 @@
 /* eslint-disable max-lines */
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 import { useMeQuery } from '@/entities/session'
 import { WorkerDto } from '@/entities/workers'
+import { useCreateWorkerMutation, useUpdateWorkerMutation } from '@/entities/workers'
 
 type WorkerFormProps = {
   existingWorker?: WorkerDto
@@ -16,28 +17,24 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
   const roleName = data?.roleName || ''
   const isDirector = roleName === 'Директор'
 
-  // Функция для получения нового table_id
-  const getNextTableId = () => {
-    const workers = JSON.parse(localStorage.getItem('workers') || '[]') as WorkerDto[]
-    const maxTableId = workers.reduce((maxId, worker) => Math.max(maxId, worker.table_id || 0), 0)
-
-    return maxTableId + 1
-  }
+  const [createWorker] = useCreateWorkerMutation()
+  const [updateWorker] = useUpdateWorkerMutation()
 
   const [formState, setFormState] = useState<WorkerDto>({
     birthday: existingWorker?.birthday || '',
     cardNumber: existingWorker?.cardNumber || '',
-    department: '',
-    dobNumber: existingWorker?.dobNumber || '',
+    department_id: undefined,
+    dobNumber: existingWorker?.dobNumber || undefined,
     email: existingWorker?.email || '',
     hireDate: existingWorker?.hireDate || '',
+    id: existingWorker?.id || 0, // Устанавливается при создании
     margin_percent: existingWorker?.margin_percent || 0.1,
+    middleName: existingWorker?.middleName || '',
     mobile: existingWorker?.mobile || '',
     name: existingWorker?.name || '',
     position: existingWorker?.position || '',
-    roleName: existingWorker?.roleName || '', // Используем только roleName
+    roleName: existingWorker?.roleName || '',
     salary: existingWorker?.salary || '',
-    table_id: existingWorker?.table_id || getNextTableId(), // Назначаем table_id если он не передан
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,19 +57,16 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Получаем массив работников из localStorage
-    const workers = JSON.parse(localStorage.getItem('workers') || '[]') as WorkerDto[]
-
-    // Обновляем или добавляем работника
-    const updatedWorkers = workers.filter(worker => worker.table_id !== formState.table_id)
-
-    updatedWorkers.push(formState)
-
-    // Сохраняем обновленный массив обратно в localStorage
-    localStorage.setItem('workers', JSON.stringify(updatedWorkers))
+    if (existingWorker) {
+      // Обновление работника
+      await updateWorker(formState)
+    } else {
+      // Создание нового работника
+      await createWorker(formState)
+    }
 
     // Дополнительная логика по завершению формы
     alert('Данные сотрудника успешно сохранены!')

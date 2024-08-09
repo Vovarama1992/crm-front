@@ -1,6 +1,15 @@
-import React, { useMemo, useState } from 'react'
+/* eslint-disable max-lines */
+/* eslint-disable react-hooks/rules-of-hooks */
+import React, { useEffect, useMemo, useState } from 'react'
 
-import MonthlyReportTable from './MonthlySalaryTable'
+import {
+  useCreateSalaryMutation,
+  useGetUserSalariesQuery,
+  useUpdateSalaryMutation,
+} from '@/entities/salary'
+import { useMeQuery } from '@/entities/session'
+
+import MonthlySalaryTable from './MonthlySalaryTable'
 
 const months = [
   'Январь',
@@ -37,68 +46,83 @@ type DepartmentData = {
   employees: Employee[]
 }
 
-const getRandomNumber = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-const generateRandomReports = (year: number): Report[] => {
-  return months.map(month => {
-    const salary = getRandomNumber(50000, 70000)
-    const earned = salary + getRandomNumber(-5000, 5000)
-    const paid = salary
-    const remaining = earned - paid
-
-    return {
-      earned,
-      month: `${month} ${year}`,
-      paid,
-      remaining,
-      salary,
-    }
-  })
-}
-
-const generateRandomEmployees = (numEmployees: number, year: number): Employee[] => {
-  const employees: Employee[] = []
-
-  for (let i = 0; i < numEmployees; i++) {
-    employees.push({
-      name: `Сотрудник ${i + 1}`,
-      reports: generateRandomReports(year),
-    })
-  }
-
-  return employees
-}
-
-const generateRandomDepartments = (numDepartments: number, year: number): DepartmentData[] => {
-  const departments: DepartmentData[] = []
-
-  for (let i = 0; i < numDepartments; i++) {
-    departments.push({
-      department: `Отдел ${i + 1}`,
-      employees: generateRandomEmployees(getRandomNumber(5, 10), year),
-    })
-  }
-
-  return departments
-}
-
-const reportData: DepartmentData[] = [
-  ...generateRandomDepartments(5, 2023),
-  ...generateRandomDepartments(5, 2024),
-  ...generateRandomDepartments(5, 2025),
-]
-
 export const SalaryReportsPage: React.FC = () => {
-  const [data, setData] = useState(reportData)
+  const { data: userdata } = useMeQuery()
+  const { data: salaries, isLoading } = useGetUserSalariesQuery(userdata?.id || 0)
+  const [createSalary] = useCreateSalaryMutation()
+  const [data, setData] = useState<DepartmentData[]>([])
   const [startMonthIndex, setStartMonthIndex] = useState(0)
   const [endMonthIndex, setEndMonthIndex] = useState(2)
   const [selectedYear, setSelectedYear] = useState<null | number>(null)
   const [selectedQuarter, setSelectedQuarter] = useState<null | number>(null)
+  const [newSalary, setNewSalary] = useState({
+    earned: 0,
+    month: 1,
+    paid: 0,
+    salary: 0,
+    userId: 0,
+    year: new Date().getFullYear(),
+  })
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const handleDataChange = (newData: DepartmentData[]) => {
-    setData(newData)
+  const handleCreateSalary = async () => {
+    try {
+      await createSalary(newSalary).unwrap()
+      alert('Salary created successfully!')
+      setIsModalOpen(false) // Close the modal on success
+    } catch (error) {
+      console.error('Failed to create salary:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (!salaries) {
+      return
+    }
+
+    const departmentData: DepartmentData[] = []
+
+    salaries.forEach(salary => {
+      const departmentName = salary.user.department.name
+      const employeeName = salary.user.name
+
+      let department = departmentData.find(d => d.department === departmentName)
+
+      if (!department) {
+        department = { department: departmentName, employees: [] }
+        departmentData.push(department)
+      }
+
+      let employee = department.employees.find(e => e.name === employeeName)
+
+      if (!employee) {
+        employee = { name: employeeName, reports: [] }
+        department.employees.push(employee)
+      }
+
+      employee.reports.push({
+        earned: salary.earned,
+        month: `${months[salary.month - 1]} ${salary.year}`,
+        paid: salary.paid,
+        remaining: salary.earned - salary.paid,
+        salary: salary.salary,
+      })
+    })
+
+    setData(departmentData)
+  }, [salaries])
+
+  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedYear(Number(event.target.value))
+    setSelectedQuarter(null)
+  }
+
+  const handleQuarterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const quarter = Number(event.target.value)
+
+    setSelectedQuarter(quarter)
+    setStartMonthIndex((quarter - 1) * 3)
+    setEndMonthIndex(quarter * 3 - 1)
   }
 
   const handleMonthChange = (event: React.ChangeEvent<HTMLSelectElement>, isStart: boolean) => {
@@ -116,19 +140,6 @@ export const SalaryReportsPage: React.FC = () => {
       }
     }
     setSelectedQuarter(null)
-  }
-
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(Number(event.target.value))
-    setSelectedQuarter(null)
-  }
-
-  const handleQuarterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const quarter = Number(event.target.value)
-
-    setSelectedQuarter(quarter)
-    setStartMonthIndex((quarter - 1) * 3)
-    setEndMonthIndex(quarter * 3 - 1)
   }
 
   const filteredData = useMemo(() => {
@@ -205,13 +216,126 @@ export const SalaryReportsPage: React.FC = () => {
         </div>
       </div>
       <div className={'w-full'}>
-        <MonthlyReportTable
-          data={filteredData}
-          months={selectedMonths}
-          onDataChange={handleDataChange}
-          tablename={'отчеты по зарплате'}
-        />
+        <MonthlySalaryTable data={filteredData} months={selectedMonths} />
       </div>
+      {userdata?.roleName === 'Директор' && (
+        <div className={'w-full mt-4'}>
+          <button
+            className={'ml-[150px] bg-blue-500 text-white px-4 py-2 rounded'}
+            onClick={() => setIsModalOpen(true)}
+          >
+            Создать зарплату
+          </button>
+        </div>
+      )}
+      {isModalOpen && (
+        <div className={'fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50'}>
+          <div className={'bg-white p-6 rounded shadow-lg'}>
+            <h2 className={'text-lg font-bold mb-4'}>Создать новую зарплату</h2>
+            <form
+              onSubmit={e => {
+                e.preventDefault()
+                handleCreateSalary()
+              }}
+            >
+              <div className={'flex mb-2'}>
+                <label className={'mr-2'} htmlFor={'userId'}>
+                  ID пользователя:
+                </label>
+                <input
+                  id={'userId'}
+                  onChange={e => setNewSalary({ ...newSalary, userId: Number(e.target.value) })}
+                  required
+                  type={'number'}
+                  value={newSalary.userId}
+                />
+              </div>
+              <div className={'flex mb-2'}>
+                <label className={'mr-2'} htmlFor={'month'}>
+                  Месяц:
+                </label>
+                <select
+                  id={'month'}
+                  onChange={e => setNewSalary({ ...newSalary, month: Number(e.target.value) })}
+                  required
+                  value={newSalary.month}
+                >
+                  {months.map((month, index) => (
+                    <option key={index} value={index + 1}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={'flex mb-2'}>
+                <label className={'mr-2'} htmlFor={'year'}>
+                  Год:
+                </label>
+                <select
+                  id={'year'}
+                  onChange={e => setNewSalary({ ...newSalary, year: Number(e.target.value) })}
+                  required
+                  value={newSalary.year}
+                >
+                  {years.map((year, index) => (
+                    <option key={index} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={'flex mb-2'}>
+                <label className={'mr-2'} htmlFor={'salary'}>
+                  Зарплата:
+                </label>
+                <input
+                  id={'salary'}
+                  onChange={e => setNewSalary({ ...newSalary, salary: Number(e.target.value) })}
+                  required
+                  type={'number'}
+                  value={newSalary.salary}
+                />
+              </div>
+              <div className={'flex mb-2'}>
+                <label className={'mr-2'} htmlFor={'earned'}>
+                  Заработано:
+                </label>
+                <input
+                  id={'earned'}
+                  onChange={e => setNewSalary({ ...newSalary, earned: Number(e.target.value) })}
+                  required
+                  type={'number'}
+                  value={newSalary.earned}
+                />
+              </div>
+              <div className={'flex mb-2'}>
+                <label className={'mr-2'} htmlFor={'paid'}>
+                  Выплачено:
+                </label>
+                <input
+                  id={'paid'}
+                  onChange={e => setNewSalary({ ...newSalary, paid: Number(e.target.value) })}
+                  required
+                  type={'number'}
+                  value={newSalary.paid}
+                />
+              </div>
+              <div className={'flex justify-end'}>
+                <button
+                  className={'bg-gray-500 text-white px-4 py-2 rounded mr-2'}
+                  onClick={() => setIsModalOpen(false)}
+                  type={'button'}
+                >
+                  Отмена
+                </button>
+                <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
+                  Создать зарплату
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

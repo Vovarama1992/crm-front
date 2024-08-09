@@ -3,31 +3,27 @@ import { Link } from 'react-router-dom'
 
 import { useMeQuery } from '@/entities/session'
 import { WorkerDto } from '@/entities/workers'
+import { useGetActiveQuery } from '@/entities/workers'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 
 import EmployeeTable from './EmployeeTable'
 
 export const WorkersPage: React.FC = () => {
-  const { data } = useMeQuery()
-  const roleName = data?.roleName || ''
+  const { data: meData } = useMeQuery()
+  const roleName = meData?.roleName || ''
 
-  // Получаем список работников из localStorage или используем начальные данные
+  const { data: workersData, error, isLoading } = useGetActiveQuery()
 
-  // Фильтрация работников по имени и почте
   const [workers, setWorkers] = useState<WorkerDto[]>([])
   const [searchName, setSearchName] = useState('')
   const [searchEmail, setSearchEmail] = useState('')
 
   useEffect(() => {
-    // Загружаем работников из localStorage при монтировании компонента
-    const storedWorkers = JSON.parse(localStorage.getItem('workers') || '[]') as WorkerDto[]
-
-    if (storedWorkers.length > 0) {
-      setWorkers(storedWorkers)
+    if (workersData) {
+      setWorkers(workersData)
     }
-  }, [])
+  }, [workersData])
 
-  // Фильтрация работников по имени и почте
   const filteredWorkers = workers.filter(
     worker =>
       worker.name.toLowerCase().includes(searchName.toLowerCase()) &&
@@ -40,6 +36,14 @@ export const WorkersPage: React.FC = () => {
 
   const handleSearchEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchEmail(e.target.value)
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (error) {
+    return <div>Error loading workers</div>
   }
 
   return (
@@ -66,7 +70,7 @@ export const WorkersPage: React.FC = () => {
         </Link>
       </div>
 
-      <EmployeeTable roleName={roleName} workers={filteredWorkers} />
+      <EmployeeTable roleName={roleName} workers={workers} />
     </div>
   )
 }

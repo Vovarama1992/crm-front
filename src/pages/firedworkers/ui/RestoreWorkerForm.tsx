@@ -1,22 +1,18 @@
 import React, { useState } from 'react'
 
 import { WorkerDto } from '@/entities/workers'
+import { useRestoreWorkerMutation } from '@/entities/workers'
+import { useToast } from '@/shared/ui-shad-cn/ui/use-toast'
 
-type RestoreWorkerModalProps = {
+type RestoreWorkerFormProps = {
   onClose: () => void
-  onSave: (worker: WorkerDto) => void
   worker: Omit<WorkerDto, 'table_id'>
 }
 
-const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave, worker }) => {
-  const [formState, setFormState] = useState<Omit<WorkerDto, 'table_id'>>({
-    ...worker,
-    cardNumber: worker.cardNumber,
-    dobNumber: '',
-    mobile: worker.mobile,
-    position: '',
-    roleName: '',
-  })
+const RestoreWorkerForm: React.FC<RestoreWorkerFormProps> = ({ onClose, worker }) => {
+  const [formState, setFormState] = useState(worker)
+  const [restoreWorker, { isLoading }] = useRestoreWorkerMutation()
+  const { toast } = useToast()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -24,16 +20,24 @@ const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave
     setFormState(prevState => ({ ...prevState, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const newWorker: WorkerDto = {
-      ...formState,
-      table_id: 0, // table_id будет назначен при сохранении
+    try {
+      await restoreWorker(worker.id).unwrap()
+      toast({
+        description: `Сотрудник ${worker.name} успешно восстановлен!`,
+        title: 'Восстановление успешно',
+        type: 'background',
+      })
+      onClose()
+    } catch (error) {
+      console.error('Failed to restore worker:', error)
+      toast({
+        description: 'Ошибка восстановления сотрудника.',
+        title: 'Ошибка',
+        variant: 'destructive',
+      })
     }
-
-    onSave(newWorker)
-    alert('Данные сотрудника успешно сохранены!')
-    onClose()
   }
 
   return (
@@ -108,7 +112,6 @@ const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave
                       }
                       name={'dobNumber'}
                       onChange={handleChange}
-                      required
                       type={'text'}
                       value={formState.dobNumber}
                     />
@@ -117,11 +120,10 @@ const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave
                     <label className={'block text-sm font-medium text-gray-700'}>Мобильный</label>
                     <input
                       className={
-                        'mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-yellow-200'
+                        'mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'
                       }
                       name={'mobile'}
                       onChange={handleChange}
-                      required
                       type={'text'}
                       value={formState.mobile}
                     />
@@ -136,7 +138,6 @@ const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave
                       }
                       name={'birthday'}
                       onChange={handleChange}
-                      required
                       type={'date'}
                       value={formState.birthday}
                     />
@@ -147,11 +148,10 @@ const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave
                     </label>
                     <input
                       className={
-                        'mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-yellow-200'
+                        'mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'
                       }
                       name={'cardNumber'}
                       onChange={handleChange}
-                      required
                       type={'text'}
                       value={formState.cardNumber}
                     />
@@ -161,6 +161,7 @@ const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave
                       className={
                         'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-500 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm'
                       }
+                      disabled={isLoading}
                       type={'submit'}
                     >
                       Сохранить
@@ -185,4 +186,4 @@ const RestoreWorkerModal: React.FC<RestoreWorkerModalProps> = ({ onClose, onSave
   )
 }
 
-export default RestoreWorkerModal
+export default RestoreWorkerForm

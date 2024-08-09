@@ -51,6 +51,24 @@ const sessionApi = baseApi.injectEndpoints({
         }
       },
     }),
+
+    askNlp: builder.mutation<
+      { dialogueId: number; reply: string },
+      { dialogueId: null | number; message: string }
+    >({
+      query: body => ({
+        body,
+        method: 'POST',
+        url: '/nlp',
+      }),
+    }),
+
+    closeDialogue: builder.mutation<void, { dialogueId: number }>({
+      query: ({ dialogueId }) => ({
+        method: 'POST',
+        url: `/nlp/${dialogueId}/close`,
+      }),
+    }),
   }),
 })
 
@@ -61,4 +79,6 @@ export const {
   useSignUpMutation,
   useSignInMutation,
   useSignOutMutation,
+  useAskNlpMutation,
+  useCloseDialogueMutation,
 } = sessionApi

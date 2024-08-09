@@ -11,14 +11,26 @@ export type UserRegisteredDto = {
 } & BaseUserDto
 
 export type UserAuthenticatedDto = {
+  id: number
   permissions: Permissions
-} & BaseUserDto
+} & RegistrationDto
 
 export type RegistrationDto = {
+  address?: string
+  birthday?: string
+  cardNumber?: string
+  department_id?: number
+  dobNumber?: number
   email: string
+  hireDate?: string
+  isActive?: boolean
+  managed_by?: number
+  margin_percent?: number
   middleName: string
+  mobile: string
   name: string
   password: string
+  position?: string
   roleName: string
   surname: string
 }
@@ -30,14 +42,12 @@ export type LoginDto = {
 
 export type Permissions = {
   common_sales: boolean
+  contragents: boolean
   departures: boolean
   finances: boolean
   my_sales: boolean
   procurements: boolean
-  salary_reports_common: boolean
-  salary_reports_himself: boolean
-  salary_reports_sellers: boolean
-  see_self: boolean
+  salary_reports: boolean
   summary_table: boolean
   suppliers: boolean
 }

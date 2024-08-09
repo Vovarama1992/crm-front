@@ -6,10 +6,8 @@ import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 
 import { useSignUpMutation } from '@/entities/session'
-import { WorkerDto } from '@/entities/workers'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { RoleSelect } from '@/shared/ui/RoleSelect'
-import { TextField } from '@/shared/ui/text-field'
 import { Button } from '@/shared/ui-shad-cn/ui/button'
 import { useToast } from '@/shared/ui-shad-cn/ui/use-toast'
 import { DevTool } from '@hookform/devtools'
@@ -41,9 +39,21 @@ export const SignUpForm = (props: SignUpFormProps) => {
     setValue,
   } = useForm<SignUpFormData>({
     defaultValues: {
+      address: '',
+      birthday: '',
+      cardNumber: '',
+      department_id: undefined,
+      dobNumber: undefined,
       email: '',
+      hireDate: '',
+      isActive: true, // Добавлено поле isActive
+      managed_by: undefined, // Изменено на undefined
+      margin_percent: undefined,
+      middleName: '',
+      mobile: '',
       name: '',
       password: '',
+      position: '',
       roleName: 'Менеджер',
       surname: '',
     },
@@ -57,34 +67,16 @@ export const SignUpForm = (props: SignUpFormProps) => {
     setRole(true)
   }
 
-  const onSubmit = handleSubmit(({ email, middleName, name, password, roleName, surname }) => {
-    signUp({ email, middleName, name, password, roleName, surname })
+  const onSubmit = handleSubmit(data => {
+    signUp({
+      ...data,
+      department_id: data.department_id ? Number(data.department_id) : undefined,
+      dobNumber: data.dobNumber ? Number(data.dobNumber) : undefined,
+      managed_by: data.managed_by ? Number(data.managed_by) : undefined,
+      margin_percent: data.margin_percent ? Number(data.margin_percent) : undefined,
+    })
       .unwrap()
       .then(user => {
-        // Сохраняем сотрудника в localStorage
-        const workersData = JSON.parse(localStorage.getItem('workers') || '[]') as WorkerDto[]
-        const newWorker: WorkerDto = {
-          birthday: '', // Оставьте пустым или добавьте логику для его заполнения
-          cardNumber: '', // Оставьте пустым или добавьте логику для его заполнения
-          department: '', // Оставьте пустым или добавьте логику для его заполнения
-          dobNumber: '', // Оставьте пустым или добавьте логику для его заполнения
-          email,
-          hireDate: '', // Оставьте пустым или добавьте логику для его заполнения
-          manager: '', // Оставьте пустым или добавьте логику для его заполнения
-          mobile: '', // Оставьте пустым или добавьте логику для его заполнения
-          name,
-          position: '', // Оставьте пустым или добавьте логику для его заполнения
-          roleName,
-          salary: '', // Оставьте пустым или добавьте логику для его заполнения
-          table_id:
-            workersData.length > 0
-              ? Math.max(...workersData.map(worker => worker.table_id)) + 1
-              : 1,
-        }
-
-        workersData.push(newWorker)
-        localStorage.setItem('workers', JSON.stringify(workersData))
-
         toast({
           description: `Мы отправили сообщение на почту ${user.email}`,
           title: 'Регистрация успешна',
@@ -113,48 +105,180 @@ export const SignUpForm = (props: SignUpFormProps) => {
     <form className={'grid gap-4'} noValidate translate={'no'} {...props} onSubmit={onSubmit}>
       <RoleSelect handleRoleChange={handleRoleChange} roles={roles} />
 
-      <TextField
-        {...register('name')}
-        errorMessage={errors.name?.message}
-        label={'Имя'}
-        onFocus={() => setValue('password', '')}
-        placeholder={''}
-      />
+      <div className={'flex flex-col space-y-4'}>
+        <div>
+          <label className={'block'}>Имя</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('name')}
+            placeholder={''}
+            type={'text'}
+          />
+          {errors.name && <span className={'text-red-500'}>{errors.name.message}</span>}
+        </div>
 
-      <TextField
-        {...register('middleName')}
-        errorMessage={errors.surname?.message}
-        label={'Отчество'}
-        onFocus={() => setValue('password', '')}
-        placeholder={''}
-      />
+        <div>
+          <label className={'block'}>Отчество</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('middleName')}
+            placeholder={''}
+            type={'text'}
+          />
+          {errors.middleName && <span className={'text-red-500'}>{errors.middleName.message}</span>}
+        </div>
 
-      <TextField
-        {...register('surname')}
-        errorMessage={errors.surname?.message}
-        label={'Фамилия'}
-        onFocus={() => setValue('password', '')}
-        placeholder={''}
-      />
+        <div>
+          <label className={'block'}>Фамилия</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('surname')}
+            placeholder={''}
+            type={'text'}
+          />
+          {errors.surname && <span className={'text-red-500'}>{errors.surname.message}</span>}
+        </div>
 
-      <TextField.Email
-        {...register('email')}
-        errorMessage={errors.email?.message}
-        label={'Почта'}
-        onFocus={() => setValue('password', '')}
-        placeholder={''}
-      />
+        <div>
+          <label className={'block'}>Почта</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('email')}
+            placeholder={''}
+            type={'email'}
+          />
+          {errors.email && <span className={'text-red-500'}>{errors.email.message}</span>}
+        </div>
 
-      <TextField.Password
-        {...register('password')}
-        errorMessage={errors.password?.message}
-        label={'Пароль'}
-        onFocus={() => setValue('password', '')}
-        placeholder={''}
-      />
+        <div>
+          <label className={'block'}>Пароль</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('password')}
+            placeholder={''}
+            type={'password'}
+          />
+          {errors.password && <span className={'text-red-500'}>{errors.password.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Дата рождения</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('birthday')}
+            placeholder={'YYYY-MM-DD'}
+            type={'date'}
+          />
+          {errors.birthday && <span className={'text-red-500'}>{errors.birthday.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Номер карты</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('cardNumber')}
+            placeholder={''}
+            type={'text'}
+          />
+          {errors.cardNumber && <span className={'text-red-500'}>{errors.cardNumber.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>ID отдела</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('department_id')}
+            placeholder={''}
+            type={'number'}
+          />
+          {errors.department_id && (
+            <span className={'text-red-500'}>{errors.department_id.message}</span>
+          )}
+        </div>
+
+        <div>
+          <label className={'block'}>Добавочный номер</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('dobNumber')}
+            placeholder={''}
+            type={'number'}
+          />
+          {errors.dobNumber && <span className={'text-red-500'}>{errors.dobNumber.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Дата приема на работу</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('hireDate')}
+            placeholder={'YYYY-MM-DD'}
+            type={'date'}
+          />
+          {errors.hireDate && <span className={'text-red-500'}>{errors.hireDate.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Менеджер</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('managed_by')}
+            placeholder={''}
+            type={'number'}
+          />
+          {errors.managed_by && <span className={'text-red-500'}>{errors.managed_by.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Процент маржи</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('margin_percent')}
+            placeholder={''}
+            type={'number'}
+          />
+          {errors.margin_percent && (
+            <span className={'text-red-500'}>{errors.margin_percent.message}</span>
+          )}
+        </div>
+
+        <div>
+          <label className={'block'}>Мобильный телефон</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('mobile')}
+            defaultValue={'+7'}
+            placeholder={''}
+            type={'text'}
+          />
+          {errors.mobile && <span className={'text-red-500'}>{errors.mobile.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Должность</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('position')}
+            placeholder={''}
+            type={'text'}
+          />
+          {errors.position && <span className={'text-red-500'}>{errors.position.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Адрес</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('address')}
+            placeholder={''}
+            type={'text'}
+          />
+          {errors.address && <span className={'text-red-500'}>{errors.address.message}</span>}
+        </div>
+      </div>
 
       <Button
-        className={'w-full mt-[35px] h-[40px]'}
+        className={'w-full mt-4 h-[40px]'}
         disabled={isLoading || !isAllFieldsDirty || !isRoleSelected}
         type={'submit'}
       >

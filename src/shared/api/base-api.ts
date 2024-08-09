@@ -6,11 +6,13 @@ import {
   AVITO_REPORT_TAG,
   CONNECTION_TAG,
   CONNECTIONS_TAG,
+  DEPARTURE_TAG,
   OZON_REPORT_TAG,
   SESSION_TAG,
   SHOP_TAG,
   SHOPS_TAG,
   WILDBERRIES_REPORT_TAG,
+  WORKERS_TAG,
 } from './tags'
 
 export const baseApi = createApi({
@@ -19,6 +21,7 @@ export const baseApi = createApi({
   reducerPath: 'baseApi',
   tagTypes: [
     SESSION_TAG,
+    WORKERS_TAG,
     SHOP_TAG,
     SHOPS_TAG,
     CONNECTION_TAG,
@@ -27,5 +30,6 @@ export const baseApi = createApi({
     WILDBERRIES_REPORT_TAG,
     AVITO_REPORT_TAG,
     OZON_REPORT_TAG,
+    DEPARTURE_TAG,
   ],
 })

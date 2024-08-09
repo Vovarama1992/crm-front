@@ -1,99 +1,104 @@
-/* eslint-disable no-nested-ternary */
 import { useState } from 'react'
 
-import { WorkerDto } from '@/entities/workers'
+import { DepartmentDto, WorkerDto } from '@/entities/workers'
 
-interface TransferFormProps {
-  departments: string[]
+type TransferFormProps = {
+  departments: DepartmentDto[]
   employee: WorkerDto
   onCancel: () => void
-  onSubmit: (transferData: { action: string; employee: WorkerDto; newDepartment?: string }) => void
+  onDemote: (worker: WorkerDto) => void
+  onPromote: (worker: WorkerDto, departmentId: number) => void
+  onSubmit: (rop: WorkerDto, departmentName: string) => void
+  onTransfer: (worker: WorkerDto, newDepartmentId: number) => void
 }
 
 const TransferForm: React.FC<TransferFormProps> = ({
   departments,
   employee,
   onCancel,
+  onDemote,
+  onPromote,
   onSubmit,
+  onTransfer,
 }) => {
-  const [action, setAction] = useState('')
-  const [newDepartment, setNewDepartment] = useState('')
+  const [departmentName, setDepartmentName] = useState<string>('')
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<null | number>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ action, employee, newDepartment })
+    if (departmentName) {
+      onSubmit(employee, departmentName)
+    } else if (selectedDepartmentId) {
+      onTransfer(employee, selectedDepartmentId)
+    }
   }
 
-  const isRop = employee.roleName === 'РОП'
-  const isManager = employee.roleName === 'Менеджер'
-
   return (
-    <form className={'p-6 bg-white shadow-md rounded-md'} onSubmit={handleSubmit}>
-      <h3 className={'text-lg font-semibold mb-4'}>Перевод сотрудника: {employee.name}</h3>
+    <form onSubmit={handleSubmit}>
+      <h3 className={'text-xl font-semibold mb-4'}>Назначить {employee.name}а РОПом</h3>
       <div className={'mb-4'}>
-        <label className={'block text-sm font-medium text-gray-700'}>Действие</label>
+        <label className={'block text-sm font-medium text-gray-700'}>Название нового отдела</label>
+        <input
+          className={'mt-1 block w-full p-2 border border-gray-300 rounded-md'}
+          onChange={e => setDepartmentName(e.target.value)}
+          type={'text'}
+          value={departmentName}
+        />
+      </div>
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-medium text-gray-700'}>
+          Выбрать существующий отдел
+        </label>
         <select
           className={'mt-1 block w-full p-2 border border-gray-300 rounded-md'}
-          onChange={e => setAction(e.target.value)}
-          value={action}
+          onChange={e => setSelectedDepartmentId(parseInt(e.target.value))}
+          value={selectedDepartmentId ?? ''}
         >
-          <option value={''}>Выберите действие</option>
-          {isRop ? (
-            <>
-              <option value={'demote'}>Понизить до менеджера</option>
-              <option value={'remove'}>Удалить из структуры</option>
-              <option value={'new_department'}>Создать новый отдел</option>
-            </>
-          ) : isManager ? (
-            <>
-              <option value={'transfer'}>Перевести в другой отдел</option>
-              <option value={'remove'}>Удалить из структуры</option>
-              <option value={'promote'}>Создать новый отдел и повысить до РОПа</option>
-            </>
-          ) : null}
+          <option value={''}>Выберите отдел</option>
+          {departments.map(department => (
+            <option key={department.id} value={department.id}>
+              {department.name}
+            </option>
+          ))}
         </select>
       </div>
-      {(action === 'transfer' || action === 'new_department' || action === 'promote') && (
-        <div className={'mb-4'}>
-          <label className={'block text-sm font-medium text-gray-700'}>Новый отдел</label>
-          {action !== 'transfer' && (
-            <input
-              className={'mt-1 block w-full p-2 border border-gray-300 rounded-md'}
-              onChange={e => setNewDepartment(e.target.value)}
-              placeholder={'Введите название нового отдела'}
-              type={'text'}
-              value={newDepartment}
-            />
-          )}
-          {action === 'transfer' && (
-            <select
-              className={'mt-1 block w-full p-2 border border-gray-300 rounded-md'}
-              onChange={e => setNewDepartment(e.target.value)}
-              value={newDepartment}
-            >
-              <option value={''}>Выберите отдел</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
-      <div className={'flex justify-end'}>
+      <div className={'mt-5 sm:mt-6 sm:flex sm:flex-row-reverse'}>
         <button
-          className={'mr-2 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600'}
+          className={
+            'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-500 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm'
+          }
+          type={'submit'}
+        >
+          Назначить
+        </button>
+        <button
+          className={
+            'mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm'
+          }
           onClick={onCancel}
           type={'button'}
         >
           Отмена
         </button>
+      </div>
+      <div className={'mt-4'}>
         <button
-          className={'bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600'}
-          type={'submit'}
+          className={
+            'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-500 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm'
+          }
+          onClick={() => onPromote(employee, selectedDepartmentId ?? 0)}
+          type={'button'}
         >
-          Сохранить
+          Повысить
+        </button>
+        <button
+          className={
+            'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-500 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:w-auto sm:text-sm'
+          }
+          onClick={() => onDemote(employee)}
+          type={'button'}
+        >
+          Понизить
         </button>
       </div>
     </form>

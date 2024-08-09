@@ -124,9 +124,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                 <React.Fragment key={month}>
                   <th className={'border px-4 py-2 bg-gray-100'}>Оборот</th>
                   <th className={'border px-4 py-2 bg-gray-100'}>Маржа</th>
-                  <th className={'border px-4 py-2 bg-gray-100'}>
-                    {departmentIndex === 0 ? 'План Маржа' : '% от Маржи'}
-                  </th>
+                  <th className={'border px-4 py-2 bg-gray-100'}>{'% от Маржи'}</th>
                 </React.Fragment>
               ))}
               <th className={'border px-4 py-2 bg-gray-100'}></th>

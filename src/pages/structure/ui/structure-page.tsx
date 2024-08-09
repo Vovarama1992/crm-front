@@ -1,149 +1,120 @@
 import { useEffect, useState } from 'react'
 
-import { useMeQuery } from '@/entities/session'
-import { WorkerDto } from '@/entities/workers'
+import {
+  useCreateDepartmentMutation,
+  useDeleteDepartmentMutation,
+  useFireWorkerMutation,
+  useGetDepartmentsQuery,
+  useGetWorkersQuery,
+  useUpdateDepartmentMutation,
+  useUpdateWorkerMutation,
+} from '@/entities/workers'
+import { DepartmentDto, WorkerDto } from '@/entities/workers'
 
 import TransferForm from './TransferForm'
-import workersData from './workersData'
 
 export const StructurePage = () => {
-  const { data } = useMeQuery()
-  const userRole = data?.roleName
+  const {
+    data: departmentsData,
+    error: departmentsError,
+    isLoading: isLoadingDepartments,
+  } = useGetDepartmentsQuery()
+  const {
+    data: workersData,
+    error: workersError,
+    isLoading: isLoadingWorkers,
+  } = useGetWorkersQuery()
+  const [deleteDepartment] = useDeleteDepartmentMutation()
+  const [createDepartment] = useCreateDepartmentMutation()
+  const [updateDepartment] = useUpdateDepartmentMutation()
+  const [fireWorker] = useFireWorkerMutation()
+  const [updateWorker] = useUpdateWorkerMutation()
 
-  const [workerList, setWorkerList] = useState<WorkerDto[]>(workersData)
+  const [departmentList, setDepartmentList] = useState<DepartmentDto[]>([])
+  const [workerList, setWorkerList] = useState<WorkerDto[]>([])
+  const [selectedDepartment, setSelectedDepartment] = useState<DepartmentDto | null>(null)
   const [transferEmployee, setTransferEmployee] = useState<WorkerDto | null>(null)
-  const [departmentWithoutRop, setDepartmentWithoutRop] = useState<null | string>(null)
-  const [isRopInDepartment, setIsRopInDepartment] = useState<{ [key: string]: boolean }>(
-    workersData.reduce(
-      (acc, worker) => {
-        if (worker.roleName === 'РОП' && worker.department) {
-          acc[worker.department] = true
-        }
+  const [newDepartmentName, setNewDepartmentName] = useState<string>('')
 
-        return acc
-      },
-      {} as { [key: string]: boolean }
-    )
-  )
+  useEffect(() => {
+    if (departmentsData) {
+      setDepartmentList(departmentsData)
+    }
+  }, [departmentsData])
 
-  const handleTransfer = (transferData: {
-    action: string
-    employee: WorkerDto
-    newDepartment?: string
-  }) => {
-    const { action, employee, newDepartment } = transferData
-    const updatedWorkers = [...workerList]
-    const employeeIndex = updatedWorkers.findIndex(worker => worker.table_id === employee.table_id)
+  useEffect(() => {
+    if (workersData) {
+      setWorkerList(workersData)
+    }
+  }, [workersData])
 
-    if (employeeIndex === -1) {
+  const handleDeleteDepartment = (id: number) => {
+    deleteDepartment(id)
+  }
+
+  const handleCreateDepartment = (ropId: number, name: string) => {
+    createDepartment({ name, ropId })
+  }
+
+  const handleUpdateDepartment = (department: Partial<DepartmentDto>) => {
+    updateDepartment(department)
+  }
+
+  const handleDeleteWorker = (id: number) => {
+    fireWorker(id)
+  }
+
+  const handleAssignRop = (rop: WorkerDto) => {
+    if (!newDepartmentName) {
       return
     }
 
-    const oldDepartment = employee.department
-
-    if (action === 'demote') {
-      updatedWorkers[employeeIndex].roleName = 'Менеджер'
-    } else if (action === 'remove') {
-      updatedWorkers.splice(employeeIndex, 1)
-    } else if (action === 'new_department') {
-      const newDeptName =
-        newDepartment ||
-        `Отдел продаж ${String.fromCharCode(65 + updatedWorkers.filter(worker => worker.department).length)}`
-
-      updatedWorkers[employeeIndex].department = newDeptName
-      updatedWorkers[employeeIndex].roleName = 'РОП'
-      setIsRopInDepartment({ ...isRopInDepartment, [newDeptName]: true })
-    } else if (action === 'transfer') {
-      updatedWorkers[employeeIndex].department = newDepartment || null
-    } else if (action === 'promote') {
-      const newDeptName =
-        newDepartment ||
-        `Отдел продаж ${String.fromCharCode(65 + updatedWorkers.filter(worker => worker.department).length)}`
-
-      updatedWorkers[employeeIndex].department = newDeptName
-      updatedWorkers[employeeIndex].roleName = 'РОП'
-      setIsRopInDepartment({ ...isRopInDepartment, [newDeptName]: true })
-    }
-
-    if (
-      (action === 'demote' ||
-        action === 'remove' ||
-        action === 'transfer' ||
-        action === 'promote') &&
-      oldDepartment
-    ) {
-      const remainingRop = updatedWorkers.find(
-        worker => worker.department === oldDepartment && worker.roleName === 'РОП'
-      )
-
-      if (!remainingRop) {
-        setDepartmentWithoutRop(oldDepartment)
-        setIsRopInDepartment({ ...isRopInDepartment, [oldDepartment]: false })
-      }
-    }
-
-    setWorkerList(updatedWorkers)
-    setTransferEmployee(null)
+    handleCreateDepartment(rop.id, newDepartmentName)
+    setNewDepartmentName('')
   }
 
-  const handleCancel = () => {
-    setTransferEmployee(null)
+  const handlePromoteWorker = (worker: WorkerDto, departmentId: number) => {
+    updateWorker({ ...worker, department_id: departmentId, roleName: 'РОП' })
   }
 
-  const departments = Array.from(
-    new Set(workerList.map(worker => worker.department).filter(dept => dept !== null))
-  ) as string[]
+  const handleDemoteWorker = (worker: WorkerDto) => {
+    updateWorker({ ...worker, roleName: 'Менеджер' })
+  }
 
-  const directors = workerList.filter(worker => worker.roleName === 'Директор')
-  const companyStaff = workerList.filter(worker =>
-    ['Бухгалтер', 'Закупщик'].includes(worker.roleName)
+  const handleTransferWorker = (worker: WorkerDto, newDepartmentId: number) => {
+    updateWorker({ ...worker, department_id: newDepartmentId })
+  }
+
+  if (isLoadingDepartments || isLoadingWorkers) {
+    return <div>Loading...</div>
+  }
+  if (departmentsError || workersError) {
+    return <div>Error loading data</div>
+  }
+
+  const workersWithoutDepartment = workerList.filter(
+    worker =>
+      worker.department_id === null &&
+      worker.roleName !== 'Директор' &&
+      worker.roleName !== 'Закупщик' &&
+      worker.roleName !== 'Бухгалтер'
   )
-  const salesDepartments = departments.map(dept => ({
-    managers: workerList.filter(
-      worker => worker.department === dept && worker.roleName === 'Менеджер'
-    ),
-    name: dept,
-    rop: workerList.find(worker => worker.department === dept && worker.roleName === 'РОП'),
+
+  const workersInAdministration = workerList.filter(
+    worker =>
+      worker.roleName === 'Директор' ||
+      worker.roleName === 'Закупщик' ||
+      worker.roleName === 'Бухгалтер'
+  )
+
+  const workersInSupport = workerList.filter(
+    worker => worker.roleName === 'Закупщик' || worker.roleName === 'Бухгалтер'
+  )
+
+  const departmentsWithWorkers = departmentList.map(department => ({
+    ...department,
+    workers: workerList.filter(worker => worker.department_id === department.id),
   }))
-  const noDepartmentManagers = workerList.filter(
-    worker => !worker.department && worker.roleName === 'Менеджер'
-  )
-
-  const handleAssignRop = (newRopId: number) => {
-    const updatedWorkers = workerList.map(worker => {
-      if (worker.table_id === newRopId) {
-        worker.roleName = 'РОП'
-      }
-
-      return worker
-    })
-
-    setWorkerList(updatedWorkers)
-    setIsRopInDepartment({ ...isRopInDepartment, [departmentWithoutRop!]: true })
-    setDepartmentWithoutRop(null)
-  }
-
-  const handleDisbandDepartment = () => {
-    const updatedWorkers = workerList.map(worker => {
-      if (worker.department === departmentWithoutRop) {
-        worker.department = null
-      }
-
-      return worker
-    })
-
-    setWorkerList(updatedWorkers)
-    setIsRopInDepartment({ ...isRopInDepartment, [departmentWithoutRop!]: false })
-    setDepartmentWithoutRop(null)
-  }
-
-  useEffect(() => {
-    salesDepartments.forEach(dept => {
-      if (!dept.rop && isRopInDepartment[dept.name] !== false) {
-        setDepartmentWithoutRop(dept.name)
-      }
-    })
-  }, [salesDepartments, isRopInDepartment])
 
   return (
     <div className={'p-6 bg-gray-100 min-h-screen'}>
@@ -152,125 +123,129 @@ export const StructurePage = () => {
       <div className={'mb-8'}>
         <h3 className={'text-xl font-semibold mb-4'}>Дирекция</h3>
         <ul className={'list-disc pl-6'}>
-          {directors.map(worker => (
-            <li className={'mb-2'} key={worker.table_id}>
-              {worker.name}
+          {workersInAdministration.map(worker => (
+            <li className={'mb-2'} key={worker.id}>
+              {worker.name} ({worker.roleName})
+              <button className={'ml-2 text-red-500'} onClick={() => handleDeleteWorker(worker.id)}>
+                Удалить
+              </button>
+              <button className={'ml-2 text-blue-500'} onClick={() => setTransferEmployee(worker)}>
+                Перенести
+              </button>
             </li>
           ))}
         </ul>
       </div>
 
       <div className={'mb-8'}>
-        <h3 className={'text-xl font-semibold mb-4'}>Сотрудники, обеспечивающие работу компании</h3>
+        <h3 className={'text-xl font-semibold mb-4'}>Сотрудники обеспечивающие работу компании</h3>
         <ul className={'list-disc pl-6'}>
-          {companyStaff.map(worker => (
-            <li className={'mb-2'} key={worker.table_id}>
-              {worker.name} - {worker.roleName}
+          {workersInSupport.map(worker => (
+            <li className={'mb-2'} key={worker.id}>
+              {worker.name} ({worker.roleName})
+              <button className={'ml-2 text-red-500'} onClick={() => handleDeleteWorker(worker.id)}>
+                Удалить
+              </button>
+              <button className={'ml-2 text-blue-500'} onClick={() => setTransferEmployee(worker)}>
+                Перенести
+              </button>
             </li>
           ))}
         </ul>
       </div>
 
-      {salesDepartments.map(dept => (
-        <div className={'mb-8'} key={dept.name}>
-          <h3 className={'text-xl font-semibold mb-4'}>{dept.name}</h3>
-          <div className={'mb-4'}>
-            <strong>РОП: {dept.rop?.name || 'Не назначен'}</strong>
-            {userRole === 'Директор' && dept.rop && (
+      <div className={'mb-8'}>
+        <h3 className={'text-xl font-semibold mb-4'}>Департаменты</h3>
+        <ul className={'list-disc pl-6'}>
+          {departmentsWithWorkers.map(department => (
+            <li className={'mb-2'} key={department.id}>
+              {department.name}
               <button
-                className={'ml-2 bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600'}
-                onClick={() => setTransferEmployee(dept.rop!)}
+                className={'ml-2 text-red-500'}
+                onClick={() => handleDeleteDepartment(department.id)}
               >
-                Перевести
+                Удалить
               </button>
-            )}
-          </div>
-          <ul className={'list-disc pl-6'}>
-            {dept.managers.map(manager => (
-              <li className={'mb-2'} key={manager.table_id}>
-                {manager.name}
-                {userRole === 'Директор' && (
-                  <button
-                    className={'ml-2 bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600'}
-                    onClick={() => setTransferEmployee(manager)}
-                  >
-                    Перевести
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+              <button
+                className={'ml-2 text-blue-500'}
+                onClick={() => setSelectedDepartment(department)}
+              >
+                Редактировать
+              </button>
+              <ul className={'list-disc pl-6'}>
+                {department.workers.map(worker => (
+                  <li className={'mb-2'} key={worker.id}>
+                    {worker.name} {worker.roleName === 'РОП' ? '(Руководитель отдела)' : ''}
+                    <button
+                      className={'ml-2 text-red-500'}
+                      onClick={() => handleDeleteWorker(worker.id)}
+                    >
+                      Удалить
+                    </button>
+                    <button
+                      className={'ml-2 text-blue-500'}
+                      onClick={() => setTransferEmployee(worker)}
+                    >
+                      Назначить РОПом
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className={'mb-8'}>
         <h3 className={'text-xl font-semibold mb-4'}>Не входят в отделы продаж</h3>
         <ul className={'list-disc pl-6'}>
-          {noDepartmentManagers.map(worker => (
-            <li className={'mb-2'} key={worker.table_id}>
+          {workersWithoutDepartment.map(worker => (
+            <li className={'mb-2'} key={worker.id}>
               {worker.name}
-              {userRole === 'Директор' && (
-                <button
-                  className={'ml-2 bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600'}
-                  onClick={() => setTransferEmployee(worker)}
-                >
-                  Перевести
-                </button>
-              )}
+              <button className={'ml-2 text-red-500'} onClick={() => handleDeleteWorker(worker.id)}>
+                Удалить
+              </button>
+              <button className={'ml-2 text-blue-500'} onClick={() => setTransferEmployee(worker)}>
+                Назначить РОПом
+              </button>
             </li>
           ))}
         </ul>
       </div>
+
+      {selectedDepartment && (
+        <div>
+          <h3 className={'text-xl font-semibold mb-4'}>Редактировать департамент</h3>
+          <input
+            className={'border p-2 mb-4 w-full'}
+            onChange={e => setSelectedDepartment({ ...selectedDepartment, name: e.target.value })}
+            type={'text'}
+            value={selectedDepartment.name}
+          />
+          <button
+            className={'mr-2 bg-blue-500 text-white px-4 py-2'}
+            onClick={() => handleUpdateDepartment(selectedDepartment)}
+          >
+            Сохранить
+          </button>
+          <button className={'bg-gray-300 px-4 py-2'} onClick={() => setSelectedDepartment(null)}>
+            Отмена
+          </button>
+        </div>
+      )}
 
       {transferEmployee && (
         <div className={'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center'}>
           <div className={'bg-white p-6 rounded-md shadow-lg w-full max-w-lg'}>
             <TransferForm
-              departments={departments}
+              departments={departmentList}
               employee={transferEmployee}
-              onCancel={handleCancel}
-              onSubmit={handleTransfer}
+              onCancel={() => setTransferEmployee(null)}
+              onDemote={handleDemoteWorker}
+              onPromote={handlePromoteWorker}
+              onSubmit={handleAssignRop}
+              onTransfer={handleTransferWorker}
             />
-          </div>
-        </div>
-      )}
-
-      {departmentWithoutRop && (
-        <div className={'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center'}>
-          <div className={'bg-white p-6 rounded-md shadow-lg w-full max-w-lg'}>
-            <h3 className={'text-xl font-semibold mb-4'}>
-              Отдел {departmentWithoutRop} остался без РОПа
-            </h3>
-            <p className={'mb-4'}>Назначьте нового РОПа или расформируйте отдел:</p>
-            <div className={'flex justify-between'}>
-              <button
-                className={'mr-4 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600'}
-                onClick={handleDisbandDepartment}
-              >
-                Расформировать отдел
-              </button>
-              <div>
-                <label className={'block text-sm font-medium text-gray-700'}>
-                  Назначить нового РОПа
-                </label>
-                <select
-                  className={'mt-1 block w-full p-2 border border-gray-300 rounded-md'}
-                  onChange={e => handleAssignRop(parseInt(e.target.value, 10))}
-                >
-                  <option value={''}>Выберите менеджера</option>
-                  {workerList
-                    .filter(
-                      worker =>
-                        worker.department === departmentWithoutRop && worker.roleName === 'Менеджер'
-                    )
-                    .map(manager => (
-                      <option key={manager.table_id} value={manager.table_id}>
-                        {manager.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
           </div>
         </div>
       )}

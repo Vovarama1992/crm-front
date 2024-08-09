@@ -16,14 +16,12 @@ export const RootLayout = () => {
 
   const defaultPermissions = {
     common_sales: false,
+    contragents: false,
     departures: false,
     finances: false,
     my_sales: false,
     procurements: false,
-    salary_reports_common: false,
-    salary_reports_himself: false,
-    salary_reports_sellers: false,
-    see_self: false,
+    salary_reports: false,
     summary_table: false,
     suppliers: false,
   }
@@ -37,11 +35,6 @@ export const RootLayout = () => {
   const name = data?.name || ''
   const surname = data?.surname || ''
   const user = data ? { name, surname } : undefined
-
-  console.log('RootLayout rendered')
-
-  console.log('contextValue:', contextValue)
-  console.log('data:', data)
 
   const renderMain = (
     <main

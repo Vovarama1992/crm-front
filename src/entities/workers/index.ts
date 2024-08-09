@@ -1,1 +1,2 @@
-export type { WorkerDto } from './worker.types'
+export * from './workers.api'
+export type { WorkerDto } from './workers.types'
