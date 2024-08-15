@@ -7,12 +7,12 @@ export type WorkerDto = {
   email: string // Электронная почта
   hireDate?: string // Дата принятия на работу (необязательное поле)
   id: number // Уникальный идентификатор работника
-  managed_by?: string // Имя менеджера (необязательное поле)
+  managed_by?: number // Имя менеджера (необязательное поле)
   margin_percent?: number
   middleName: string
   mobile?: string // Мобильный телефон
   name: string // ФИО работника
   position?: string // Должность
   roleName: string
-  salary?: string // Оклад сотрудника (необязательное поле)
+  salary?: number // Оклад сотрудника (необязательное поле)
 }
