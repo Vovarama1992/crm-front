@@ -46,6 +46,14 @@ const departureApi = baseApi.injectEndpoints({
     getSuppliers: builder.query<SupplierDto[], void>({
       query: () => 'suppliers',
     }),
+    updateDeparture: builder.mutation<DepartureDto, { data: Partial<DepartureDto>; id: number }>({
+      invalidatesTags: [DEPARTURE_TAG],
+      query: ({ data, id }) => ({
+        body: data,
+        method: 'PATCH',
+        url: `departures/${id}`,
+      }),
+    }),
     updateSupplier: builder.mutation<SupplierDto, { data: UpdateSupplierDto; id: number }>({
       query: ({ data, id }) => ({
         body: data,
@@ -64,6 +72,7 @@ export const {
   useGetDeparturesByUserQuery,
   useGetDeparturesQuery,
   useGetSuppliersQuery,
+  useUpdateDepartureMutation, // <-- Экспортируем новый хук
   useUpdateSupplierMutation,
   util: departureUtil,
 } = departureApi

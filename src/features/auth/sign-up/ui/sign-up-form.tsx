@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import type { SignUpFormData } from '../model/sign-up-schema'
 
 import { useState } from 'react'
@@ -274,6 +275,17 @@ export const SignUpForm = (props: SignUpFormProps) => {
             type={'text'}
           />
           {errors.address && <span className={'text-red-500'}>{errors.address.message}</span>}
+        </div>
+
+        <div>
+          <label className={'block'}>Зарплата</label>
+          <input
+            className={'border p-2 w-full'}
+            {...register('salary')}
+            placeholder={''}
+            type={'number'}
+          />
+          {errors.salary && <span className={'text-red-500'}>{errors.salary.message}</span>}
         </div>
       </div>
 

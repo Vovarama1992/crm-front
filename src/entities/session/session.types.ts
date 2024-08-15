@@ -32,6 +32,7 @@ export type RegistrationDto = {
   password: string
   position?: string
   roleName: string
+  salary?: number
   surname: string
 }
 

@@ -32,6 +32,7 @@ export const signUpSchema = z.object({
     ),
   position: z.string().optional(),
   roleName: z.string().nonempty('Роль обязательна'),
+  salary: z.number().optional(),
   surname: z.string().nonempty('Фамилия обязательна'),
 })
 

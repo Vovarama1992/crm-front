@@ -4,22 +4,24 @@ import { useCreateDealMutation } from '@/entities/deal/deal.api'
 import { CreateDealDto } from '@/entities/deal/deal.types'
 import { useMeQuery } from '@/entities/session'
 
-const stageOptions = [
-  { label: 'выставлен счет', value: 'INVOICE_SENT' },
+export const stageOptions = [
   { label: 'отправлено КП', value: 'QUOTE_SENT' },
-  { label: 'проигран', value: 'LOST' },
-  { label: 'работа с возражениями(бюрократия)', value: 'WORKING_WITH_OBJECTIONS' },
+  { label: 'работа с возражениями/Бюрократия', value: 'WORKING_WITH_OBJECTIONS' },
+  { label: 'выставлен счёт', value: 'INVOICE_SENT' },
+  { label: 'счёт оплачен/подписана спецификация', value: 'INVOICE_PAID' },
   { label: 'сделка закрыта', value: 'DEAL_CLOSED' },
-  { label: 'счет оплачен', value: 'INVOICE_PAID' },
+  { label: 'проигран', value: 'LOST' },
 ]
 
-const lossReasonOptions = [
+{
+  /*const lossReasonOptions = [
   { label: 'дорого', value: 'EXPENSIVE' },
   { label: 'пустомеля', value: 'EMPTY_TALK' },
   { label: 'нет раппорта', value: 'NO_REPORT' },
   { label: 'недоработал', value: 'DID_NOT_WORK' },
   { label: 'другое', value: 'OTHER' },
-]
+]*/
+}
 
 const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { data: userData } = useMeQuery()
@@ -30,10 +32,10 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     closeDate: null,
     comment: '',
     counterpartyName: '',
-    dealType: 'PURCHASE',
-    lossReason: 'EXPENSIVE',
+    dealType: 'TASK',
     marginRub: 0,
-    stage: 'INVOICE_SENT',
+    requestNumber: 0,
+    stage: 'QUOTE_SENT',
     turnoverRub: 0,
     userId,
   })
@@ -43,7 +45,10 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     setFormData(prevState => ({
       ...prevState,
-      [name]: name === 'marginRub' || name === 'turnoverRub' ? Number(value) : value,
+      [name]:
+        name === 'marginRub' || name === 'turnoverRub' || name === 'requestNumber'
+          ? Number(value)
+          : value,
     }))
   }
 
@@ -60,10 +65,10 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         closeDate: null,
         comment: '',
         counterpartyName: '',
-        dealType: 'PURCHASE',
-        lossReason: 'EXPENSIVE',
+        dealType: 'TASK',
         marginRub: 0,
-        stage: 'INVOICE_SENT',
+        requestNumber: 0,
+        stage: 'QUOTE_SENT',
         turnoverRub: 0,
         userId,
       })
@@ -137,11 +142,11 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 required
                 value={formData.dealType}
               >
-                <option value={'PURCHASE'}>Закупка</option>
-                <option value={'SALE'}>Продажа</option>
+                <option value={'REQUEST'}>Запрос</option>
+                <option value={'TASK'}>Задача</option>
               </select>
             </div>
-            <div className={'mb-4'}>
+            {/*<div className={'mb-4'}>
               <label className={'block text-sm font-bold mb-1'}>Причина проигрыша</label>
               <select
                 className={'w-full border p-2 rounded'}
@@ -156,7 +161,7 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </option>
                 ))}
               </select>
-            </div>
+            </div>*/}
             <div className={'mb-4 col-span-2'}>
               <label className={'block text-sm font-bold mb-1'}>Комментарий</label>
               <input
@@ -175,6 +180,16 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 onChange={handleChange}
                 type={'date'}
                 value={formData.closeDate || ''}
+              />
+            </div>
+            <div className={'mb-4 col-span-2'}>
+              <label className={'block text-sm font-bold mb-1'}>Номер запроса/задачи</label>
+              <input
+                className={'w-full border p-2 rounded'}
+                name={'requestNumber'}
+                onChange={handleChange}
+                type={'number'}
+                value={formData.requestNumber || 0}
               />
             </div>
           </div>

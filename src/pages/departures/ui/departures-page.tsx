@@ -1,10 +1,10 @@
 /* eslint-disable max-lines */
 import React, { useMemo, useState } from 'react'
 
-import { CreateDepartureDto, DepartureDto } from '@/entities/departure'
+import { DepartureDto } from '@/entities/departure'
 import {
-  useCreateDepartureMutation,
   useGetDeparturesQuery,
+  useUpdateDepartureMutation,
 } from '@/entities/departure/departure.api'
 import { useMeQuery } from '@/entities/session'
 import { EditableTable } from '@/shared/ui/EditableTable'
@@ -133,16 +133,10 @@ const columns: CustomColumnDef<DepartureDto>[] = [
 export const DeparturesPage = () => {
   const [filterNumber, setFilterNumber] = useState('')
   const [filterCounterparty, setFilterCounterparty] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const { data: departuresData } = useGetDeparturesQuery()
-  const [createDeparture] = useCreateDepartureMutation()
-
+  const [updateDeparture] = useUpdateDepartureMutation() // Хук для обновления
   const { data } = useMeQuery()
   const activeId = data?.id || 9999
-
-  const updateData = (newData: DepartureDto[]) => {
-    console.log('Updated Data:', newData)
-  }
 
   const handleFilterNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterNumber(e.target.value)
@@ -152,14 +146,14 @@ export const DeparturesPage = () => {
     setFilterCounterparty(e.target.value)
   }
 
-  const handleCreateDeparture = async (newDeparture: CreateDepartureDto) => {
+  const updateData = async (newData: DepartureDto[]) => {
     try {
-      newDeparture.userId = activeId // Устанавливаем userId перед отправкой
-      await createDeparture(newDeparture).unwrap()
-      alert('Отправление успешно создано!')
-      setIsModalOpen(false)
+      for (const departure of newData) {
+        await updateDeparture({ data: departure, id: departure.id }).unwrap()
+      }
+      alert('Отправление успешно обновлено!')
     } catch (error) {
-      console.error('Ошибка при создании отправления:', error)
+      console.error('Ошибка при обновлении отправления:', error)
     }
   }
 
@@ -192,12 +186,6 @@ export const DeparturesPage = () => {
           type={'text'}
           value={filterCounterparty}
         />
-        <button
-          className={'bg-blue-500 text-white px-4 py-2 rounded'}
-          onClick={() => setIsModalOpen(true)}
-        >
-          Создать отправление
-        </button>
       </div>
       <EditableTable
         columns={columns}
@@ -208,7 +196,7 @@ export const DeparturesPage = () => {
           status: statusOptions,
         }}
         tablename={'отправления'}
-        updateData={updateData}
+        updateData={updateData} // Используем обработчик обновления
         user_id={activeId}
         userPermissions={{
           arrivalDate: 'see',
@@ -225,185 +213,7 @@ export const DeparturesPage = () => {
           userId: 'see',
         }}
       />
-      {isModalOpen && (
-        <div className={'fixed inset-0 flex items-center justify-center z-50'}>
-          <div className={'absolute inset-0 bg-gray-900 opacity-50'}></div>
-          <div className={'bg-white p-6 rounded shadow-lg z-10'}>
-            <CreateDepartureForm activeId={activeId} onCreateDeparture={handleCreateDeparture} />
-            <button
-              className={'mt-4 bg-red-500 text-white px-4 py-2 rounded'}
-              onClick={() => setIsModalOpen(false)}
-            >
-              Закрыть
-            </button>
-          </div>
-        </div>
-      )}
     </div>
-  )
-}
-
-const CreateDepartureForm = ({
-  activeId,
-  onCreateDeparture,
-}: {
-  activeId: number
-  onCreateDeparture: (newDeparture: CreateDepartureDto) => void
-}) => {
-  const [formData, setFormData] = useState<CreateDepartureDto>({
-    arrivalDate: null,
-    comments: '',
-    counterpartyId: 0,
-    dealId: 0,
-    destination: 'TO_CLIENT',
-    dispatchDate: '',
-    expectedArrivalDate: null,
-    finalAmount: null,
-    specificDestination: 'TO_TERMINAL',
-    status: 'SENT_ALL',
-    trackingNumber: '',
-    transportCompany: '',
-    userId: activeId,
-  })
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-
-    setFormData(prevState => ({ ...prevState, [name]: value }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const transformedData: CreateDepartureDto = {
-      ...formData,
-      arrivalDate: formData.arrivalDate ? new Date(formData.arrivalDate).toISOString() : null,
-      counterpartyId: Number(formData.counterpartyId),
-      dealId: Number(formData.dealId),
-      dispatchDate: formData.dispatchDate ? new Date(formData.dispatchDate).toISOString() : '',
-      finalAmount: formData.finalAmount !== null ? Number(formData.finalAmount) : null,
-      userId: activeId,
-    }
-
-    onCreateDeparture(transformedData)
-  }
-
-  return (
-    <form className={'p-4 border rounded'} onSubmit={handleSubmit}>
-      <h2 className={'text-xl mb-4'}>Создать новое отправление</h2>
-      <div className={'grid grid-cols-2 gap-4'}>
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'dealId'}
-          onChange={handleChange}
-          placeholder={'Номер'}
-          type={'number'}
-          value={formData.dealId}
-        />
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'counterpartyId'}
-          onChange={handleChange}
-          placeholder={'Контрагент ID'}
-          type={'number'}
-          value={formData.counterpartyId}
-        />
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'transportCompany'}
-          onChange={handleChange}
-          placeholder={'Транспортная компания'}
-          type={'text'}
-          value={formData.transportCompany || ''}
-        />
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'trackingNumber'}
-          onChange={handleChange}
-          placeholder={'Трек номер'}
-          type={'text'}
-          value={formData.trackingNumber || ''}
-        />
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'finalAmount'}
-          onChange={handleChange}
-          placeholder={'Финальная сумма'}
-          type={'number'}
-          value={formData.finalAmount !== null ? formData.finalAmount : ''}
-        />
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'dispatchDate'}
-          onChange={handleChange}
-          placeholder={'Дата отправки'}
-          type={'date'}
-          value={formData.dispatchDate}
-        />
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'arrivalDate'}
-          onChange={handleChange}
-          placeholder={'Дата поступления'}
-          type={'date'}
-          value={formData.arrivalDate || ''}
-        />
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'expectedArrivalDate'}
-          onChange={handleChange}
-          placeholder={'Ожидаемая дата прибытия'}
-          type={'date'}
-          value={formData.expectedArrivalDate || ''}
-        />
-        <select
-          className={'border rounded px-2 py-1'}
-          name={'specificDestination'}
-          onChange={handleChange}
-          value={formData.specificDestination}
-        >
-          {specificDestinationOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select
-          className={'border rounded px-2 py-1'}
-          name={'destination'}
-          onChange={handleChange}
-          value={formData.destination}
-        >
-          {destinationOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <input
-          className={'border rounded px-2 py-1'}
-          name={'comments'}
-          onChange={handleChange}
-          placeholder={'Комментарий'}
-          type={'text'}
-          value={formData.comments || ''}
-        />
-        <select
-          className={'border rounded px-2 py-1'}
-          name={'status'}
-          onChange={handleChange}
-          value={formData.status}
-        >
-          {statusOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <button className={'bg-blue-500 text-white px-4 py-2 rounded mt-4'} type={'submit'}>
-        Создать отправление
-      </button>
-    </form>
   )
 }
 

@@ -3,11 +3,12 @@ export type DealDto = {
   comment: null | string
   counterparty: CounterpartyDto // добавлено
   counterpartyName: string
-  dealType: 'PURCHASE' | 'SALE'
+  dealType: 'REQUEST' | 'TASK'
   id: number
   lossReason?: 'DID_NOT_WORK' | 'EMPTY_TALK' | 'EXPENSIVE' | 'NO_REPORT' | 'OTHER'
   marginRub: number
   purchaseId?: number
+  requestNumber: number
   saleId?: number
   stage:
     | 'DEAL_CLOSED'
@@ -20,7 +21,7 @@ export type DealDto = {
   userId: number
 }
 
-export type CreateDealDto = Omit<DealDto, 'counterparty' | 'id'>
+export type CreateDealDto = Omit<DealDto, 'counterparty' | 'id' | 'lossReason'>
 
 export type CreateCounterpartyDto = {
   inn: string
@@ -73,6 +74,8 @@ export type SaleDto = {
   signingStage?: SigningStage
   userId: number
 }
+
+export type CreateSaleDto = Omit<SaleDto, 'id'>
 
 export type UpdateSaleDto = Partial<SaleDto>
 

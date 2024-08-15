@@ -1,3 +1,4 @@
+import type { UserAuthenticatedDto } from '../session/session.types'
 import type { WorkerDto } from './workers.types'
 
 import { WORKERS_TAG, baseApi } from '@/shared/api'
@@ -82,7 +83,7 @@ const workersApi = baseApi.injectEndpoints({
         url: `users/departments/${body.id}`,
       }),
     }),
-    updateWorker: builder.mutation<WorkerDto, Partial<WorkerDto>>({
+    updateWorker: builder.mutation<WorkerDto, Partial<UserAuthenticatedDto>>({
       invalidatesTags: [WORKERS_TAG],
       query: body => ({
         body,

@@ -3,6 +3,7 @@ import type {
   CreateCounterpartyDto,
   CreateDealDto,
   CreateExpenseDto,
+  CreateSaleDto,
   DealDto,
   ExpenseDto,
   InvoiceLineDto,
@@ -35,6 +36,7 @@ const dealApi = baseApi.injectEndpoints({
         url: '/deals',
       }),
     }),
+
     createExpense: builder.mutation<ExpenseDto, CreateExpenseDto>({
       query: expense => ({
         body: expense,
@@ -42,7 +44,8 @@ const dealApi = baseApi.injectEndpoints({
         url: '/expenses',
       }),
     }),
-    createSale: builder.mutation<SaleDto, Omit<SaleDto, 'id'>>({
+
+    createSale: builder.mutation<SaleDto, CreateSaleDto>({
       query: sale => ({
         body: sale,
         method: 'POST',

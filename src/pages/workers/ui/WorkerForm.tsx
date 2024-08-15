@@ -2,8 +2,10 @@
 import { useState } from 'react'
 
 import { useMeQuery } from '@/entities/session'
+import { useSignUpMutation } from '@/entities/session'
+import { RegistrationDto } from '@/entities/session/session.types'
 import { WorkerDto } from '@/entities/workers'
-import { useCreateWorkerMutation, useUpdateWorkerMutation } from '@/entities/workers'
+import { useUpdateWorkerMutation } from '@/entities/workers'
 
 type WorkerFormProps = {
   existingWorker?: WorkerDto
@@ -17,31 +19,40 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
   const roleName = data?.roleName || ''
   const isDirector = roleName === 'Директор'
 
-  const [createWorker] = useCreateWorkerMutation()
+  const [createWorker] = useSignUpMutation()
   const [updateWorker] = useUpdateWorkerMutation()
 
-  const [formState, setFormState] = useState<WorkerDto>({
+  const [formState, setFormState] = useState<RegistrationDto>({
     birthday: existingWorker?.birthday || '',
     cardNumber: existingWorker?.cardNumber || '',
     department_id: undefined,
-    dobNumber: existingWorker?.dobNumber || undefined,
+    dobNumber: existingWorker?.dobNumber ? Number(existingWorker.dobNumber) : 0,
     email: existingWorker?.email || '',
     hireDate: existingWorker?.hireDate || '',
-    id: existingWorker?.id || 0, // Устанавливается при создании
     margin_percent: existingWorker?.margin_percent || 0.1,
     middleName: existingWorker?.middleName || '',
     mobile: existingWorker?.mobile || '',
     name: existingWorker?.name || '',
+    password: '', // Добавлено поле пароля
     position: existingWorker?.position || '',
     roleName: existingWorker?.roleName || '',
-    salary: existingWorker?.salary || '',
+    salary: Number(existingWorker?.salary),
+    surname: '', // Добавлено поле фамилии
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isDirector) {
+      const { name, value } = e.target
+
       setFormState(prevState => ({
         ...prevState,
-        [e.target.name]: e.target.value,
+        [name]:
+          name === 'dobNumber' ||
+          name === 'department_id' ||
+          name === 'margin_percent' ||
+          name === 'salary'
+            ? Number(value)
+            : value,
       }))
     }
   }
@@ -107,7 +118,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
         </svg>
       </button>
       <div className={'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
-        <div className={'flex  flex-col'}>
+        <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>ФИО</label>
           <input
             className={
@@ -119,6 +130,20 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             required
             type={'text'}
             value={formState.name}
+          />
+        </div>
+        <div className={'flex flex-col'}>
+          <label className={'text-gray-700 text-sm'}>Фамилия</label>
+          <input
+            className={
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
+            }
+            disabled={!isDirector}
+            name={'surname'}
+            onChange={handleChange}
+            required
+            type={'text'}
+            value={formState.surname}
           />
         </div>
         <div className={'flex flex-col'}>
@@ -159,7 +184,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             name={'dobNumber'}
             onChange={handleChange}
             required
-            type={'text'}
+            type={'number'}
             value={formState.dobNumber}
           />
         </div>
@@ -244,7 +269,20 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             value={formState.hireDate || ''}
           />
         </div>
-
+        <div className={'flex flex-col'}>
+          <label className={'text-gray-700 text-sm'}>Пароль</label>
+          <input
+            className={
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
+            }
+            disabled={!isDirector}
+            name={'password'}
+            onChange={handleChange}
+            required
+            type={'password'}
+            value={formState.password}
+          />
+        </div>
         <div className={'flex flex-col col-span-full'}>
           <label className={'text-gray-700 text-sm'}>Роль</label>
           <div className={'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2'}>

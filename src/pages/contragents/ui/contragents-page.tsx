@@ -1,20 +1,14 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { DealDto } from '@/entities/deal'
 import { useGetAllDealsQuery, useUpdateDealMutation } from '@/entities/deal/deal.api'
 import { useMeQuery } from '@/entities/session'
+import { useGetWorkersQuery } from '@/entities/workers'
 
 import NewCounterpartyForm from './NewCounterpartyForm'
+import { stageOptions } from './NewDealForm'
 import NewDealForm from './NewDealForm'
-
-const stageOptions = [
-  { label: 'выставлен счет', value: 'INVOICE_SENT' },
-  { label: 'отправлено КП', value: 'QUOTE_SENT' },
-  { label: 'проигран', value: 'LOST' },
-  { label: 'работа с возражениями(бюрократия)', value: 'WORKING_WITH_OBJECTIONS' },
-  { label: 'сделка закрыта', value: 'DEAL_CLOSED' },
-  { label: 'счет оплачен', value: 'INVOICE_PAID' },
-]
+import { SaleForm } from './Saleform'
 
 const lossReasonOptions = [
   { label: 'дорого', value: 'EXPENSIVE' },
@@ -29,12 +23,48 @@ export const ContragentsPage = () => {
   const userId = userData?.id || 1
 
   const { data: deals = [], refetch } = useGetAllDealsQuery()
+  const { data: users = [] } = useGetWorkersQuery() // Получаем всех пользователей
   const [updateDeal] = useUpdateDealMutation()
 
-  const [filterInn, setFilterInn] = useState('')
-  const [filterCounterparty, setFilterCounterparty] = useState('')
+  const [selectedUserId, setSelectedUserId] = useState<null | number>(userId)
+  const [filterInn, setFilterInn] = useState<string>('')
+  const [filterCounterparty, setFilterCounterparty] = useState<string>('')
+  const [filteredDeals, setFilteredDeals] = useState<DealDto[]>(deals)
+  const [isEditingComment, setIsEditingComment] = useState<null | number>(null)
+  const [commentValue, setCommentValue] = useState<string>('')
+  const [isSaleFormOpen, setIsSaleFormOpen] = useState<boolean>(false)
+  const [currentDeal, setCurrentDeal] = useState<DealDto | null>(null) // Состояние для хранения текущей сделки
+
   const [isDealFormOpen, setIsDealFormOpen] = useState(false)
   const [isCounterpartyFormOpen, setIsCounterpartyFormOpen] = useState(false)
+
+  useEffect(() => {
+    let updatedDeals = deals
+
+    if (selectedUserId !== null) {
+      updatedDeals = updatedDeals.filter(deal => deal.userId === selectedUserId)
+    }
+
+    if (filterInn) {
+      updatedDeals = updatedDeals.filter(deal =>
+        deal.counterparty.inn.toString().includes(filterInn)
+      )
+    }
+
+    if (filterCounterparty) {
+      updatedDeals = updatedDeals.filter(deal =>
+        deal.counterparty.name.toLowerCase().includes(filterCounterparty.toLowerCase())
+      )
+    }
+
+    setFilteredDeals(updatedDeals)
+  }, [selectedUserId, filterInn, filterCounterparty, deals])
+
+  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const userId = e.target.value === 'all' ? null : Number(e.target.value)
+
+    setSelectedUserId(userId)
+  }
 
   const handleFilterInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterInn(e.target.value)
@@ -43,16 +73,6 @@ export const ContragentsPage = () => {
   const handleFilterCounterpartyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterCounterparty(e.target.value)
   }
-
-  const filteredData = useMemo(() => {
-    return deals.filter(
-      deal =>
-        deal.userId === userId &&
-        (!filterInn || deal.counterparty.inn.toString().includes(filterInn)) &&
-        (!filterCounterparty ||
-          deal.counterparty.name.toLowerCase().includes(filterCounterparty.toLowerCase()))
-    )
-  }, [filterInn, filterCounterparty, userId, deals])
 
   const handleFieldChange = async (dealId: number, field: keyof DealDto, value: any) => {
     const deal = deals.find(deal => deal.id === dealId)
@@ -63,6 +83,11 @@ export const ContragentsPage = () => {
       }
 
       try {
+        if (field === 'stage' && value === 'INVOICE_PAID') {
+          setCurrentDeal(deal)
+          setIsSaleFormOpen(true)
+        }
+
         await updateDeal({
           deal: updatedDeal,
           id: dealId,
@@ -74,12 +99,31 @@ export const ContragentsPage = () => {
     }
   }
 
+  const handleCommentClick = (dealId: number, currentComment: string) => {
+    setIsEditingComment(dealId)
+    setCommentValue(currentComment)
+  }
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCommentValue(e.target.value)
+  }
+
+  const handleCommentSubmit = (dealId: number) => {
+    handleFieldChange(dealId, 'comment', commentValue)
+    setIsEditingComment(null)
+  }
+
+  const handleSaleFormClose = () => {
+    setIsSaleFormOpen(false)
+    setCurrentDeal(null)
+  }
+
   return (
     <div className={'absolute left-[1%] w-[94vw] top-[15%]'}>
       <div className={'mb-4 ml-[10%] flex items-center justify-between'}>
-        <div>
+        <div className={'flex space-x-2'}>
           <input
-            className={'border rounded px-2 py-1 mr-2'}
+            className={'border rounded px-2 py-1'}
             onChange={handleFilterInnChange}
             placeholder={'Фильтр по ИНН'}
             type={'text'}
@@ -92,6 +136,18 @@ export const ContragentsPage = () => {
             type={'text'}
             value={filterCounterparty}
           />
+          <select
+            className={'border rounded px-2 py-1'}
+            onChange={handleUserChange}
+            value={selectedUserId !== null ? selectedUserId : 'all'}
+          >
+            <option value={'all'}>Все сотрудники</option>
+            {users.map(user => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <button
@@ -123,11 +179,11 @@ export const ContragentsPage = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredData.map(deal => (
+          {filteredDeals.map(deal => (
             <tr key={deal.id}>
               <td className={'border px-4 py-2'}>{deal.counterparty.name}</td>
               <td className={'border px-4 py-2'}>{deal.counterparty.inn}</td>
-              <td className={'border px-4 py-2'}>{deal.id}</td>
+              <td className={'border px-4 py-2'}>{deal.requestNumber}</td>
               <td className={'border px-4 py-2'}>{deal.turnoverRub}</td>
               <td className={'border px-4 py-2'}>{deal.marginRub}</td>
               <td className={'border px-4 py-2'}>
@@ -156,7 +212,44 @@ export const ContragentsPage = () => {
                   ))}
                 </select>
               </td>
-              <td className={'border px-4 py-2'}>{deal.comment}</td>
+              <td className={'border px-4 py-2'} style={{ width: '200px' }}>
+                {isEditingComment === deal.id ? (
+                  <div>
+                    <input
+                      autoFocus
+                      className={'border rounded px-2 py-1'}
+                      onBlur={() => handleCommentSubmit(deal.id)}
+                      onChange={handleCommentChange}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          handleCommentSubmit(deal.id)
+                        }
+                      }}
+                      style={{ boxSizing: 'border-box', width: '80%' }}
+                      type={'text'}
+                      value={commentValue}
+                    />
+                  </div>
+                ) : (
+                  <span
+                    className={'block overflow-hidden overflow-ellipsis'}
+                    onClick={() => handleCommentClick(deal.id, deal.comment || '')}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
+                    style={{
+                      backgroundColor: '#f9f9f9',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      maxWidth: '80%',
+                      padding: '2px 4px',
+                      transition: 'background-color 0.2s',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {deal.comment || 'Добавить комментарий'}
+                  </span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -164,6 +257,15 @@ export const ContragentsPage = () => {
       {isDealFormOpen && <NewDealForm onClose={() => setIsDealFormOpen(false)} />}
       {isCounterpartyFormOpen && (
         <NewCounterpartyForm onClose={() => setIsCounterpartyFormOpen(false)} />
+      )}
+      {isSaleFormOpen && currentDeal && (
+        <SaleForm
+          counterpartyId={currentDeal.counterparty.id}
+          dealId={currentDeal.id}
+          onClose={handleSaleFormClose}
+          saleAmount={currentDeal.turnoverRub}
+          userId={currentDeal.userId}
+        />
       )}
     </div>
   )
