@@ -1,7 +1,13 @@
+export type UserDto = {
+  department_id: number
+  id: number
+  name: string
+}
+
 export type DealDto = {
   closeDate: null | string
   comment: null | string
-  counterparty: CounterpartyDto // добавлено
+  counterparty: CounterpartyDto // Информация о контрагенте
   counterpartyName: string
   dealType: 'REQUEST' | 'TASK'
   id: number
@@ -18,10 +24,11 @@ export type DealDto = {
     | 'QUOTE_SENT'
     | 'WORKING_WITH_OBJECTIONS'
   turnoverRub: number
+  user: UserDto // Добавлено поле для пользователя
   userId: number
 }
 
-export type CreateDealDto = Omit<DealDto, 'counterparty' | 'id' | 'lossReason'>
+export type CreateDealDto = Omit<DealDto, 'counterparty' | 'id' | 'lossReason' | 'user'>
 
 export type CreateCounterpartyDto = {
   inn: string

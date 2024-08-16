@@ -7,7 +7,7 @@ export type DepartmentDto = {
   id: number
   name: string
   ropId?: number
-  workers: WorkerDto[]
+  users: WorkerDto[]
 }
 
 const workersApi = baseApi.injectEndpoints({
@@ -61,6 +61,12 @@ const workersApi = baseApi.injectEndpoints({
         url: '/users/fired',
       }),
     }),
+    getWorkerById: builder.query<WorkerDto, number>({
+      providesTags: [WORKERS_TAG],
+      query: id => ({
+        url: `/users/${id}`,
+      }),
+    }),
     getWorkers: builder.query<WorkerDto[], void>({
       providesTags: [WORKERS_TAG],
       query: () => ({
@@ -103,6 +109,7 @@ export const {
   useGetActiveQuery,
   useGetDepartmentsQuery,
   useGetFiredWorkersQuery,
+  useGetWorkerByIdQuery, // Новый хук для получения пользователя по ID
   useGetWorkersQuery,
   useRestoreWorkerMutation,
   useUpdateDepartmentMutation,

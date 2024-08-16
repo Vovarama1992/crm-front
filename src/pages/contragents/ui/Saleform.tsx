@@ -1,65 +1,52 @@
 import React, { useState } from 'react'
 
+import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
-import { DeliveryStage, SigningStage } from '@/entities/deal/deal.types'
 
 export type SaleFormProps = {
-  counterpartyId: number
-  dealId: number
-  onClose: () => void
-  saleAmount: number // Наследуем значение оборота из сделки
-  userId: number
+  dealId: number // Пропс для dealId
+  onClose: () => void // Функция закрытия формы
+  saleAmount: number // Пропс для saleAmount
+  userId: number // Пропс для userId
 }
 
-// Отображение русских версий стадий
-const deliveryStageOptions = {
-  [DeliveryStage.IN_STOCK]: 'На складе',
-  [DeliveryStage.ITEM_DELIVERED_FULL]: 'Товар доставлен полностью',
-  [DeliveryStage.ITEM_DELIVERED_PARTIAL]: 'Товар доставлен частично',
-  [DeliveryStage.ITEM_SENT]: 'Товар отправлен',
-  [DeliveryStage.PURCHASED_FOR_ORDER]: 'Закуплено для заказа',
-  [DeliveryStage.RETURN]: 'Возврат',
-}
-
-const signingStageOptions = {
-  [SigningStage.SIGNED_IN_EDO]: 'Подписано в ЭДО',
-  [SigningStage.SIGNED_ON_PAPER]: 'Подписано на бумаге',
-}
-
-export const SaleForm: React.FC<SaleFormProps> = ({
-  counterpartyId,
-  dealId,
-  onClose,
-  saleAmount, // Получаем значение из сделки
-  userId,
-}) => {
+export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount, userId }) => {
+  const [selectedCounterpartyId, setSelectedCounterpartyId] = useState<null | number>(null)
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [logisticsCost, setLogisticsCost] = useState<number | undefined>(undefined)
-  const [purchaseCost, setPurchaseCost] = useState<number | undefined>(undefined)
-  const [margin, setMargin] = useState<number | undefined>(undefined)
-  const [deliveryStage, setDeliveryStage] = useState<DeliveryStage>(
-    DeliveryStage.PURCHASED_FOR_ORDER
-  )
-  const [signingStage, setSigningStage] = useState<SigningStage>(SigningStage.SIGNED_IN_EDO)
+  const [inn, setInn] = useState('') // Состояние для ИНН
 
-  console.log('conterparty: ' + counterpartyId)
+  const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const [createSale] = useCreateSaleMutation()
+
+  const handleCounterpartyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = Number(e.target.value)
+
+    setSelectedCounterpartyId(selectedId)
+
+    const selectedCounterparty = counterparties.find((cp: any) => cp.id === selectedId)
+
+    setInn(selectedCounterparty?.inn || '') // Автоматически заполняем ИНН
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const saleData = {
-      counterpartyId,
+    if (selectedCounterpartyId === null) {
+      alert('Выберите контрагента!')
+
+      return
+    }
+
+    const saleData: any = {
+      counterpartyId: selectedCounterpartyId,
       date: new Date().toISOString(),
-      dealId,
-      deliveryStage,
+      dealId, // Используем переданный dealId
       invoiceNumber,
-      logisticsCost,
-      margin,
-      purchaseCost,
-      saleAmount, // Наследуемое значение оборота
-      signingStage,
-      userId,
+      logisticsCost: 0, // Дефолтное значение
+      margin: 0, // Дефолтное значение
+      purchaseCost: 0, // Дефолтное значение
+      saleAmount, // Используем переданный saleAmount
+      userId, // Используем переданный userId
     }
 
     try {
@@ -77,6 +64,30 @@ export const SaleForm: React.FC<SaleFormProps> = ({
       <h2 className={'text-lg font-bold mb-4'}>Создание продажи</h2>
 
       <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
+        <select
+          className={'border rounded p-2 w-full'}
+          onChange={handleCounterpartyChange}
+          required
+          value={selectedCounterpartyId || ''}
+        >
+          <option disabled value={''}>
+            Выберите контрагента
+          </option>
+          {counterparties.map((counterparty: any) => (
+            <option key={counterparty.id} value={counterparty.id}>
+              {counterparty.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>ИНН</label>
+        <input className={'border rounded p-2 w-full'} readOnly type={'text'} value={inn} />
+      </div>
+
+      <div className={'mb-4'}>
         <label className={'block text-sm font-bold mb-1'}>Номер счёта</label>
         <input
           className={'border rounded p-2 w-full'}
@@ -84,66 +95,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({
           type={'text'}
           value={invoiceNumber}
         />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Стоимость логистики</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setLogisticsCost(Number(e.target.value))}
-          type={'number'}
-          value={logisticsCost || ''}
-        />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Стоимость закупки</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setPurchaseCost(Number(e.target.value))}
-          type={'number'}
-          value={purchaseCost || ''}
-        />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Маржа</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setMargin(Number(e.target.value))}
-          type={'number'}
-          value={margin || ''}
-        />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Стадия доставки</label>
-        <select
-          className={'border rounded p-2 w-full'}
-          onChange={e => setDeliveryStage(e.target.value as DeliveryStage)}
-          value={deliveryStage}
-        >
-          {Object.entries(deliveryStageOptions).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Стадия подписания</label>
-        <select
-          className={'border rounded p-2 w-full'}
-          onChange={e => setSigningStage(e.target.value as SigningStage)}
-          value={signingStage}
-        >
-          {Object.entries(signingStageOptions).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <button className={'bg-blue-500 ml-[300px] text-white px-4 py-2 rounded'} type={'submit'}>

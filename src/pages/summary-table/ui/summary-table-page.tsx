@@ -1,36 +1,33 @@
-/* eslint-disable no-nested-ternary */
-/* eslint-disable react-hooks/rules-of-hooks */
 import type { AuthContext } from '@/app/providers/router/types'
 
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
-import {
-  useGetAllDealsQuery,
-  useGetDealsByDepartmentQuery,
-  useGetDealsByUserIdQuery,
-} from '@/entities/deal/deal.api'
+import { useGetAllDealsQuery } from '@/entities/deal'
 import { useMeQuery } from '@/entities/session'
-import { EditableTable } from '@/shared/ui/EditableTable'
-import { ColumnDef } from '@tanstack/react-table'
+import { useGetDepartmentsQuery } from '@/entities/workers'
+import { CustomColumnDef, EditableTable } from '@/shared/ui/EditableTable'
 
 export type SummaryDto = {
   closeDate: null | string
   comment: null | string
   counterpartyName: string
+  departmentId: number
   id: number
   marginRub: number
+  specialistName: string
   stage: string
   turnoverRub: number
+  userId: number
 }
 
-interface CustomColumnMeta {
-  type?: 'input' | 'select'
-}
-
-interface CustomColumnDef<TData> extends Omit<ColumnDef<TData, unknown>, 'meta'> {
-  accessorKey: keyof TData
-  meta?: CustomColumnMeta
+const stageOptions: { [key: string]: string } = {
+  DEAL_CLOSED: 'сделка закрыта',
+  INVOICE_PAID: 'счет оплачен',
+  INVOICE_SENT: 'выставлен счет',
+  LOST: 'проигран',
+  QUOTE_SENT: 'отправлено КП',
+  WORKING_WITH_OBJECTIONS: 'работа с возражениями(бюрократия)',
 }
 
 const userPermissions: { [key: string]: 'change' | 'null' | 'see' } = {
@@ -42,103 +39,113 @@ const userPermissions: { [key: string]: 'change' | 'null' | 'see' } = {
   turnoverRub: 'see',
 }
 
-const stageOptions = {
-  DEAL_CLOSED: 'сделка закрыта',
-  INVOICE_PAID: 'счет оплачен',
-  INVOICE_SENT: 'выставлен счет',
-  LOST: 'проигран',
-  QUOTE_SENT: 'отправлено КП',
-  WORKING_WITH_OBJECTIONS: 'работа с возражениями(бюрократия)',
-}
-
-const columns: CustomColumnDef<SummaryDto>[] = [
-  {
-    accessorKey: 'counterpartyName',
-    cell: info => info.getValue(),
-    header: 'Контрагент',
-    meta: { type: 'input' },
-  },
-  {
-    accessorKey: 'turnoverRub',
-    cell: info => info.getValue(),
-    header: 'Оборот в рублях',
-    meta: { type: 'input' },
-  },
-  {
-    accessorKey: 'marginRub',
-    cell: info => info.getValue(),
-    header: 'Маржа в рублях',
-    meta: { type: 'input' },
-  },
-  {
-    accessorKey: 'stage',
-    cell: info => stageOptions[info.getValue() as keyof typeof stageOptions],
-    header: 'Стадия сделки',
-    meta: { type: 'input' },
-  },
-  {
-    accessorKey: 'closeDate',
-    cell: info => info.getValue(),
-    header: 'Дата закрытия',
-    meta: { type: 'input' },
-  },
-  {
-    accessorKey: 'comment',
-    cell: info => info.getValue(),
-    header: 'Комментарий',
-    meta: { type: 'input' },
-  },
-]
-
 export const SummaryTablePage = () => {
   const [filterCounterparty, setFilterCounterparty] = useState('')
+  const [selectedDepartment, setSelectedDepartment] = useState<null | number>(null)
 
   const context = useOutletContext<AuthContext>()
   const { permissions } = context
 
   const { data: userData } = useMeQuery()
-  const userId = userData?.id
-  const roleName = userData?.roleName
-  const departmentId = userData?.department_id
+  const { data: deals = [] } = useGetAllDealsQuery()
+  const { data: departments = [] } = useGetDepartmentsQuery()
 
-  const { data: deals = [], refetch } =
-    roleName === 'РОП' && userId && departmentId
-      ? useGetDealsByDepartmentQuery(String(departmentId))
-      : roleName === 'Закупщик' || roleName === 'Директор'
-        ? useGetAllDealsQuery()
-        : useGetDealsByUserIdQuery(String(userId))
+  const filteredData: SummaryDto[] = deals
+    .filter(deal => {
+      if (userData?.roleName === 'РОП' && userData.department_id !== deal.user.department_id) {
+        return false
+      }
+      if (
+        userData?.roleName !== 'Директор' &&
+        userData?.roleName !== 'Закупщик' &&
+        deal.userId !== userData?.id
+      ) {
+        return false
+      }
+      if (selectedDepartment && deal.user.department_id !== selectedDepartment) {
+        return false
+      }
+      if (
+        filterCounterparty &&
+        !deal.counterparty.name.toLowerCase().includes(filterCounterparty.toLowerCase())
+      ) {
+        return false
+      }
 
-  const isCommonViewer = permissions.summary_table
+      return true
+    })
+    .map(deal => ({
+      closeDate: deal.closeDate,
+      comment: deal.comment,
+      counterpartyName: deal.counterparty.name,
+      departmentId: deal.user.department_id,
+      id: deal.id,
+      marginRub: deal.marginRub,
+      specialistName: deal.user.name,
+      stage: stageOptions[deal.stage],
+      turnoverRub: deal.turnoverRub,
+      userId: deal.userId,
+    }))
 
   const handleFilterCounterpartyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterCounterparty(e.target.value)
   }
 
-  const filteredData = useMemo(() => {
-    return deals
-      .filter(
-        deal =>
-          !filterCounterparty ||
-          deal.counterparty.name.toLowerCase().includes(filterCounterparty.toLowerCase())
-      )
-      .map(deal => ({
-        closeDate: deal.closeDate,
-        comment: deal.comment,
-        counterpartyName: deal.counterparty.name,
-        id: deal.id,
-        marginRub: deal.marginRub,
-        stage: stageOptions[deal.stage],
-        turnoverRub: deal.turnoverRub,
-      }))
-  }, [filterCounterparty, deals])
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedDepartment(Number(e.target.value))
+  }
 
   const totalDepartmentTurnover = filteredData.reduce((total, item) => total + item.turnoverRub, 0)
   const totalDepartmentProfit = filteredData.reduce((total, item) => total + item.marginRub, 0)
 
   const updateData = (newData: SummaryDto[]) => {
     console.log('Updated Data:', newData)
-    refetch()
   }
+
+  const columns: CustomColumnDef<SummaryDto>[] = [
+    {
+      accessorKey: 'specialistName',
+      cell: info => info.getValue(),
+      header: 'Имя специалиста',
+      meta: { type: 'input' },
+    },
+    {
+      accessorKey: 'counterpartyName',
+      cell: info => info.getValue(),
+      header: 'Контрагент',
+      meta: { type: 'input' },
+    },
+    {
+      accessorKey: 'turnoverRub',
+      cell: info => info.getValue(),
+      header: 'Оборот в рублях',
+      meta: { type: 'input' },
+    },
+    {
+      accessorKey: 'marginRub',
+      cell: info => info.getValue(),
+      header: 'Маржа в рублях',
+      meta: { type: 'input' },
+    },
+    {
+      accessorKey: 'stage',
+      cell: info => stageOptions[info.getValue() as keyof typeof stageOptions],
+      header: 'Стадия сделки',
+      meta: { type: 'input' },
+    },
+    {
+      accessorKey: 'closeDate',
+      cell: info => info.getValue(),
+      header: 'Дата закрытия',
+      meta: { type: 'input' },
+    },
+    {
+      accessorKey: 'comment',
+      cell: info => info.getValue(),
+      header: 'Комментарий',
+      meta: { type: 'input' },
+    },
+  ]
 
   return (
     <div className={'absolute w-[94vw] left-[1%] top-[15%]'}>
@@ -150,16 +157,30 @@ export const SummaryTablePage = () => {
           type={'text'}
           value={filterCounterparty}
         />
+        {(userData?.roleName === 'Закупщик' || userData?.roleName === 'Директор') && (
+          <select
+            className={'border rounded px-2 py-1 ml-4'}
+            onChange={handleDepartmentChange}
+            value={selectedDepartment || ''}
+          >
+            <option value={''}>Все отделы</option>
+            {departments.map((department: any) => (
+              <option key={department.id} value={department.id}>
+                {department.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
       <EditableTable
         columns={columns}
         data={filteredData}
         tablename={'сводная таблица'}
         updateData={updateData}
-        user_id={userId || 1}
+        user_id={userData?.id || 1}
         userPermissions={userPermissions}
       />
-      {isCommonViewer && (
+      {permissions.summary_table && (
         <SummaryFooterTable
           totalDepartmentProfit={totalDepartmentProfit}
           totalDepartmentTurnover={totalDepartmentTurnover}

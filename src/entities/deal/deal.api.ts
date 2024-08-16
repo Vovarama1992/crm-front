@@ -29,6 +29,7 @@ const dealApi = baseApi.injectEndpoints({
         url: '/counterparties',
       }),
     }),
+
     createDeal: builder.mutation<DealDto, CreateDealDto>({
       query: deal => ({
         body: deal,
@@ -50,6 +51,12 @@ const dealApi = baseApi.injectEndpoints({
         body: sale,
         method: 'POST',
         url: '/sales',
+      }),
+    }),
+
+    getAllCounterparties: builder.query<CounterpartyDto[], void>({
+      query: () => ({
+        url: '/counterparties',
       }),
     }),
     getAllDeals: builder.query<DealDto[], void>({
@@ -204,6 +211,7 @@ export const {
   useCreateDealMutation,
   useCreateExpenseMutation,
   useCreateSaleMutation,
+  useGetAllCounterpartiesQuery,
   useGetAllDealsQuery,
   useGetAllExpensesQuery,
   useGetAllPurchasesQuery,

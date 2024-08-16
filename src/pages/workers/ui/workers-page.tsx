@@ -32,6 +32,14 @@ export const WorkersPage: React.FC = () => {
     setSearchEmail(e.target.value)
   }
 
+  // Фильтрация работников по имени и электронной почте
+  const filteredWorkers = workers.filter(worker => {
+    const matchesName = worker.name.toLowerCase().includes(searchName.toLowerCase())
+    const matchesEmail = worker.email.toLowerCase().includes(searchEmail.toLowerCase())
+
+    return matchesName && matchesEmail
+  })
+
   if (isLoading) {
     return <div>Loading...</div>
   }
@@ -64,7 +72,7 @@ export const WorkersPage: React.FC = () => {
         </Link>
       </div>
 
-      <EmployeeTable roleName={roleName} workers={workers} />
+      <EmployeeTable roleName={roleName} workers={filteredWorkers} />
     </div>
   )
 }

@@ -18,6 +18,15 @@ const lossReasonOptions = [
   { label: 'другое', value: 'OTHER' },
 ]
 
+const stageToPercentageMap: { [key: string]: number } = {
+  DEAL_CLOSED: 100,
+  INVOICE_PAID: 90,
+  INVOICE_SENT: 80,
+  LOST: 0,
+  QUOTE_SENT: 50,
+  WORKING_WITH_OBJECTIONS: 60,
+}
+
 export const ContragentsPage = () => {
   const { data: userData } = useMeQuery()
   const userId = userData?.id || 1
@@ -173,6 +182,7 @@ export const ContragentsPage = () => {
             <th className={'px-4 py-2'}>Оборот в рублях</th>
             <th className={'px-4 py-2'}>Маржа в рублях</th>
             <th className={'px-4 py-2'}>Стадия сделки</th>
+            <th className={'px-4 py-2'}>Этап</th>
             <th className={'px-4 py-2'}>Дата закрытия</th>
             <th className={'px-4 py-2'}>Причина проигрыша</th>
             <th className={'px-4 py-2'}>Комментарий</th>
@@ -198,6 +208,7 @@ export const ContragentsPage = () => {
                   ))}
                 </select>
               </td>
+              <td className={'border px-4 py-2'}>{stageToPercentageMap[deal.stage] || 0}%</td>
               <td className={'border px-4 py-2'}>{deal.closeDate}</td>
               <td className={'border px-4 py-2'}>
                 <select
@@ -260,7 +271,6 @@ export const ContragentsPage = () => {
       )}
       {isSaleFormOpen && currentDeal && (
         <SaleForm
-          counterpartyId={currentDeal.counterparty.id}
           dealId={currentDeal.id}
           onClose={handleSaleFormClose}
           saleAmount={currentDeal.turnoverRub}

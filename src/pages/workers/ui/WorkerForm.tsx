@@ -119,7 +119,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
       </button>
       <div className={'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
         <div className={'flex flex-col'}>
-          <label className={'text-gray-700 text-sm'}>ФИО</label>
+          <label className={'text-gray-700 text-sm'}>Имя</label>
           <input
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
