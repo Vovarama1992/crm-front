@@ -56,7 +56,8 @@ export const StructurePage = () => {
     {
       ...virtualDepartments[2],
       workers: workersData.filter(
-        worker => !worker.department_id && worker.roleName === 'Менеджер'
+        worker =>
+          !worker.department_id && (worker.roleName === 'Менеджер' || worker.roleName === 'РОП')
       ),
     },
   ]
@@ -77,6 +78,23 @@ export const StructurePage = () => {
 
   const handleFormSubmit = () => {
     window.location.reload() // Перезагружаем страницу после отправки формы
+  }
+
+  const handleCreateDepartmentForRop = async (worker: WorkerDto) => {
+    const departmentName = prompt('Введите название нового отдела:')
+
+    if (departmentName) {
+      const newDepartment = await createDepartment({ name: departmentName, ropId: worker.id })
+
+      if (newDepartment.data) {
+        await updateWorker({
+          ...worker,
+          department_id: newDepartment.data.id,
+          roleName: 'РОП',
+        })
+        handleFormSubmit()
+      }
+    }
   }
 
   return (
@@ -112,7 +130,17 @@ export const StructurePage = () => {
                     </button>
                   </>
                 )}
-                {worker.roleName === 'РОП' && (
+                {worker.roleName === 'РОП' && !worker.department_id && (
+                  <>
+                    <button
+                      className={'ml-2 text-purple-500'}
+                      onClick={() => handleCreateDepartmentForRop(worker)}
+                    >
+                      Создать отдел
+                    </button>
+                  </>
+                )}
+                {worker.roleName === 'РОП' && worker.department_id && (
                   <>
                     <button
                       className={'ml-2 text-red-500'}
