@@ -15,4 +15,5 @@ export type WorkerDto = {
   position?: string // Должность
   roleName: string
   salary?: number // Оклад сотрудника (необязательное поле)
+  surname: string
 }

@@ -4,8 +4,8 @@ import {
   useCreateDepartmentMutation,
   useDeleteDepartmentMutation,
   useFireWorkerMutation,
+  useGetActiveQuery,
   useGetDepartmentsQuery,
-  useGetWorkersQuery,
   useUpdateWorkerMutation,
 } from '@/entities/workers'
 import { WorkerDto } from '@/entities/workers'
@@ -14,7 +14,7 @@ import TransferForm from './TransferForm'
 
 export const StructurePage = () => {
   const { data: departmentsData } = useGetDepartmentsQuery()
-  const { data: workersData } = useGetWorkersQuery()
+  const { data: workersData } = useGetActiveQuery()
 
   const [deleteDepartment] = useDeleteDepartmentMutation()
   const [createDepartment] = useCreateDepartmentMutation()
@@ -57,7 +57,10 @@ export const StructurePage = () => {
       ...virtualDepartments[2],
       workers: workersData.filter(
         worker =>
-          !worker.department_id && (worker.roleName === 'Менеджер' || worker.roleName === 'РОП')
+          !worker.department_id &&
+          (worker.roleName === 'Менеджер' ||
+            worker.roleName === 'РОП' ||
+            worker.roleName === 'Логист')
       ),
     },
   ]
@@ -107,8 +110,8 @@ export const StructurePage = () => {
           <ul className={'list-disc pl-6'}>
             {department.workers.map(worker => (
               <li className={'mb-2'} key={worker.id}>
-                {worker.name} {worker.roleName === 'РОП' && '(Руководитель отдела)'}
-                {worker.roleName === 'Менеджер' && (
+                {worker.name} {worker.middleName} {worker.surname} ({worker.roleName})
+                {(worker.roleName === 'Менеджер' || worker.roleName === 'Логист') && ( // Добавлено условие для Логистов
                   <>
                     <button
                       className={'ml-2 text-red-500'}
@@ -122,12 +125,14 @@ export const StructurePage = () => {
                     >
                       Перевести
                     </button>
-                    <button
-                      className={'ml-2 text-blue-500'}
-                      onClick={() => handleWorkerAction(worker, 'promote')}
-                    >
-                      Поднять до РОПа
-                    </button>
+                    {worker.roleName === 'Менеджер' && (
+                      <button
+                        className={'ml-2 text-blue-500'}
+                        onClick={() => handleWorkerAction(worker, 'promote')}
+                      >
+                        Поднять до РОПа
+                      </button>
+                    )}
                   </>
                 )}
                 {worker.roleName === 'РОП' && !worker.department_id && (

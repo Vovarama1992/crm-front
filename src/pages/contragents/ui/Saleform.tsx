@@ -14,6 +14,12 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
   const [selectedCounterpartyId, setSelectedCounterpartyId] = useState<null | number>(null)
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [inn, setInn] = useState('') // Состояние для ИНН
+  const [deliveryDeadline, setDeliveryDeadline] = useState('') // Крайняя дата поставки
+  const [prepaymentAmount, setPrepaymentAmount] = useState('') // Сумма предоплаты
+  const [amountPaidNow, setAmountPaidNow] = useState('') // Оплачено сейчас
+  const [isFinalAmount, setIsFinalAmount] = useState(false) // Финальная сумма (чекбокс)
+  const [totalSaleAmount, setTotalSaleAmount] = useState('') // Общая сумма продажи
+  const [isIndependentDeal, setIsIndependentDeal] = useState(false) // Самостоятельная сделка (чекбокс)
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const [createSale] = useCreateSaleMutation()
@@ -37,9 +43,10 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
       return
     }
 
+    // Данные, которые будут отправлены (без новых полей)
     const saleData: any = {
       counterpartyId: selectedCounterpartyId,
-      date: new Date().toISOString(),
+      date: new Date().toISOString(), // Текущая дата
       dealId, // Используем переданный dealId
       invoiceNumber,
       logisticsCost: 0, // Дефолтное значение
@@ -97,9 +104,73 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
         />
       </div>
 
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Крайняя дата поставки</label>
+        <input
+          className={'border rounded p-2 w-full'}
+          onChange={e => setDeliveryDeadline(e.target.value)}
+          type={'date'}
+          value={deliveryDeadline}
+        />
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Сумма предоплаты</label>
+        <input
+          className={'border rounded p-2 w-full'}
+          onChange={e => setPrepaymentAmount(e.target.value)}
+          type={'number'}
+          value={prepaymentAmount}
+        />
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Оплачено сейчас</label>
+        <input
+          className={'border rounded p-2 w-full'}
+          onChange={e => setAmountPaidNow(e.target.value)}
+          type={'number'}
+          value={amountPaidNow}
+        />
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'inline-flex items-center'}>
+          <input
+            checked={isFinalAmount}
+            onChange={() => setIsFinalAmount(!isFinalAmount)}
+            type={'checkbox'}
+          />
+          <span className={'ml-2'}>Финальная сумма</span>
+        </label>
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Общая сумма продажи</label>
+        <input
+          className={'border rounded p-2 w-full'}
+          onChange={e => setTotalSaleAmount(e.target.value)}
+          type={'number'}
+          value={totalSaleAmount}
+        />
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'inline-flex items-center'}>
+          <input
+            checked={isIndependentDeal}
+            onChange={() => setIsIndependentDeal(!isIndependentDeal)}
+            type={'checkbox'}
+          />
+          <span className={'ml-2'}>Самостоятельная сделка</span>
+        </label>
+      </div>
+
       <button className={'bg-blue-500 ml-[300px] text-white px-4 py-2 rounded'} type={'submit'}>
         Создать продажу
       </button>
     </form>
   )
 }
+
+export default SaleForm

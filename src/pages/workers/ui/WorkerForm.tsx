@@ -133,6 +133,20 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
           />
         </div>
         <div className={'flex flex-col'}>
+          <label className={'text-gray-700 text-sm'}>Отчество</label>
+          <input
+            className={
+              'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
+            }
+            disabled={!isDirector}
+            name={'middleName'}
+            onChange={handleChange}
+            required
+            type={'text'}
+            value={formState.middleName}
+          />
+        </div>
+        <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Фамилия</label>
           <input
             className={
