@@ -28,7 +28,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months }) => {
       <thead>
         <tr>
           <th className={'border px-4 py-2 bg-gray-100'} rowSpan={2}>
-            Фамилия
+            Сотрудник
           </th>
           {months.map((month, index) => (
             <th

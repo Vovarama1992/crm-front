@@ -3,23 +3,11 @@ import type { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.
 
 import React, { useEffect, useMemo, useState } from 'react'
 
-import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
+import { useGetAllSalesQuery } from '@/entities/deal'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
-const translatedDeliveryStage: Record<DeliveryStage, string> = {
-  IN_STOCK: 'На складе',
-  ITEM_DELIVERED_FULL: 'Доставлен товар весь',
-  ITEM_DELIVERED_PARTIAL: 'Доставлен товар частично',
-  ITEM_SENT: 'Отправлен товар',
-  PURCHASED_FOR_ORDER: 'Закуплено под заказ',
-  RETURN: 'Возврат',
-}
-
-const translatedSigningStage: Record<SigningStage, string> = {
-  SIGNED_IN_EDO: 'Подписано в ЭДО',
-  SIGNED_ON_PAPER: 'Подписано на бумаге',
-}
+import { SalesEditForm } from './SalesEditForm'
 
 const months = [
   { label: 'Январь', value: 1 },
@@ -36,25 +24,56 @@ const months = [
   { label: 'Декабрь', value: 12 },
 ]
 
+const translatedDeliveryStage: Record<DeliveryStage, string> = {
+  IN_STOCK: 'На складе',
+  ITEM_DELIVERED_FULL: 'Доставлен товар весь',
+  ITEM_DELIVERED_PARTIAL: 'Доставлен товар частично',
+  ITEM_SENT: 'Отправлен товар',
+  PURCHASED_FOR_ORDER: 'Закуплено под заказ',
+  RETURN: 'Возврат',
+}
+
+const translatedSigningStage: Record<SigningStage, string> = {
+  SIGNED_IN_EDO: 'Подписано в ЭДО',
+  SIGNED_ON_PAPER: 'Подписано на бумаге',
+}
+
 export const SalesListPage = () => {
   const { data: meData } = useMeQuery()
   const { data: salesData } = useGetAllSalesQuery()
   const { data: workersData } = useGetWorkersQuery()
-  const [updateSale] = useUpdateSaleMutation()
-  const userRole = meData?.roleName || ''
   const userId = meData?.id || null
   const percent = 0.1
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(userId)
-  const [selectedStartMonth, setSelectedStartMonth] = useState<string>('8') // Изначально выбран июль
-  const [selectedEndMonth, setSelectedEndMonth] = useState<string>('8') // Изначально выбран июль
-  const [selectedYear, setSelectedYear] = useState<string>('2024') // Изначально выбран 2024 год
+  const [selectedStartMonth, setSelectedStartMonth] = useState<string>('8')
+  const [selectedEndMonth, setSelectedEndMonth] = useState<string>('8')
+  const [selectedYear, setSelectedYear] = useState<string>('2024')
+  const [editingSale, setEditingSale] = useState<SaleDto | null>(null)
 
   const [sales, setSales] = useState<SaleDto[]>([])
 
+  // Здесь добавляем useEffect для обработки дублирования
   useEffect(() => {
     if (salesData) {
-      setSales(salesData)
+      // Обработка дублирования записей с заполненным статусом
+      const processedSales = salesData.flatMap(sale => {
+        if (sale.signingStage) {
+          return [
+            sale,
+            {
+              ...sale,
+              margin: undefined,
+              signingStage: undefined,
+              statusSetDate: undefined,
+            },
+          ]
+        }
+
+        return [sale]
+      })
+
+      setSales(processedSales)
     }
   }, [salesData])
 
@@ -74,14 +93,6 @@ export const SalesListPage = () => {
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(event.target.value)
-  }
-
-  const handleUpdateSale = (id: number, field: string, value: string) => {
-    updateSale({ id, sale: { [field]: value } }).then(() => {
-      setSales(prevSales =>
-        prevSales.map(sale => (sale.id === id ? { ...sale, [field]: value } : sale))
-      )
-    })
   }
 
   const filteredSalesByMonth = useMemo(() => {
@@ -126,6 +137,10 @@ export const SalesListPage = () => {
         },
         { earned: 0, margin: 0, saleAmount: 0 }
       )
+      // Округление значений до 2 знаков после запятой
+      statsByMonth[key].earned = parseFloat(statsByMonth[key].earned.toFixed(2))
+      statsByMonth[key].margin = parseFloat(statsByMonth[key].margin.toFixed(2))
+      statsByMonth[key].saleAmount = parseFloat(statsByMonth[key].saleAmount.toFixed(2))
     })
 
     return statsByMonth
@@ -174,11 +189,9 @@ export const SalesListPage = () => {
         </div>
       </div>
       {Object.entries(filteredSalesByMonth).map(([key, sales]) => {
-        const [month, year] = key.split('-')
-
         return (
           <div key={key}>
-            <h2>{`${months[Number(month) - 1].label} ${year}`}</h2>
+            <h2>{`${months[Number(key.split('-')[0]) - 1].label} ${key.split('-')[1]}`}</h2>
             <table className={'min-w-full divide-y divide-gray-200 table-auto'}>
               <thead className={'bg-gray-50'}>
                 <tr>
@@ -195,6 +208,8 @@ export const SalesListPage = () => {
                     'ID пользователя',
                     'Стадия доставки',
                     'Стадия подписания',
+                    'Дата проставления статуса',
+                    'Действия',
                   ].map(header => (
                     <th
                       className={
@@ -235,44 +250,27 @@ export const SalesListPage = () => {
                       {sale.saleAmount || '—'}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.margin || '—'}
+                      {sale.margin !== undefined ? sale.margin : '—'}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                       {sale.userId}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' || userRole === 'Закупщик' ? (
-                        <select
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleUpdateSale(sale.id, 'deliveryStage', e.target.value)}
-                          value={sale.deliveryStage || ''}
-                        >
-                          {Object.entries(translatedDeliveryStage).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        translatedDeliveryStage[sale.deliveryStage as DeliveryStage] || '—'
-                      )}
+                      {translatedDeliveryStage[sale.deliveryStage as DeliveryStage] || '—'}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {userRole === 'Директор' || userRole === 'Бухгалтер' ? (
-                        <select
-                          className={'border border-gray-300 rounded p-1 w-full'}
-                          onChange={e => handleUpdateSale(sale.id, 'signingStage', e.target.value)}
-                          value={sale.signingStage || ''}
-                        >
-                          {Object.entries(translatedSigningStage).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        translatedSigningStage[sale.signingStage as SigningStage] || '—'
-                      )}
+                      {translatedSigningStage[sale.signingStage as SigningStage] || '—'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {sale.statusSetDate || '—'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      <button
+                        className={'bg-blue-500 text-white px-4 py-2 rounded'}
+                        onClick={() => setEditingSale(sale)}
+                      >
+                        Редактировать
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -295,6 +293,13 @@ export const SalesListPage = () => {
           </div>
         )
       })}
+      {editingSale && (
+        <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
+          <div className={'bg-white p-4 rounded'}>
+            <SalesEditForm onClose={() => setEditingSale(null)} sale={editingSale} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,7 +7,7 @@ type ExpenseReport = {
   id: number
   name: string
   subcategory: string
-  userId: number // Добавлено поле userId
+  userId?: number // Добавлено поле userId
 }
 
 type ReportDetailsModalProps = {

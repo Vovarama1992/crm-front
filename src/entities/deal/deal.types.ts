@@ -48,7 +48,7 @@ export type ExpenseDto = {
   id: number
   name: string
   subcategory: string
-  userId: number
+  userId?: number
 }
 
 export type CreateExpenseDto = Omit<ExpenseDto, 'id'>
@@ -69,16 +69,25 @@ export enum SigningStage {
 
 export type SaleDto = {
   counterpartyId: number
-  date: string
+  date: string // DateTime в формате ISO
   dealId: number
   deliveryStage?: DeliveryStage
   id: number
   invoiceNumber?: string
+  isFinalAmount: boolean
+  isIndependentDeal: boolean
+  lastDeliveryDate?: string // DateTime в формате ISO
   logisticsCost?: number
   margin?: number
+  paidNow: number
+
+  prepaymentAmount: number
   purchaseCost?: number
   saleAmount?: number
   signingStage?: SigningStage
+  // Новые поля:
+  statusSetDate?: string // DateTime в формате ISO
+  totalSaleAmount: number
   userId: number
 }
 
@@ -150,3 +159,23 @@ export type LogisticsLineDto = {
 export type CreateLogisticsLineDto = Omit<LogisticsLineDto, 'id'>
 
 export type UpdateLogisticsLineDto = Partial<CreateLogisticsLineDto>
+
+export enum PaymentType {
+  BONUS = 'BONUS',
+  SALARY = 'SALARY',
+}
+
+export type PaymentDto = {
+  amount: number
+  date: string // DateTime в формате ISO
+  id: number
+  type: PaymentType
+  userId: number
+}
+
+export type CreatePaymentDto = {
+  amount: number
+  date?: string // Опциональное поле, по умолчанию будет установлено текущая дата и время
+  type?: PaymentType // Опциональное поле, с дефолтным значением SALARY
+  userId: number
+}

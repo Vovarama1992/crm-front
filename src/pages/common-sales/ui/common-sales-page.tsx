@@ -33,6 +33,7 @@ type Report = {
 type Employee = {
   name: string
   reports: Report[]
+  surname: string
 }
 
 type DepartmentData = {
@@ -109,6 +110,7 @@ export const CommonSalesPage: React.FC = () => {
             return {
               name: worker.name,
               reports: reports,
+              surname: worker.surname,
             }
           }) || []
 
@@ -140,6 +142,7 @@ export const CommonSalesPage: React.FC = () => {
         return {
           name: worker.name,
           reports: reports,
+          surname: worker.surname,
         }
       }) || []
 
@@ -297,3 +300,5 @@ export const CommonSalesPage: React.FC = () => {
     </div>
   )
 }
+
+name

@@ -43,16 +43,26 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
       return
     }
 
-    // Данные, которые будут отправлены (без новых полей)
+    // Преобразование дат в формат ISO для DateTime
+    const currentDateTime = new Date().toISOString()
+    const deliveryDateTime = deliveryDeadline ? new Date(deliveryDeadline).toISOString() : null
+
+    // Данные, которые будут отправлены с учетом новых полей
     const saleData: any = {
       counterpartyId: selectedCounterpartyId,
-      date: new Date().toISOString(), // Текущая дата
+      date: currentDateTime, // Текущая дата и время
       dealId, // Используем переданный dealId
       invoiceNumber,
+      isFinalAmount, // Финальная сумма
+      isIndependentDeal, // Самостоятельная сделка
+      lastDeliveryDate: deliveryDateTime, // Крайняя дата поставки в формате DateTime
       logisticsCost: 0, // Дефолтное значение
       margin: 0, // Дефолтное значение
+      paidNow: parseFloat(amountPaidNow) || 0, // Оплачено сейчас
+      prepaymentAmount: parseFloat(prepaymentAmount) || 0, // Сумма предоплаты
       purchaseCost: 0, // Дефолтное значение
       saleAmount, // Используем переданный saleAmount
+      totalSaleAmount: parseFloat(totalSaleAmount) || 0, // Общая сумма продажи
       userId, // Используем переданный userId
     }
 
@@ -134,7 +144,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
         />
       </div>
 
-      <div className={'mb-4'}>
+      <div className={'ml-[200px] mb-4'}>
         <label className={'inline-flex items-center'}>
           <input
             checked={isFinalAmount}
@@ -155,7 +165,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
         />
       </div>
 
-      <div className={'mb-4'}>
+      <div className={'ml-[200px] mb-4'}>
         <label className={'inline-flex items-center'}>
           <input
             checked={isIndependentDeal}

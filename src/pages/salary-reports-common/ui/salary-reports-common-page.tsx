@@ -1,9 +1,12 @@
-/* eslint-disable max-lines */
-/* eslint-disable react-hooks/rules-of-hooks */
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-import { useCreateSalaryMutation, useGetUserSalariesQuery } from '@/entities/salary'
-import { useMeQuery } from '@/entities/session'
+import {
+  useGetAllPaymentsQuery,
+  useGetAllSalesQuery,
+  useGetAllUsersMonthlyTurnoverAndMarginQuery,
+} from '@/entities/deal'
+import { useGetActiveQuery } from '@/entities/workers'
+import { useGetDepartmentsQuery } from '@/entities/workers'
 
 import MonthlySalaryTable from './MonthlySalaryTable'
 
@@ -43,44 +46,34 @@ type DepartmentData = {
 }
 
 export const SalaryReportsPage: React.FC = () => {
-  const { data: userdata } = useMeQuery()
-  const { data: salaries } = useGetUserSalariesQuery(userdata?.id || 0)
-  const [createSalary] = useCreateSalaryMutation()
+  const { data: users } = useGetActiveQuery()
+  const { data: expenses } = useGetAllPaymentsQuery()
+  const { data: margins } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
+    endDate: '2024-12-31',
+    startDate: '2024-01-01',
+  })
+  const { data: sales } = useGetAllSalesQuery()
+  const { data: departments } = useGetDepartmentsQuery()
+
   const [data, setData] = useState<DepartmentData[]>([])
   const [startMonthIndex, setStartMonthIndex] = useState(0)
   const [endMonthIndex, setEndMonthIndex] = useState(2)
-  const [selectedYear, setSelectedYear] = useState<null | number>(null)
+  const [selectedYear, setSelectedYear] = useState<number>(2024)
   const [selectedQuarter, setSelectedQuarter] = useState<null | number>(null)
-  const [newSalary, setNewSalary] = useState({
-    earned: 0,
-    month: 1,
-    paid: 0,
-    salary: 0,
-    userId: 0,
-    year: new Date().getFullYear(),
-  })
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const handleCreateSalary = async () => {
-    try {
-      await createSalary(newSalary).unwrap()
-      alert('Salary created successfully!')
-      setIsModalOpen(false) // Close the modal on success
-    } catch (error) {
-      console.error('Failed to create salary:', error)
-    }
-  }
 
   useEffect(() => {
-    if (!salaries) {
+    if (!users || !margins || !expenses || !departments || !sales) {
       return
     }
 
-    const departmentData: DepartmentData[] = []
+    const departmentData: DepartmentData[] = departments.map(dept => ({
+      department: dept.name,
+      employees: [],
+    }))
 
-    salaries.forEach(salary => {
-      const departmentName = salary.user.department.name
-      const employeeName = salary.user.name
+    users.forEach(user => {
+      const departmentName =
+        departments.find(dept => dept.id === user.department_id)?.name || 'Без отдела'
 
       let department = departmentData.find(d => d.department === departmentName)
 
@@ -89,24 +82,66 @@ export const SalaryReportsPage: React.FC = () => {
         departmentData.push(department)
       }
 
-      let employee = department.employees.find(e => e.name === employeeName)
-
-      if (!employee) {
-        employee = { name: employeeName, reports: [] }
-        department.employees.push(employee)
+      const employee: Employee = {
+        name: user.name,
+        reports: [],
       }
 
-      employee.reports.push({
-        earned: salary.earned,
-        month: `${months[salary.month - 1]} ${salary.year}`,
-        paid: salary.paid,
-        remaining: salary.earned - salary.paid,
-        salary: salary.salary,
+      months.forEach((month, index) => {
+        const currentYear = selectedYear
+
+        // Определяем первый и последний дни месяца
+        const firstDayOfMonth = new Date(currentYear, index, 1)
+        const lastDayOfMonth = new Date(currentYear, index + 1, 0) // последний день месяца
+
+        // Проверка на дату приема на работу
+        const hireDate = user.hireDate ? new Date(user.hireDate) : null
+
+        let salary = 0
+
+        if (hireDate && hireDate <= lastDayOfMonth) {
+          // Если пользователь был принят на работу в текущем месяце или ранее
+          const daysInMonth = lastDayOfMonth.getDate()
+          const workingDays =
+            hireDate > firstDayOfMonth ? daysInMonth - hireDate.getDate() + 1 : daysInMonth
+
+          // Пропорциональный расчет оклада
+          salary = (user.salary || 0) * (workingDays / daysInMonth)
+        }
+
+        // Данные о заработке (маржа) за месяц
+        const marginData = margins.find(m => m.userId === user.id)
+        const earnings =
+          marginData?.monthlyData.find((m: any) => m.month === index + 1)?.totalMargin || 0
+
+        // Выплаты за месяц
+        const paid = expenses
+          .filter(
+            exp =>
+              exp.userId === user.id &&
+              new Date(exp.date).getMonth() === index &&
+              new Date(exp.date).getFullYear() === currentYear
+          )
+          .reduce((sum, exp) => sum + exp.amount, 0)
+
+        // Рассчитываем остаток
+        const remaining = salary + earnings - paid
+
+        // Заполняем отчет для текущего месяца
+        employee.reports.push({
+          earned: earnings,
+          month: `${month} ${currentYear}`,
+          paid: paid,
+          remaining: remaining,
+          salary: salary,
+        })
       })
+
+      department.employees.push(employee)
     })
 
     setData(departmentData)
-  }, [salaries])
+  }, [users, margins, expenses, departments, sales, selectedYear])
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(Number(event.target.value))
@@ -138,22 +173,20 @@ export const SalaryReportsPage: React.FC = () => {
     setSelectedQuarter(null)
   }
 
-  const filteredData = useMemo(() => {
-    return data.map(department => ({
-      ...department,
-      employees: department.employees.map(employee => ({
-        ...employee,
-        reports: employee.reports.filter(report => {
-          const [reportMonth, reportYear] = report.month.split(' ')
-          const monthIndex = months.indexOf(reportMonth)
-          const yearMatch = selectedYear ? Number(reportYear) === selectedYear : true
-          const intervalMatch = monthIndex >= startMonthIndex && monthIndex <= endMonthIndex
+  const filteredData = data.map(department => ({
+    ...department,
+    employees: department.employees.map(employee => ({
+      ...employee,
+      reports: employee.reports.filter(report => {
+        const [reportMonth, reportYear] = report.month.split(' ')
+        const monthIndex = months.indexOf(reportMonth)
+        const yearMatch = selectedYear ? Number(reportYear) === selectedYear : true
+        const intervalMatch = monthIndex >= startMonthIndex && monthIndex <= endMonthIndex
 
-          return yearMatch && intervalMatch
-        }),
-      })),
-    }))
-  }, [data, selectedYear, startMonthIndex, endMonthIndex])
+        return yearMatch && intervalMatch
+      }),
+    })),
+  }))
 
   const selectedMonths = months.slice(startMonthIndex, endMonthIndex + 1)
 
@@ -162,8 +195,7 @@ export const SalaryReportsPage: React.FC = () => {
       <div className={'flex w-full mb-4'}>
         <div className={'ml-[300px] flex flex-col mr-4'}>
           <label htmlFor={'yearSelect'}>Выберите год: </label>
-          <select id={'yearSelect'} onChange={handleYearChange} value={selectedYear || ''}>
-            <option value={''}>Все</option>
+          <select id={'yearSelect'} onChange={handleYearChange} value={selectedYear}>
             {years.map((year, index) => (
               <option key={index} value={year}>
                 {year}
@@ -214,124 +246,6 @@ export const SalaryReportsPage: React.FC = () => {
       <div className={'w-full'}>
         <MonthlySalaryTable data={filteredData} months={selectedMonths} />
       </div>
-      {userdata?.roleName === 'Директор' && (
-        <div className={'w-full mt-4'}>
-          <button
-            className={'ml-[150px] bg-blue-500 text-white px-4 py-2 rounded'}
-            onClick={() => setIsModalOpen(true)}
-          >
-            Создать зарплату
-          </button>
-        </div>
-      )}
-      {isModalOpen && (
-        <div className={'fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50'}>
-          <div className={'bg-white p-6 rounded shadow-lg'}>
-            <h2 className={'text-lg font-bold mb-4'}>Создать новую зарплату</h2>
-            <form
-              onSubmit={e => {
-                e.preventDefault()
-                handleCreateSalary()
-              }}
-            >
-              <div className={'flex mb-2'}>
-                <label className={'mr-2'} htmlFor={'userId'}>
-                  ID пользователя:
-                </label>
-                <input
-                  id={'userId'}
-                  onChange={e => setNewSalary({ ...newSalary, userId: Number(e.target.value) })}
-                  required
-                  type={'number'}
-                  value={newSalary.userId}
-                />
-              </div>
-              <div className={'flex mb-2'}>
-                <label className={'mr-2'} htmlFor={'month'}>
-                  Месяц:
-                </label>
-                <select
-                  id={'month'}
-                  onChange={e => setNewSalary({ ...newSalary, month: Number(e.target.value) })}
-                  required
-                  value={newSalary.month}
-                >
-                  {months.map((month, index) => (
-                    <option key={index} value={index + 1}>
-                      {month}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={'flex mb-2'}>
-                <label className={'mr-2'} htmlFor={'year'}>
-                  Год:
-                </label>
-                <select
-                  id={'year'}
-                  onChange={e => setNewSalary({ ...newSalary, year: Number(e.target.value) })}
-                  required
-                  value={newSalary.year}
-                >
-                  {years.map((year, index) => (
-                    <option key={index} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={'flex mb-2'}>
-                <label className={'mr-2'} htmlFor={'salary'}>
-                  Зарплата:
-                </label>
-                <input
-                  id={'salary'}
-                  onChange={e => setNewSalary({ ...newSalary, salary: Number(e.target.value) })}
-                  required
-                  type={'number'}
-                  value={newSalary.salary}
-                />
-              </div>
-              <div className={'flex mb-2'}>
-                <label className={'mr-2'} htmlFor={'earned'}>
-                  Заработано:
-                </label>
-                <input
-                  id={'earned'}
-                  onChange={e => setNewSalary({ ...newSalary, earned: Number(e.target.value) })}
-                  required
-                  type={'number'}
-                  value={newSalary.earned}
-                />
-              </div>
-              <div className={'flex mb-2'}>
-                <label className={'mr-2'} htmlFor={'paid'}>
-                  Выплачено:
-                </label>
-                <input
-                  id={'paid'}
-                  onChange={e => setNewSalary({ ...newSalary, paid: Number(e.target.value) })}
-                  required
-                  type={'number'}
-                  value={newSalary.paid}
-                />
-              </div>
-              <div className={'flex justify-end'}>
-                <button
-                  className={'bg-gray-500 text-white px-4 py-2 rounded mr-2'}
-                  onClick={() => setIsModalOpen(false)}
-                  type={'button'}
-                >
-                  Отмена
-                </button>
-                <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
-                  Создать зарплату
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

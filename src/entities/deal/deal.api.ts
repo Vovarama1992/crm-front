@@ -3,11 +3,13 @@ import type {
   CreateCounterpartyDto,
   CreateDealDto,
   CreateExpenseDto,
+  CreatePaymentDto,
   CreateSaleDto,
   DealDto,
   ExpenseDto,
   InvoiceLineDto,
   LogisticsLineDto,
+  PaymentDto,
   PurchaseDto,
   SaleDto,
   SupplierLineDto,
@@ -46,6 +48,14 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    createPayment: builder.mutation<PaymentDto, CreatePaymentDto>({
+      query: payment => ({
+        body: payment,
+        method: 'POST',
+        url: '/payments',
+      }),
+    }),
+
     createSale: builder.mutation<SaleDto, CreateSaleDto>({
       query: sale => ({
         body: sale,
@@ -59,26 +69,38 @@ const dealApi = baseApi.injectEndpoints({
         url: '/counterparties',
       }),
     }),
+
     getAllDeals: builder.query<DealDto[], void>({
       query: () => ({
         url: '/deals',
       }),
     }),
+
     getAllExpenses: builder.query<ExpenseDto[], void>({
       query: () => ({
         url: '/expenses',
       }),
     }),
+
+    getAllPayments: builder.query<PaymentDto[], void>({
+      // Добавляем получение всех выплат
+      query: () => ({
+        url: '/payments',
+      }),
+    }),
+
     getAllPurchases: builder.query<PurchaseDto[], void>({
       query: () => ({
         url: '/purchases',
       }),
     }),
+
     getAllSales: builder.query<SaleDto[], void>({
       query: () => ({
         url: '/sales',
       }),
     }),
+
     getAllUsersMonthlyTurnoverAndMargin: builder.query<
       any[],
       { endDate: string; startDate: string }
@@ -89,27 +111,32 @@ const dealApi = baseApi.injectEndpoints({
         url: `/deals/all-users-monthly-turnover-and-margin`,
       }),
     }),
+
     getDealsByDateRange: builder.query<DealDto[], { endDate: string; startDate: string }>({
       query: ({ endDate, startDate }) => ({
         params: { endDate, startDate },
         url: '/deals/date-range',
       }),
     }),
+
     getDealsByDepartment: builder.query<DealDto[], string>({
       query: departmentId => ({
         url: `/deals/department/${departmentId}`,
       }),
     }),
+
     getDealsByUserId: builder.query<DealDto[], string>({
       query: userId => ({
         url: `/deals/user/${userId}`,
       }),
     }),
+
     getExpensesByUserId: builder.query<ExpenseDto[], string>({
       query: userId => ({
         url: `/expenses/user/${userId}`,
       }),
     }),
+
     // Новый эндпойнт для получения invoice lines по purchaseId
     getInvoiceLinesByPurchaseId: builder.query<InvoiceLineDto[], number>({
       query: purchaseId => ({
@@ -117,6 +144,7 @@ const dealApi = baseApi.injectEndpoints({
         url: `/purchases/${purchaseId}/invoice-lines`,
       }),
     }),
+
     // Новый эндпойнт для получения logistics lines по purchaseId
     getLogisticsLinesByPurchaseId: builder.query<LogisticsLineDto[], number>({
       query: purchaseId => ({
@@ -124,6 +152,7 @@ const dealApi = baseApi.injectEndpoints({
         url: `/purchases/${purchaseId}/logistics-lines`,
       }),
     }),
+
     getMonthlyTurnoverAndMargin: builder.query<any[], { month: number; year: number }>({
       query: ({ month, year }) => ({
         method: 'GET',
@@ -137,18 +166,20 @@ const dealApi = baseApi.injectEndpoints({
         url: `/sales/${id}`,
       }),
     }),
+
     getSalesByUserId: builder.query<SaleDto[], string>({
       query: userId => ({
         url: `/sales/user/${userId}`,
       }),
     }),
-    // Новый эндпойнт для получения supplier lines по purchaseId
+
     getSupplierLinesByPurchaseId: builder.query<SupplierLineDto[], number>({
       query: purchaseId => ({
         method: 'GET',
         url: `/purchases/${purchaseId}/supplier-lines`,
       }),
     }),
+
     updateDeal: builder.mutation<DealDto, { deal: Partial<DealDto>; id: number }>({
       query: ({ deal, id }) => ({
         body: deal,
@@ -156,6 +187,7 @@ const dealApi = baseApi.injectEndpoints({
         url: `/deals/${id}`,
       }),
     }),
+
     updateInvoiceLine: builder.mutation<InvoiceLineDto, { data: UpdateInvoiceLineDto; id: number }>(
       {
         query: ({ data, id }) => ({
@@ -165,6 +197,7 @@ const dealApi = baseApi.injectEndpoints({
         }),
       }
     ),
+
     updateLogisticsLine: builder.mutation<
       LogisticsLineDto,
       { data: UpdateLogisticsLineDto; id: number }
@@ -173,6 +206,14 @@ const dealApi = baseApi.injectEndpoints({
         body: data,
         method: 'PUT',
         url: `purchases/logistics-line/${id}`,
+      }),
+    }),
+
+    updatePayment: builder.mutation<PaymentDto, { data: Partial<PaymentDto>; id: number }>({
+      query: ({ data, id }) => ({
+        body: data,
+        method: 'PATCH',
+        url: `/payments/${id}`,
       }),
     }),
 
@@ -210,10 +251,12 @@ export const {
   useCreateCounterpartyMutation,
   useCreateDealMutation,
   useCreateExpenseMutation,
+  useCreatePaymentMutation,
   useCreateSaleMutation,
   useGetAllCounterpartiesQuery,
   useGetAllDealsQuery,
   useGetAllExpensesQuery,
+  useGetAllPaymentsQuery,
   useGetAllPurchasesQuery,
   useGetAllSalesQuery,
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
@@ -230,6 +273,7 @@ export const {
   useUpdateDealMutation,
   useUpdateInvoiceLineMutation,
   useUpdateLogisticsLineMutation,
+  useUpdatePaymentMutation, // Добавляем хук для обновления выплаты
   useUpdatePurchaseMutation,
   useUpdateSaleMutation,
   useUpdateSupplierLineMutation,

@@ -10,6 +10,7 @@ type Report = {
 type Employee = {
   name: string
   reports: Report[]
+  surname: string
 }
 
 type DepartmentData = {
@@ -131,8 +132,8 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
               <th className={'border px-4 py-2 bg-gray-100'}></th>
             </tr>
             {department.employees.map((employee, employeeIndex) => (
-              <tr key={employee.name}>
-                <td className={'border px-4 py-2'}>{employee.name}</td>
+              <tr key={employee.surname}>
+                <td className={'border px-4 py-2'}>{employee.name + ' ' + employee.surname}</td>
                 {months.map(month => {
                   const report = employee.reports.find(r => r.month === month)
                   const keyPrefix = `${departmentIndex}-${employeeIndex}-${month}`
@@ -238,7 +239,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
           ))}
         </tr>
         <tr>
-          <td className={'border px-4 py-2 font-bold'}>Общий остаток маржи</td>
+          {/*<td className={'border px-4 py-2 font-bold'}>Общий остаток маржи</td>
           {months.map(month => {
             const totalMargin = calculateMonthlyTotal(data, 'margin', month)
             const totalRevenue = calculateMonthlyTotal(data, 'revenue', month)
@@ -260,7 +261,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                 {(totalMargin * 0.9).toFixed(2)}
               </td>
             )
-          })}
+          })}*/}
         </tr>
       </tbody>
     </table>

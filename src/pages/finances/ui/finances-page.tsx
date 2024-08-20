@@ -5,6 +5,7 @@ import {
   useGetAllExpensesQuery,
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
 } from '@/entities/deal'
+import { useGetWorkersQuery } from '@/entities/workers' // Импортируем хук для получения списка сотрудников
 
 import ExpenseTable from './ExpenseTable'
 import IncomeTable from './IncomeTable'
@@ -58,29 +59,35 @@ export const FinancesPage: React.FC = () => {
   })
 
   const { data: expensesData } = useGetAllExpensesQuery()
+  const { data: workersData } = useGetWorkersQuery() // Получаем список всех сотрудников
 
   const [incomeData, setIncomeData] = useState<Employee[]>([])
 
   useEffect(() => {
-    if (turnoverAndMarginData) {
-      const employeeData: Employee[] = turnoverAndMarginData.map(userData => ({
-        name: `User ${userData.userId}`,
-        reports: userData.monthlyData.map((monthlyData: any) => ({
-          completionPercent: monthlyData.completionPercent,
-          marginAmount: monthlyData.marginAmount,
-          marginPercent: monthlyData.marginPercent,
-          month: months[monthlyData.month - 1],
-          totalMargin: monthlyData.totalMargin,
-          totalTurnover: monthlyData.totalTurnover,
-          userId: userData.userId,
-          year: monthlyData.year,
-          yearlyProfitPlan: monthlyData.yearlyProfitPlan,
-        })),
-      }))
+    if (turnoverAndMarginData && workersData) {
+      const employeeData: Employee[] = turnoverAndMarginData.map(userData => {
+        const worker = workersData.find(worker => worker.id === userData.userId)
+        const name = worker ? `${worker.name} ${worker.surname}` : `User ${userData.userId}`
+
+        return {
+          name,
+          reports: userData.monthlyData.map((monthlyData: any) => ({
+            completionPercent: monthlyData.completionPercent,
+            marginAmount: monthlyData.marginAmount,
+            marginPercent: monthlyData.marginPercent,
+            month: months[monthlyData.month - 1],
+            totalMargin: monthlyData.totalMargin,
+            totalTurnover: monthlyData.totalTurnover,
+            userId: userData.userId,
+            year: monthlyData.year,
+            yearlyProfitPlan: monthlyData.yearlyProfitPlan,
+          })),
+        }
+      })
 
       setIncomeData(employeeData)
     }
-  }, [turnoverAndMarginData, selectedYear])
+  }, [turnoverAndMarginData, workersData, selectedYear])
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(Number(event.target.value))

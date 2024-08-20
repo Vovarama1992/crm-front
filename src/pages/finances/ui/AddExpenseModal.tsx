@@ -56,6 +56,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, isOpen, o
 
     try {
       await createExpense(newReport).unwrap()
+      window.location.reload()
       onClose()
     } catch (error) {
       console.error('Failed to create expense', error)
