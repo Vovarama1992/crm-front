@@ -71,7 +71,7 @@ export const SignUpForm = (props: SignUpFormProps) => {
   const onSubmit = handleSubmit(data => {
     signUp({
       ...data,
-      department_id: data.department_id ? Number(data.department_id) : undefined,
+      department_id: data.department_id ? Number(data.department_id) : null,
       dobNumber: data.dobNumber ? Number(data.dobNumber) : undefined,
       managed_by: data.managed_by ? Number(data.managed_by) : undefined,
       margin_percent: data.margin_percent ? Number(data.margin_percent) : undefined,

@@ -19,12 +19,22 @@ type Category = {
   subcategories: Subcategory[]
 }
 
-type ExpenseTableProps = {
-  expenses: ExpenseDto[]
-  months: string[]
-}
+const months = [
+  'Январь',
+  'Февраль',
+  'Март',
+  'Апрель',
+  'Май',
+  'Июнь',
+  'Июль',
+  'Август',
+  'Сентябрь',
+  'Октябрь',
+  'Ноябрь',
+  'Декабрь',
+] // Массив месяцев
 
-const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
+const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
   const { data: workersData } = useGetWorkersQuery()
   const { data: salesData } = useGetAllSalesQuery()
   const { data: paymentsData } = useGetAllPaymentsQuery()
@@ -34,44 +44,59 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
   const [selectedReport, setSelectedReport] = useState<ExpenseDto | null>(null)
   const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState<string>(months[new Date().getMonth()])
+  const [startMonth, setStartMonth] = useState<string>(months[0]) // По умолчанию первый месяц
+  const [endMonth, setEndMonth] = useState<string>(months[0]) // По умолчанию первый месяц
 
   useEffect(() => {
     const structuredCategories: Category[] = []
-    const monthIndex = months.indexOf(selectedMonth)
+    const startMonthIndex = months.indexOf(startMonth)
+    const endMonthIndex = months.indexOf(endMonth)
     const currentYear = new Date().getFullYear()
 
     // Формируем существующие категории на основе расходов
     expenses.forEach(expense => {
-      const categoryIndex = structuredCategories.findIndex(cat => cat.category === expense.category)
+      const expenseDate = new Date(expense.date)
+      const expenseMonthIndex = expenseDate.getMonth()
+      const isInInterval =
+        expenseDate.getFullYear() === currentYear &&
+        expenseMonthIndex >= startMonthIndex &&
+        expenseMonthIndex <= endMonthIndex
 
-      if (categoryIndex === -1) {
-        structuredCategories.push({
-          category: expense.category,
-          subcategories: [
-            {
-              reports: [expense],
-              subcategory: expense.subcategory,
-            },
-          ],
-        })
-      } else {
-        const subcategoryIndex = structuredCategories[categoryIndex].subcategories.findIndex(
-          subcat => subcat.subcategory === expense.subcategory
+      if (isInInterval) {
+        const categoryIndex = structuredCategories.findIndex(
+          cat => cat.category === expense.category
         )
 
-        if (subcategoryIndex === -1) {
-          structuredCategories[categoryIndex].subcategories.push({
-            reports: [expense],
-            subcategory: expense.subcategory,
+        if (categoryIndex === -1) {
+          structuredCategories.push({
+            category: expense.category,
+            subcategories: [
+              {
+                reports: [expense],
+                subcategory: expense.subcategory,
+              },
+            ],
           })
         } else {
-          structuredCategories[categoryIndex].subcategories[subcategoryIndex].reports.push(expense)
+          const subcategoryIndex = structuredCategories[categoryIndex].subcategories.findIndex(
+            subcat => subcat.subcategory === expense.subcategory
+          )
+
+          if (subcategoryIndex === -1) {
+            structuredCategories[categoryIndex].subcategories.push({
+              reports: [expense],
+              subcategory: expense.subcategory,
+            })
+          } else {
+            structuredCategories[categoryIndex].subcategories[subcategoryIndex].reports.push(
+              expense
+            )
+          }
         }
       }
     })
 
-    // Добавляем фиксированную сумму аренды офиса
+    // Добавляем фиксированную сумму аренды офиса для выбранного интервала
     structuredCategories.push({
       category: 'Офис',
       subcategories: [
@@ -79,8 +104,8 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
           reports: [
             {
               category: 'Офис',
-              date: new Date(currentYear, monthIndex, 1).toISOString(),
-              expense: 20000,
+              date: new Date(currentYear, startMonthIndex, 1).toISOString(),
+              expense: 20000 * (endMonthIndex - startMonthIndex + 1), // Умножаем на количество месяцев
               id: -1, // Для уникальности id
               name: 'Аренда офиса',
               subcategory: 'Аренда',
@@ -91,37 +116,41 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
       ],
     })
 
-    // Рассчитываем ФОТ и добавляем в соответствующую категорию
+    // Рассчитываем ФОТ и добавляем в соответствующую категорию для выбранного интервала
     if (workersData) {
       const fotSubcategory: Subcategory = {
         reports: [],
         subcategory: 'ФОТ',
       }
 
-      const firstDayOfMonth = new Date(currentYear, monthIndex, 1)
-      const lastDayOfMonth = new Date(currentYear, monthIndex + 1, 0) // Последний день месяца
-
       workersData.forEach(worker => {
         if (worker.hireDate && worker.salary) {
           const hiredDate = new Date(worker.hireDate)
 
-          if (hiredDate <= lastDayOfMonth) {
-            const daysInMonth = lastDayOfMonth.getDate()
-            const workingDays =
-              hiredDate > firstDayOfMonth ? daysInMonth - hiredDate.getDate() + 1 : daysInMonth
+          if (hiredDate <= new Date(currentYear, endMonthIndex + 1, 0)) {
+            for (let month = startMonthIndex; month <= endMonthIndex; month++) {
+              const firstDayOfMonth = new Date(currentYear, month, 1)
+              const lastDayOfMonth = new Date(currentYear, month + 1, 0) // Последний день месяца
 
-            const proportionalSalary = Math.round(
-              (worker.salary || 0) * (workingDays / daysInMonth)
-            )
+              if (hiredDate <= lastDayOfMonth) {
+                const daysInMonth = lastDayOfMonth.getDate()
+                const workingDays =
+                  hiredDate > firstDayOfMonth ? daysInMonth - hiredDate.getDate() + 1 : daysInMonth
 
-            fotSubcategory.reports.push({
-              category: 'ФОТ',
-              date: worker.hireDate,
-              expense: proportionalSalary,
-              id: worker.id,
-              name: worker.name,
-              subcategory: 'ФОТ',
-            } as ExpenseDto)
+                const proportionalSalary = Math.round(
+                  (worker.salary || 0) * (workingDays / daysInMonth)
+                )
+
+                fotSubcategory.reports.push({
+                  category: 'ФОТ',
+                  date: worker.hireDate,
+                  expense: proportionalSalary,
+                  id: worker.id,
+                  name: worker.name,
+                  subcategory: 'ФОТ',
+                } as ExpenseDto)
+              }
+            }
           }
         }
       })
@@ -130,7 +159,10 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
       const salaryPayments =
         paymentsData
           ?.filter(
-            payment => payment.type === 'SALARY' && new Date(payment.date).getMonth() === monthIndex
+            payment =>
+              payment.type === 'SALARY' &&
+              new Date(payment.date).getMonth() >= startMonthIndex &&
+              new Date(payment.date).getMonth() <= endMonthIndex
           )
           .reduce((sum, payment) => sum + payment.amount, 0) || 0
 
@@ -141,7 +173,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
       })
     }
 
-    // Создаем категорию "Заработали менеджеры" и добавляем совокупную маржу
+    // Создаем категорию "Заработали менеджеры" и добавляем совокупную маржу для выбранного интервала
     if (salesData) {
       const managerEarningsSubcategory: Subcategory = {
         reports: [],
@@ -150,10 +182,12 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
 
       salesData.forEach(sale => {
         const saleDate = new Date(sale.date)
+        const saleMonthIndex = saleDate.getMonth()
 
         if (
           saleDate.getFullYear() === currentYear &&
-          saleDate.getMonth() === monthIndex &&
+          saleMonthIndex >= startMonthIndex &&
+          saleMonthIndex <= endMonthIndex &&
           sale.margin
         ) {
           managerEarningsSubcategory.reports.push({
@@ -171,7 +205,10 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
       const bonusPayments =
         paymentsData
           ?.filter(
-            payment => payment.type === 'BONUS' && new Date(payment.date).getMonth() === monthIndex
+            payment =>
+              payment.type === 'BONUS' &&
+              new Date(payment.date).getMonth() >= startMonthIndex &&
+              new Date(payment.date).getMonth() <= endMonthIndex
           )
           .reduce((sum, payment) => sum + payment.amount, 0) || 0
 
@@ -183,13 +220,19 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
     }
 
     setCategories(structuredCategories)
-  }, [expenses, workersData, salesData, paymentsData, selectedMonth, months])
+  }, [expenses, workersData, salesData, paymentsData, startMonth, endMonth])
 
-  const isReportInSelectedMonth = (report: ExpenseDto): boolean => {
+  const isReportInSelectedRange = (report: ExpenseDto): boolean => {
     const reportDate = new Date(report.date)
-    const reportMonth = reportDate.toLocaleString('ru-RU', { month: 'long' })
+    const reportMonthIndex = reportDate.getMonth()
+    const startMonthIndex = months.indexOf(startMonth)
+    const endMonthIndex = months.indexOf(endMonth)
 
-    return reportMonth === selectedMonth.toLowerCase()
+    return (
+      reportDate.getFullYear() === new Date().getFullYear() &&
+      reportMonthIndex >= startMonthIndex &&
+      reportMonthIndex <= endMonthIndex
+    )
   }
 
   const handleAddExpense = () => {
@@ -229,6 +272,12 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
     }, 0)
   }
 
+  const calculateTotalExpenses = () => {
+    return categories.reduce((total, category) => {
+      return total + calculateTotalForCategory(category)
+    }, 0)
+  }
+
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category)
     setSelectedSubcategory(null)
@@ -238,19 +287,39 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
     setSelectedSubcategory(subcategory)
   }
 
-  const handleMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedMonth(event.target.value)
+  const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setStartMonth(event.target.value)
+  }
+
+  const handleEndMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setEndMonth(event.target.value)
   }
 
   return (
     <div>
       <div className={'mb-4'}>
-        <label htmlFor={'monthSelect'}>Выберите месяц: </label>
+        <label htmlFor={'startMonthSelect'}>Выберите начальный месяц: </label>
         <select
           className={'border p-2'}
-          id={'monthSelect'}
-          onChange={handleMonthChange}
-          value={selectedMonth}
+          id={'startMonthSelect'}
+          onChange={handleStartMonthChange}
+          value={startMonth}
+        >
+          {months.map(month => (
+            <option key={month} value={month}>
+              {month}
+            </option>
+          ))}
+        </select>
+
+        <label className={'ml-4'} htmlFor={'endMonthSelect'}>
+          Выберите конечный месяц:{' '}
+        </label>
+        <select
+          className={'border p-2'}
+          id={'endMonthSelect'}
+          onChange={handleEndMonthChange}
+          value={endMonth}
         >
           {months.map(month => (
             <option key={month} value={month}>
@@ -294,7 +363,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
                     {selectedSubcategory === subcategory.subcategory &&
                       subcategory.reports.map(
                         report =>
-                          isReportInSelectedMonth(report) && (
+                          isReportInSelectedRange(report) && (
                             <tr
                               className={'cursor-pointer bg-white hover:bg-gray-50'}
                               key={report.id}
@@ -317,6 +386,12 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ expenses, months }) => {
               )}
             </React.Fragment>
           ))}
+          {/* Общий расход */}
+          <tr>
+            <td className={'border px-4 py-2 font-bold text-right'} colSpan={2}>
+              Общий расход за период: {calculateTotalExpenses()}
+            </td>
+          </tr>
         </tbody>
       </table>
 

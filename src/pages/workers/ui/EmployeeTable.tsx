@@ -6,6 +6,7 @@ import { useFireWorkerMutation } from '@/entities/workers'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 
 import ConfirmModal from './ConfirmModal'
+import EditWorkerForm from './EditWorkerForm'
 import WorkerForm from './WorkerForm'
 
 type EmployeeTableProps = {
@@ -20,6 +21,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
   const [open, setOpen] = useState(false)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [workerIdToDelete, setWorkerIdToDelete] = useState<number | undefined>(undefined)
+  const [editWorkerOpen, setEditWorkerOpen] = useState(false)
 
   const handleFireWorker = (workerId: number) => {
     setWorkerIdToDelete(workerId)
@@ -40,7 +42,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
 
   const handleViewDetails = (worker: WorkerDto) => {
     setSelectedWorker(worker)
-    setOpen(true)
+    setEditWorkerOpen(true)
   }
 
   return (
@@ -130,10 +132,10 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                     href={'#'}
                     onClick={() => handleViewDetails(worker)}
                   >
-                    {worker.name}
+                    {worker.name + ' ' + worker.middleName + ' ' + worker.surname}
                   </a>
                 ) : (
-                  worker.name
+                  worker.name + ' ' + worker.middleName + ' ' + worker.surname
                 )}
               </td>
               <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
@@ -194,9 +196,17 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
       </Link>
       {open && (
         <WorkerForm
-          existingWorker={selectedWorker}
           onClose={() => {
             setOpen(false)
+            setSelectedWorker(undefined)
+          }}
+        />
+      )}
+      {editWorkerOpen && selectedWorker && (
+        <EditWorkerForm
+          existingWorker={selectedWorker}
+          onClose={() => {
+            setEditWorkerOpen(false)
             setSelectedWorker(undefined)
           }}
         />

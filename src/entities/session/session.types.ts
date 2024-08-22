@@ -19,7 +19,7 @@ export type RegistrationDto = {
   address?: string
   birthday?: string
   cardNumber?: string
-  department_id?: number
+  department_id: null | number
   dobNumber?: number
   email: string
   hireDate?: string

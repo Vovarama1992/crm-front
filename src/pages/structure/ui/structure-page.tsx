@@ -196,7 +196,7 @@ export const StructurePage = () => {
               handleFormSubmit()
             }
           }}
-          onTransfer={async (worker: WorkerDto, newDepartmentId: number) => {
+          onTransfer={async (worker: WorkerDto, newDepartmentId: null | number) => {
             await updateWorker({ ...worker, department_id: newDepartmentId })
             handleFormSubmit()
           }}

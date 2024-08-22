@@ -2,7 +2,7 @@ import type { SaleDto } from '@/entities/deal/deal.types'
 
 import React, { useState } from 'react'
 
-import { useUpdateSaleMutation } from '@/entities/deal'
+import { useCreateSaleMutation, useUpdateSaleMutation } from '@/entities/deal'
 
 interface SalesEditFormProps {
   onClose: () => void
@@ -10,8 +10,11 @@ interface SalesEditFormProps {
 }
 
 export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) => {
+  const [createSale] = useCreateSaleMutation()
   const [updateSale] = useUpdateSaleMutation()
   const [formData, setFormData] = useState<SaleDto>({ ...sale })
+  const [additionalAmount, setAdditionalAmount] = useState<number>(0)
+  const [refundAmount, setRefundAmount] = useState<number>(0)
   const [error, setError] = useState<null | string>(null)
 
   const handleChange = (field: keyof SaleDto, value: number | string) => {
@@ -22,7 +25,14 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
   }
 
   const handleSave = () => {
-    const updatedFields: SaleDto = { ...formData }
+    // Рассчитать новое значение paidNow
+    const newPaidNow = (formData.paidNow || 0) + additionalAmount - refundAmount
+
+    // Обновить объект с новыми значениями
+    const updatedFields: SaleDto = {
+      ...formData,
+      paidNow: newPaidNow,
+    }
 
     // Проверка на стадию подписания
     if (formData.signingStage && !sale.signingStage) {
@@ -31,15 +41,31 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
 
         return
       }
-
       updatedFields.statusSetDate = new Date().toISOString()
     }
 
-    // Всегда обновляем существующую продажу
-    updateSale({ id: sale.id, sale: updatedFields }).then(() => {
-      onClose()
-      window.location.reload()
-    })
+    // Обновление существующей продажи или создание новой
+    if (sale.id) {
+      updateSale({ id: sale.id, sale: updatedFields }).then(() => {
+        onClose()
+        window.location.reload()
+      })
+    } else {
+      const { id, ...createFields } = updatedFields
+
+      createSale(createFields).then(() => {
+        onClose()
+        window.location.reload()
+      })
+    }
+  }
+
+  const handleAdditionalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAdditionalAmount(Number(e.target.value))
+  }
+
+  const handleRefundAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRefundAmount(Number(e.target.value))
   }
 
   return (
@@ -116,6 +142,33 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
           onChange={e => handleChange('margin', Number(e.target.value))}
           type={'number'}
           value={formData.margin || ''}
+        />
+      </div>
+      <div>
+        <label>Оплачено сейчас:</label>
+        <input
+          className={'border border-gray-300 rounded p-1 w-full'}
+          readOnly
+          type={'number'}
+          value={formData.paidNow || ''}
+        />
+      </div>
+      <div>
+        <label>Доплата:</label>
+        <input
+          className={'border border-gray-300 rounded p-1 w-full'}
+          onChange={handleAdditionalAmountChange}
+          type={'number'}
+          value={additionalAmount}
+        />
+      </div>
+      <div>
+        <label>Возврат:</label>
+        <input
+          className={'border border-gray-300 rounded p-1 w-full'}
+          onChange={handleRefundAmountChange}
+          type={'number'}
+          value={refundAmount}
         />
       </div>
       <button className={'mt-2 bg-blue-500 text-white p-2 rounded'} onClick={handleSave}>

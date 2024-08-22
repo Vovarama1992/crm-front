@@ -1,8 +1,8 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react'
 
-import CreatePaymentForm from './CreatePaymentForm' // Импорт формы создания выплаты
-import PaymentsListForm from './PaymentsListForm' // Импорт формы списка всех выплат
+import CreatePaymentForm from './CreatePaymentForm'
+import PaymentsListForm from './PaymentsListForm'
 
 type Report = {
   earned: number
@@ -13,8 +13,11 @@ type Report = {
 }
 
 type Employee = {
+  id: number
+  middleName: string
   name: string
   reports: Report[]
+  surname: string
 }
 
 type DepartmentData = {
@@ -29,9 +32,41 @@ type MonthlySalaryTableProps = {
 
 const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months }) => {
   const [showCreatePaymentForm, setShowCreatePaymentForm] = useState(false)
-  const [showPaymentsListForm, setShowPaymentsListForm] = useState(false) // Новый стейт для списка всех выплат
+  const [showPaymentsListForm, setShowPaymentsListForm] = useState(false)
+  const [usersWithRemaining, setUsersWithRemaining] = useState<
+    { id: number; middleName: string; name: string; remaining: number; surname: string }[]
+  >([])
 
   const handleCreatePaymentClick = () => {
+    const usersWithRemainingArray: {
+      id: number
+      middleName: string
+      name: string
+      remaining: number
+      surname: string
+    }[] = []
+
+    data.forEach(department => {
+      department.employees.forEach(employee => {
+        let totalRemaining = 0
+
+        employee.reports.forEach(report => {
+          totalRemaining += report.remaining
+        })
+
+        if (totalRemaining > 0) {
+          usersWithRemainingArray.push({
+            id: employee.id,
+            middleName: employee.middleName,
+            name: employee.name,
+            remaining: totalRemaining,
+            surname: employee.surname,
+          })
+        }
+      })
+    })
+
+    setUsersWithRemaining(usersWithRemainingArray)
     setShowCreatePaymentForm(true)
   }
 
@@ -44,7 +79,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
       <table className={'table-auto w-full border-collapse'}>
         <thead>
           <tr>
-            <th className={'border px-4 py-2 bg-gray-100'}>Фамилия</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>ФИО</th>
             {months.map(month => (
               <th className={'border px-4 py-2 bg-gray-100'} colSpan={4} key={month}>
                 {month} 2024
@@ -75,8 +110,10 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
                 </td>
               </tr>
               {department.employees.map(employee => (
-                <tr key={employee.name}>
-                  <td className={'border px-4 py-2'}>{employee.name}</td>
+                <tr key={employee.id}>
+                  <td className={'border px-4 py-2'}>
+                    {`${employee.surname} ${employee.name} ${employee.middleName}`}
+                  </td>
                   {months.map(month => {
                     const report = employee.reports.find(r => r.month === `${month} 2024`)
 
@@ -85,7 +122,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
                         {['salary', 'earned', 'paid', 'remaining'].map(field => (
                           <td
                             className={'border px-4 py-2'}
-                            key={`${employee.name}-${month}-${field}`}
+                            key={`${employee.id}-${month}-${field}`}
                           >
                             <div className={'w-full h-full'} style={{ minWidth: '100px' }}>
                               <span className={'block w-full h-full px-2 py-1 text-sm'}>
@@ -122,7 +159,10 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
         </button>
       </div>
       {showCreatePaymentForm && (
-        <CreatePaymentForm onClose={() => setShowCreatePaymentForm(false)} />
+        <CreatePaymentForm
+          onClose={() => setShowCreatePaymentForm(false)}
+          usersWithRemaining={usersWithRemaining}
+        />
       )}
       {showPaymentsListForm && <PaymentsListForm onClose={() => setShowPaymentsListForm(false)} />}
     </div>

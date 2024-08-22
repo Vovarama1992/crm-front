@@ -36,8 +36,11 @@ type Report = {
 }
 
 type Employee = {
+  id: number // Добавляем поле id
+  middleName: string
   name: string
   reports: Report[]
+  surname: string
 }
 
 type DepartmentData = {
@@ -83,9 +86,14 @@ export const SalaryReportsPage: React.FC = () => {
       }
 
       const employee: Employee = {
+        id: user.id,
+        middleName: user.middleName,
         name: user.name,
         reports: [],
+        surname: user.surname,
       }
+
+      let previousRemaining = 0
 
       months.forEach((month, index) => {
         const currentYear = selectedYear
@@ -124,8 +132,8 @@ export const SalaryReportsPage: React.FC = () => {
           )
           .reduce((sum, exp) => sum + exp.amount, 0)
 
-        // Рассчитываем остаток
-        const remaining = salary + earnings - paid
+        // Рассчитываем остаток с учетом остатка с прошлого месяца
+        const remaining = salary + earnings - paid + previousRemaining
 
         // Заполняем отчет для текущего месяца
         employee.reports.push({
@@ -135,6 +143,9 @@ export const SalaryReportsPage: React.FC = () => {
           remaining: remaining,
           salary: salary,
         })
+
+        // Обновляем остаток для следующего месяца
+        previousRemaining = remaining
       })
 
       department.employees.push(employee)

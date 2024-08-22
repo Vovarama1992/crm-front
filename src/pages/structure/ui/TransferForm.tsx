@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { DepartmentDto, WorkerDto } from '@/entities/workers'
+import { useUpdateWorkerMutation } from '@/entities/workers' // Импортируем хук для обновления
 
 type TransferFormProps = {
   departments: DepartmentDto[]
@@ -9,7 +10,7 @@ type TransferFormProps = {
   onCancel: () => void
   onDemote: (worker: WorkerDto, newRopId?: number) => void
   onPromote: (worker: WorkerDto, departmentName: string) => void
-  onTransfer: (worker: WorkerDto, newDepartmentId: number) => void
+  onTransfer: (worker: WorkerDto, newDepartmentId: null | number) => void
 }
 
 const TransferForm: React.FC<TransferFormProps> = ({
@@ -26,12 +27,16 @@ const TransferForm: React.FC<TransferFormProps> = ({
   const [newRopId, setNewRopId] = useState<null | number>(null)
   const [demoteOption, setDemoteOption] = useState<'disband' | 'reassign' | null>(null)
 
+  const [updateWorker] = useUpdateWorkerMutation() // Используем хук для обновления данных сотрудника
+
   // Находим текущий департамент сотрудника
   const currentDepartment = departments.find(dept => dept.id === employee.department_id)
 
-  const handleSubmit = () => {
-    if (formType === 'transfer' && selectedDepartmentId !== null) {
-      onTransfer(employee, selectedDepartmentId)
+  const handleSubmit = async () => {
+    if (formType === 'transfer') {
+      // Обновляем сотрудника, устанавливая department_id в null, если выбран "Без отдела"
+      await updateWorker({ ...employee, department_id: selectedDepartmentId })
+      onTransfer(employee, selectedDepartmentId) // Передаем null, если выбрана опция "Без отдела"
     } else if (formType === 'promote' && departmentName) {
       onPromote(employee, departmentName)
     } else if (formType === 'demote') {
@@ -58,10 +63,10 @@ const TransferForm: React.FC<TransferFormProps> = ({
           <label className={'block text-sm font-medium text-gray-700'}>Выбрать отдел</label>
           <select
             className={'mt-1 block w-full p-2 border border-gray-300 rounded-md'}
-            onChange={e => setSelectedDepartmentId(Number(e.target.value))}
+            onChange={e => setSelectedDepartmentId(Number(e.target.value) || null)}
             value={selectedDepartmentId || ''}
           >
-            <option value={''}>Выберите отдел</option>
+            <option value={''}>Без отдела</option> {/* Добавлена опция "Без отдела" */}
             {departments.map(dept => (
               <option key={dept.id} value={dept.id}>
                 {dept.name}

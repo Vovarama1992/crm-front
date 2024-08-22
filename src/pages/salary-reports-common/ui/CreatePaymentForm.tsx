@@ -1,34 +1,78 @@
 import React, { useState } from 'react'
 
-import { useCreatePaymentMutation } from '@/entities/deal'
+import { useCreateMultiplePaymentsMutation, useCreatePaymentMutation } from '@/entities/deal'
 import { PaymentType } from '@/entities/deal/deal.types'
-import { useGetWorkersQuery } from '@/entities/workers' // Импортируем типы платежей
+
+type User = {
+  id: number
+  middleName: string
+  name: string
+  remaining: number // Поле remaining для остатков
+  surname: string
+}
 
 type CreatePaymentFormProps = {
   onClose: () => void
+  usersWithRemaining: User[] // Получаем массив пользователей с остатками через пропсы
 }
 
-// Определяем типы платежей с русскими отображаемыми значениями
 const PAYMENT_TYPES = [
   { label: 'Оклад', value: 'SALARY' as PaymentType },
   { label: 'Бонус', value: 'BONUS' as PaymentType },
 ]
 
-const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({ onClose }) => {
+const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({ onClose, usersWithRemaining }) => {
   const [amount, setAmount] = useState<null | number>(null)
   const [selectedUserId, setSelectedUserId] = useState<null | number>(null)
   const [type, setType] = useState<PaymentType>(PAYMENT_TYPES[0].value) // Значение по умолчанию для типа
-  const { data: users } = useGetWorkersQuery()
+  const [date, setDate] = useState<string>('') // Поле для выбора даты в формате ISO
+  const [isPayAll, setIsPayAll] = useState(false) // Стейт для переключения между выплатой всем и конкретному пользователю
   const [createPayment, { isLoading }] = useCreatePaymentMutation()
+  const [createMultiplePayments] = useCreateMultiplePaymentsMutation() // Хук для массовой выплаты
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (amount !== null && selectedUserId !== null) {
-      await createPayment({ amount, type, userId: selectedUserId })
-      window.location.reload()
-      onClose()
+    if (date === '') {
+      alert('Пожалуйста, выберите дату')
+
+      return
     }
+
+    const isoDate = new Date(date).toISOString() // Преобразуем дату в ISO строку
+
+    if (isPayAll) {
+      // Выплата всем пользователям с ненулевым остатком
+      const usersToPay = usersWithRemaining.filter(user => user.remaining > 0) // Фильтруем пользователей с ненулевым остатком
+      const payments = usersToPay.map(user => ({
+        amount: Math.ceil(user.remaining),
+        date: isoDate,
+        type,
+        userId: user.id,
+      }))
+
+      // Подтверждение перед массовой выплатой
+      const confirmation = window.confirm(
+        `Вы собираетесь выплатить следующим пользователям:\n\n` +
+          usersToPay.map(user => `${user.surname} ${user.name}: ${user.remaining}`).join('\n') +
+          `\n\nДата выплаты: ${isoDate}\n\nНажмите ОК, чтобы продолжить.`
+      )
+
+      if (confirmation) {
+        await createMultiplePayments(payments) // Используем хук для массовой выплаты
+      }
+    } else {
+      // Выплата конкретному пользователю
+      if (amount !== null && selectedUserId !== null) {
+        await createPayment({ amount, date: isoDate, type, userId: selectedUserId })
+      } else {
+        alert('Пожалуйста, выберите сумму и пользователя')
+
+        return
+      }
+    }
+    //window.location.reload()
+    onClose()
   }
 
   return (
@@ -38,21 +82,47 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({ onClose }) => {
         <form onSubmit={handleSubmit}>
           <div className={'mb-4'}>
             <label className={'block text-sm font-medium text-gray-700'}>
-              Выберите пользователя
+              <input
+                checked={isPayAll}
+                className={'mr-2'}
+                onChange={() => setIsPayAll(prev => !prev)}
+                type={'checkbox'}
+              />
+              Выплатить всем пользователям с ненулевым остатком
             </label>
-            <select
-              className={'mt-1 block w-full p-2 border border-gray-300 rounded'}
-              onChange={e => setSelectedUserId(Number(e.target.value))}
-              value={selectedUserId ?? ''}
-            >
-              <option value={''}>Выберите пользователя</option>
-              {users?.map(user => (
-                <option key={user.id} value={user.id}>
-                  {user.name} {user.surname}
-                </option>
-              ))}
-            </select>
           </div>
+
+          {!isPayAll && (
+            <>
+              <div className={'mb-4'}>
+                <label className={'block text-sm font-medium text-gray-700'}>
+                  Выберите пользователя
+                </label>
+                <select
+                  className={'mt-1 block w-full p-2 border border-gray-300 rounded'}
+                  onChange={e => setSelectedUserId(Number(e.target.value))}
+                  value={selectedUserId ?? ''}
+                >
+                  <option value={''}>Выберите пользователя</option>
+                  {usersWithRemaining?.map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.surname} {user.name} {user.middleName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={'mb-4'}>
+                <label className={'block text-sm font-medium text-gray-700'}>Сумма</label>
+                <input
+                  className={'mt-1 block w-full p-2 border border-gray-300 rounded'}
+                  onChange={e => setAmount(Number(e.target.value))}
+                  type={'number'}
+                  value={amount ?? ''}
+                />
+              </div>
+            </>
+          )}
+
           <div className={'mb-4'}>
             <label className={'block text-sm font-medium text-gray-700'}>Тип выплаты</label>
             <select
@@ -67,15 +137,17 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({ onClose }) => {
               ))}
             </select>
           </div>
+
           <div className={'mb-4'}>
-            <label className={'block text-sm font-medium text-gray-700'}>Сумма</label>
+            <label className={'block text-sm font-medium text-gray-700'}>Дата</label>
             <input
               className={'mt-1 block w-full p-2 border border-gray-300 rounded'}
-              onChange={e => setAmount(Number(e.target.value))}
-              type={'number'}
-              value={amount ?? ''}
+              onChange={e => setDate(e.target.value)}
+              type={'date'}
+              value={date}
             />
           </div>
+
           <div className={'flex justify-end'}>
             <button
               className={'mr-4 px-4 py-2 bg-gray-200 rounded text-gray-800'}

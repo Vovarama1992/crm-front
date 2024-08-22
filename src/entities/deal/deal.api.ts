@@ -48,6 +48,13 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    createMultiplePayments: builder.mutation<PaymentDto[], CreatePaymentDto[]>({
+      query: payments => ({
+        body: payments,
+        method: 'POST',
+        url: '/payments/bulk',
+      }),
+    }),
     createPayment: builder.mutation<PaymentDto, CreatePaymentDto>({
       query: payment => ({
         body: payment,
@@ -251,6 +258,7 @@ export const {
   useCreateCounterpartyMutation,
   useCreateDealMutation,
   useCreateExpenseMutation,
+  useCreateMultiplePaymentsMutation,
   useCreatePaymentMutation,
   useCreateSaleMutation,
   useGetAllCounterpartiesQuery,

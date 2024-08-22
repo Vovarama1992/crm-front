@@ -16,7 +16,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
   const [inn, setInn] = useState('') // Состояние для ИНН
   const [deliveryDeadline, setDeliveryDeadline] = useState('') // Крайняя дата поставки
   const [prepaymentAmount, setPrepaymentAmount] = useState('') // Сумма предоплаты
-  const [amountPaidNow, setAmountPaidNow] = useState('') // Оплачено сейчас
   const [isFinalAmount, setIsFinalAmount] = useState(false) // Финальная сумма (чекбокс)
   const [totalSaleAmount, setTotalSaleAmount] = useState('') // Общая сумма продажи
   const [isIndependentDeal, setIsIndependentDeal] = useState(false) // Самостоятельная сделка (чекбокс)
@@ -58,7 +57,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
       lastDeliveryDate: deliveryDateTime, // Крайняя дата поставки в формате DateTime
       logisticsCost: 0, // Дефолтное значение
       margin: 0, // Дефолтное значение
-      paidNow: parseFloat(amountPaidNow) || 0, // Оплачено сейчас
+      paidNow: 0, // Оплачено сейчас
       prepaymentAmount: parseFloat(prepaymentAmount) || 0, // Сумма предоплаты
       purchaseCost: 0, // Дефолтное значение
       saleAmount, // Используем переданный saleAmount
@@ -131,16 +130,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
           onChange={e => setPrepaymentAmount(e.target.value)}
           type={'number'}
           value={prepaymentAmount}
-        />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Оплачено сейчас</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setAmountPaidNow(e.target.value)}
-          type={'number'}
-          value={amountPaidNow}
         />
       </div>
 

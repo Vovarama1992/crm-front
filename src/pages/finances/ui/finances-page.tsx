@@ -204,7 +204,7 @@ export const FinancesPage: React.FC = () => {
       </div>
 
       <h2 className={'text-xl font-bold mt-4'}>Таблица расходов</h2>
-      <ExpenseTable expenses={expensesData || []} months={selectedMonths} />
+      <ExpenseTable expenses={expensesData || []} />
     </div>
   )
 }

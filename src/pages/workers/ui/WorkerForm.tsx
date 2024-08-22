@@ -1,83 +1,65 @@
 /* eslint-disable max-lines */
 import { useState } from 'react'
 
-import { useMeQuery } from '@/entities/session'
 import { useSignUpMutation } from '@/entities/session'
 import { RegistrationDto } from '@/entities/session/session.types'
-import { WorkerDto } from '@/entities/workers'
-import { useUpdateWorkerMutation } from '@/entities/workers'
 
 type WorkerFormProps = {
-  existingWorker?: WorkerDto
   onClose?: () => void // Обработчик закрытия формы
 }
 
 const ROLES = ['Директор', 'Бухгалтер', 'РОП', 'Закупщик', 'Логист', 'Менеджер']
 
-const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
-  const { data } = useMeQuery()
-  const roleName = data?.roleName || ''
-  const isDirector = roleName === 'Директор'
-
+const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
   const [createWorker] = useSignUpMutation()
-  const [updateWorker] = useUpdateWorkerMutation()
 
   const [formState, setFormState] = useState<RegistrationDto>({
-    birthday: existingWorker?.birthday || '',
-    cardNumber: existingWorker?.cardNumber || '',
-    department_id: undefined,
-    dobNumber: existingWorker?.dobNumber ? Number(existingWorker.dobNumber) : 0,
-    email: existingWorker?.email || '',
-    hireDate: existingWorker?.hireDate || '',
-    margin_percent: existingWorker?.margin_percent || 0.1,
-    middleName: existingWorker?.middleName || '',
-    mobile: existingWorker?.mobile || '',
-    name: existingWorker?.name || '',
-    password: '', // Добавлено поле пароля
-    position: existingWorker?.position || '',
-    roleName: existingWorker?.roleName || '',
-    salary: Number(existingWorker?.salary),
-    surname: '', // Добавлено поле фамилии
+    birthday: new Date().toISOString().split('T')[0], // Текущая дата по умолчанию
+    cardNumber: '',
+    department_id: null,
+    dobNumber: 0,
+    email: '',
+    hireDate: new Date().toISOString().split('T')[0], // Текущая дата по умолчанию
+    margin_percent: 0.1,
+    middleName: '',
+    mobile: '',
+    name: '',
+    password: '',
+    position: '',
+    roleName: 'Менеджер',
+    salary: 0,
+    surname: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isDirector) {
-      const { name, value } = e.target
+    const { name, value } = e.target
 
-      setFormState(prevState => ({
-        ...prevState,
-        [name]:
-          name === 'dobNumber' ||
-          name === 'department_id' ||
-          name === 'margin_percent' ||
-          name === 'salary'
-            ? Number(value)
-            : value,
-      }))
-    }
+    setFormState(prevState => ({
+      ...prevState,
+      [name]:
+        name === 'dobNumber' ||
+        name === 'department_id' ||
+        name === 'margin_percent' ||
+        name === 'salary'
+          ? Number(value)
+          : value,
+    }))
   }
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isDirector) {
-      const role = e.target.value
+    const role = e.target.value
 
-      setFormState(prevState => ({
-        ...prevState,
-        roleName: e.target.checked ? role : '',
-      }))
-    }
+    setFormState(prevState => ({
+      ...prevState,
+      roleName: e.target.checked ? role : '',
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (existingWorker) {
-      // Обновление работника
-      await updateWorker(formState)
-    } else {
-      // Создание нового работника
-      await createWorker(formState)
-    }
+    // Создание нового работника
+    await createWorker(formState)
 
     // Дополнительная логика по завершению формы
     alert('Данные сотрудника успешно сохранены!')
@@ -124,7 +106,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'name'}
             onChange={handleChange}
             required
@@ -138,7 +119,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'middleName'}
             onChange={handleChange}
             required
@@ -152,7 +132,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'surname'}
             onChange={handleChange}
             required
@@ -166,7 +145,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'position'}
             onChange={handleChange}
             required
@@ -180,7 +158,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'email'}
             onChange={handleChange}
             required
@@ -194,7 +171,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'dobNumber'}
             onChange={handleChange}
             required
@@ -208,7 +184,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'mobile'}
             onChange={handleChange}
             required
@@ -222,7 +197,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'margin_percent'}
             onChange={handleChange}
             required
@@ -236,7 +210,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'birthday'}
             onChange={handleChange}
             required
@@ -250,9 +223,9 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'cardNumber'}
             onChange={handleChange}
+            required
             type={'text'}
             value={formState.cardNumber}
           />
@@ -263,9 +236,9 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'address'}
             onChange={handleChange}
+            required
             type={'text'}
             value={formState.address || ''}
           />
@@ -276,11 +249,11 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'hireDate'}
             onChange={handleChange}
+            required
             type={'date'}
-            value={formState.hireDate || ''}
+            value={formState.hireDate}
           />
         </div>
         <div className={'flex flex-col'}>
@@ -289,7 +262,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm h-[20px]'
             }
-            disabled={!isDirector}
             name={'password'}
             onChange={handleChange}
             required
@@ -305,7 +277,6 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
                 <input
                   checked={formState.roleName === role}
                   className={'form-checkbox'}
-                  disabled={!isDirector}
                   onChange={handleRoleChange}
                   type={'checkbox'}
                   value={role}
@@ -321,9 +292,9 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ existingWorker, onClose }) => {
             className={
               'p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm'
             }
-            disabled={!isDirector}
             name={'salary'}
             onChange={handleChange}
+            required
             type={'text'}
             value={formState.salary || ''}
           />
