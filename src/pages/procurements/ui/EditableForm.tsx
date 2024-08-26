@@ -2,6 +2,7 @@
 import React from 'react'
 
 import {
+  useGetAllCounterpartiesQuery,
   useGetInvoiceLinesByPurchaseIdQuery,
   useGetLogisticsLinesByPurchaseIdQuery,
   useGetSupplierLinesByPurchaseIdQuery,
@@ -11,6 +12,7 @@ import {
   useUpdateSupplierLineMutation,
 } from '@/entities/deal'
 import { PurchaseDto } from '@/entities/deal/deal.types'
+import { useGetWorkersQuery } from '@/entities/workers'
 
 interface EditableFormProps {
   initialValue: PurchaseDto
@@ -27,6 +29,22 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   const [updateInvoiceLine] = useUpdateInvoiceLineMutation()
   const [updateSupplierLine] = useUpdateSupplierLineMutation()
   const [updateLogisticsLine] = useUpdateLogisticsLineMutation()
+
+  const { data: counterparties = [] } = useGetAllCounterpartiesQuery() // Получаем всех контрагентов
+  const { data: workers = [] } = useGetWorkersQuery()
+
+  const getCounterpartyName = (id: number) => {
+    const counterparty = counterparties.find(c => c.id === id)
+
+    return counterparty ? counterparty.name : 'Неизвестный контрагент'
+  }
+
+  // Функция для получения имени сотрудника по ID
+  const getWorkerName = (id: number) => {
+    const worker = workers.find(w => w.id === id)
+
+    return worker ? worker.name : 'Неизвестный сотрудник'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,60 +70,63 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
 
       // Обновляем связанные сущности
       await Promise.all(
-        invoiceLines.map(line =>
-          updateInvoiceLine({
-            data: {
-              ...line,
-              articleNumber: formData.get(`invoiceLine_articleNumber_${line.id}`) as string,
-              comment: formData.get(`invoiceLine_comment_${line.id}`) as string,
-              description: formData.get(`invoiceLine_description_${line.id}`) as string,
-              quantity: Number(formData.get(`invoiceLine_quantity_${line.id}`)),
-              totalPrice: Number(formData.get(`invoiceLine_totalPrice_${line.id}`)),
-              unitPrice: Number(formData.get(`invoiceLine_unitPrice_${line.id}`)),
-            },
+        invoiceLines.map(line => {
+          const lineData = {
+            articleNumber: formData.get(`invoiceLine_articleNumber_${line.id}`) as string,
+            comment: formData.get(`invoiceLine_comment_${line.id}`) as string,
+            description: formData.get(`invoiceLine_description_${line.id}`) as string,
+            quantity: Number(formData.get(`invoiceLine_quantity_${line.id}`)),
+            totalPrice: Number(formData.get(`invoiceLine_totalPrice_${line.id}`)),
+            unitPrice: Number(formData.get(`invoiceLine_unitPrice_${line.id}`)),
+          }
+
+          return updateInvoiceLine({
+            data: lineData, // Передаем данные без id
             id: line.id,
           }).unwrap()
-        )
+        })
       )
 
       await Promise.all(
-        supplierLines.map(line =>
-          updateSupplierLine({
-            data: {
-              ...line,
-              articleNumber: formData.get(`supplierLine_articleNumber_${line.id}`) as string,
-              comment: formData.get(`supplierLine_comment_${line.id}`) as string,
-              delivered: formData.get(`supplierLine_delivered_${line.id}`) === 'on',
-              description: formData.get(`supplierLine_description_${line.id}`) as string,
-              paymentDate: line.paymentDate ? new Date(line.paymentDate).toISOString() : '',
-              quantity: Number(formData.get(`supplierLine_quantity_${line.id}`)),
-              shipmentDate: line.shipmentDate ? new Date(line.shipmentDate).toISOString() : '',
-              supplierId: Number(formData.get(`supplierLine_supplierId_${line.id}`)),
-              supplierInvoice: formData.get(`supplierLine_supplierInvoice_${line.id}`) as string,
-              totalPurchaseAmount: Number(
-                formData.get(`supplierLine_totalPurchaseAmount_${line.id}`)
-              ),
-            },
+        supplierLines.map(line => {
+          const lineData = {
+            articleNumber: formData.get(`supplierLine_articleNumber_${line.id}`) as string,
+            comment: formData.get(`supplierLine_comment_${line.id}`) as string,
+            delivered: formData.get(`supplierLine_delivered_${line.id}`) === 'on',
+            description: formData.get(`supplierLine_description_${line.id}`) as string,
+            paymentDate: line.paymentDate ? new Date(line.paymentDate).toISOString() : '',
+            quantity: Number(formData.get(`supplierLine_quantity_${line.id}`)),
+            shipmentDate: line.shipmentDate ? new Date(line.shipmentDate).toISOString() : '',
+
+            supplierInvoice: formData.get(`supplierLine_supplierInvoice_${line.id}`) as string,
+            totalPurchaseAmount: Number(
+              formData.get(`supplierLine_totalPurchaseAmount_${line.id}`)
+            ),
+          }
+
+          return updateSupplierLine({
+            data: lineData, // Передаем данные без id
             id: line.id,
           }).unwrap()
-        )
+        })
       )
 
       await Promise.all(
-        logisticsLines.map(line =>
-          updateLogisticsLine({
-            data: {
-              ...line,
-              amount: Number(formData.get(`logisticsLine_amount_${line.id}`)),
-              carrier: formData.get(`logisticsLine_carrier_${line.id}`) as string,
-              date: line.date
-                ? new Date(formData.get(`logisticsLine_date_${line.id}`) as string).toISOString()
-                : '',
-              description: formData.get(`logisticsLine_description_${line.id}`) as string,
-            },
+        logisticsLines.map(line => {
+          const lineData = {
+            amount: Number(formData.get(`logisticsLine_amount_${line.id}`)),
+            carrier: formData.get(`logisticsLine_carrier_${line.id}`) as string,
+            date: line.date
+              ? new Date(formData.get(`logisticsLine_date_${line.id}`) as string).toISOString()
+              : '',
+            description: formData.get(`logisticsLine_description_${line.id}`) as string,
+          }
+
+          return updateLogisticsLine({
+            data: lineData, // Передаем данные без id
             id: line.id,
           }).unwrap()
-        )
+        })
       )
 
       onSave()
@@ -130,12 +151,11 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               />
             </div>
             <div>
-              <label className={'block text-sm font-medium'}>Заказчик (ID)</label>
+              <label className={'block text-sm font-medium'}>Заказчик</label>
               <input
                 className={'border p-2 w-full'}
-                defaultValue={initialValue.counterpartyId}
-                name={'counterpartyId'}
-                type={'number'}
+                defaultValue={getCounterpartyName(initialValue.counterpartyId)}
+                type={'text'}
               />
             </div>
             <div>
@@ -148,12 +168,11 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               />
             </div>
             <div>
-              <label className={'block text-sm font-medium'}>Менеджер (ID)</label>
+              <label className={'block text-sm font-medium'}>Менеджер</label>
               <input
                 className={'border p-2 w-full'}
-                defaultValue={initialValue.userId}
-                name={'userId'}
-                type={'number'}
+                defaultValue={getWorkerName(initialValue.userId)}
+                type={'text'}
               />
             </div>
             <div>

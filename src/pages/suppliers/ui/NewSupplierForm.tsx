@@ -15,6 +15,7 @@ const NewSupplierForm: React.FC<NewSupplierFormProps> = ({ onAddSupplier, onClos
   const [website, setWebsite] = useState('')
   const [contactPerson, setContactPerson] = useState('')
   const [notes, setNotes] = useState('')
+  const [inn, setInn] = useState('') // Добавлено состояние для ИНН
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,6 +23,7 @@ const NewSupplierForm: React.FC<NewSupplierFormProps> = ({ onAddSupplier, onClos
       address,
       contactPerson,
       email,
+      inn, // Добавлено ИНН
       name,
       note: notes,
       phone,
@@ -93,6 +95,16 @@ const NewSupplierForm: React.FC<NewSupplierFormProps> = ({ onAddSupplier, onClos
               required
               type={'text'}
               value={contactPerson}
+            />
+          </div>
+          <div className={'mb-4'}>
+            <label className={'block text-sm font-bold mb-1'}>ИНН</label>{' '}
+            {/* Добавлено поле для ИНН */}
+            <input
+              className={'w-full border p-2 rounded'}
+              onChange={e => setInn(e.target.value)}
+              type={'text'}
+              value={inn}
             />
           </div>
           <div className={'mb-4'}>

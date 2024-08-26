@@ -122,6 +122,7 @@ export const SuppliersPage: React.FC = () => {
             <th className={'border px-4 py-2'}>E-mail</th>
             <th className={'border px-4 py-2'}>WWW</th>
             <th className={'border px-4 py-2'}>Контактное лицо</th>
+            <th className={'border px-4 py-2'}>ИНН</th> {/* Добавлен столбец для ИНН */}
             <th className={'border px-4 py-2'}>Примечание</th>
           </tr>
         </thead>
@@ -195,7 +196,12 @@ export const SuppliersPage: React.FC = () => {
                 )}
               </td>
               <td className={'border w-[100px]  px-4 py-2'}>
-                <a href={supplier.website} rel={'noopener noreferrer'} target={'_blank'}>
+                <a
+                  className={'text-blue-500 hover:underline'}
+                  href={supplier.website}
+                  rel={'noopener noreferrer'}
+                  target={'_blank'}
+                >
                   {supplier.website}
                 </a>
               </td>
@@ -220,12 +226,28 @@ export const SuppliersPage: React.FC = () => {
                 )}
               </td>
               <td className={'border w-[100px]  px-4 py-2'}>
+                {isDirector && editIndex?.row === index && editIndex.column === 'inn' ? (
+                  <input
+                    autoFocus
+                    className={'w-full'}
+                    onBlur={() => setEditIndex(null)}
+                    onChange={e => handleEditChange(e, supplier.id, 'inn')}
+                    type={'text'}
+                    value={supplier.inn}
+                  />
+                ) : (
+                  <span onClick={() => isDirector && setEditIndex({ column: 'inn', row: index })}>
+                    {supplier.inn}
+                  </span>
+                )}
+              </td>
+              <td className={'border w-[100px]  px-4 py-2'}>
                 {isDirector && editIndex?.row === index && editIndex.column === 'notes' ? (
                   <input
                     autoFocus
                     className={'w-full'}
                     onBlur={() => setEditIndex(null)}
-                    onChange={e => handleEditChange(e, supplier.id, 'notes')}
+                    onChange={e => handleEditChange(e, supplier.id, 'note')}
                     type={'text'}
                     value={supplier.note}
                   />

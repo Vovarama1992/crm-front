@@ -32,6 +32,7 @@ export type SupplierDto = {
   contactPerson: string
   email: string
   id: number
+  inn: string
   name: string
   note?: string
   phone: string
@@ -42,6 +43,7 @@ export type CreateSupplierDto = {
   address: string
   contactPerson: string
   email: string
+  inn: string
   name: string
   note?: string
   phone: string

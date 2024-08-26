@@ -5,7 +5,7 @@ import { PurchaseDto } from '@/entities/deal/deal.types'
 import EditableForm from './EditableForm'
 
 interface PurchaseTableProps {
-  data: PurchaseDto[]
+  data: ({ counterpartyName: string; managerName: string } & PurchaseDto)[]
 }
 
 const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
@@ -29,9 +29,9 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
           <tr>
             <th className={'border px-4 py-2 bg-gray-100'}>№ сделки</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Номер запроса</th>
-            <th className={'border px-4 py-2 bg-gray-100'}>Заказчик (ID)</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>Заказчик</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Счет заказчику</th>
-            <th className={'border px-4 py-2 bg-gray-100'}>Менеджер (ID)</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>Менеджер</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Крайняя дата поставки</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Действия</th>
           </tr>
@@ -41,9 +41,9 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
             <tr key={purchase.id}>
               <td className={'border px-4 py-2'}>{purchase.dealId}</td>
               <td className={'border px-4 py-2'}>{purchase.requestNumber}</td>
-              <td className={'border px-4 py-2'}>{purchase.counterpartyId}</td>
+              <td className={'border px-4 py-2'}>{purchase.counterpartyName}</td>
               <td className={'border px-4 py-2'}>{purchase.invoiceToCustomer}</td>
-              <td className={'border px-4 py-2'}>{purchase.userId}</td>
+              <td className={'border px-4 py-2'}>{purchase.managerName}</td>
               <td className={'border px-4 py-2'}>
                 {new Date(purchase.deliveryDeadline).toLocaleDateString()}
               </td>

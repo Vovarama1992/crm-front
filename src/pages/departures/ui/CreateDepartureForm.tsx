@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { useGetAllDealsQuery } from '@/entities/deal'
+import { useGetAllSalesQuery } from '@/entities/deal'
 import { useCreateDepartureMutation } from '@/entities/departure/departure.api'
 import { useGetWorkersQuery } from '@/entities/workers'
 
@@ -19,6 +20,10 @@ const specificDestinationOptions = [
 export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { data: deals = [] } = useGetAllDealsQuery()
   const { data: workers = [] } = useGetWorkersQuery()
+  const { data: sales = [] } = useGetAllSalesQuery()
+
+  // Отфильтруем продажи по полю progressed
+  const progressedSales = sales
   const [createDeparture] = useCreateDepartureMutation()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -66,14 +71,15 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
       <h2 className={'text-lg font-bold mb-4'}>Создание отправления</h2>
 
       <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Номер сделки</label>
+        <label className={'block text-sm font-bold mb-1'}>Номер продажи</label>{' '}
+        {/* Переименовали поле */}
         <select className={'border rounded p-2 w-full'} name={'dealId'} required>
           <option disabled value={''}>
-            Выберите сделку
+            Выберите номер продажи
           </option>
-          {deals.map(deal => (
-            <option key={deal.id} value={deal.id}>
-              {deal.id}
+          {progressedSales.map(sale => (
+            <option key={sale.id} value={sale.id}>
+              {sale.id} {/* Используем ID продаж */}
             </option>
           ))}
         </select>

@@ -1,11 +1,15 @@
 import React, { useState } from 'react'
 
-import { useGetAllPurchasesQuery } from '@/entities/deal'
+import { useGetAllCounterpartiesQuery, useGetAllPurchasesQuery } from '@/entities/deal'
+import { useGetWorkersQuery } from '@/entities/workers'
 
 import PurchaseTable from './PurchaseTable'
 
 export const ProcurementsPage: React.FC = () => {
   const { data: purchaseData = [] } = useGetAllPurchasesQuery()
+  const { data: counterparties = [] } = useGetAllCounterpartiesQuery() // Получаем всех контрагентов
+  const { data: workers = [] } = useGetWorkersQuery() // Получаем всех сотрудников
+
   const [searchInvoice, setSearchInvoice] = useState('')
   const [searchManager, setSearchManager] = useState('')
   const [searchCustomer, setSearchCustomer] = useState('')
@@ -47,24 +51,47 @@ export const ProcurementsPage: React.FC = () => {
     }
   }
 
+  // Функция для получения имени контрагента по ID
+  const getCounterpartyName = (id: number) => {
+    const counterparty = counterparties.find(c => c.id === id)
+
+    return counterparty ? counterparty.name : 'Неизвестный контрагент'
+  }
+
+  // Функция для получения имени сотрудника по ID
+  const getWorkerName = (id: number) => {
+    const worker = workers.find(w => w.id === id)
+
+    return worker ? worker.name + ' ' + worker.surname : 'Неизвестный сотрудник'
+  }
+
   // Фильтрация данных
   const filteredData = purchaseData.filter(purchase => {
     const matchesInvoice = purchase.requestNumber
       .toLowerCase()
       .includes(searchInvoice.toLowerCase())
-    const matchesManager = searchManager === '' || purchase.userId === parseInt(searchManager, 10)
+    const matchesManager =
+      searchManager === '' ||
+      getWorkerName(purchase.userId).toLowerCase().includes(searchManager.toLowerCase())
     const matchesCustomer =
-      searchCustomer === '' || purchase.counterpartyId === parseInt(searchCustomer, 10)
+      searchCustomer === '' ||
+      getCounterpartyName(purchase.counterpartyId)
+        .toLowerCase()
+        .includes(searchCustomer.toLowerCase())
     const matchesPriceRange =
       (!priceRange.min || purchase.invoiceToCustomer >= parseFloat(priceRange.min)) &&
       (!priceRange.max || purchase.invoiceToCustomer <= parseFloat(priceRange.max))
 
-    // Фильтрация по чекбоксам на основе связанных сущностей
+    // Убедитесь, что логистические линии и линии поставщиков определены и являются массивами
     const matchesCompletedDealsOnly =
-      !completedDealsOnly || purchase.logisticsLines.some(line => line.date && line.amount)
-    const matchesIssuesOnly = !issuesOnly || purchase.supplierLines.some(line => !line.delivered)
+      !completedDealsOnly ||
+      (purchase.logisticsLines && purchase.logisticsLines.some(line => line.date && line.amount))
+    const matchesIssuesOnly =
+      !issuesOnly ||
+      (purchase.supplierLines && purchase.supplierLines.some(line => !line.delivered))
     const matchesUnpaidSupplierInvoicesOnly =
-      !unpaidSupplierInvoicesOnly || purchase.supplierLines.some(line => !line.paymentDate)
+      !unpaidSupplierInvoicesOnly ||
+      (purchase.supplierLines && purchase.supplierLines.some(line => !line.paymentDate))
 
     return (
       matchesInvoice &&
@@ -92,14 +119,14 @@ export const ProcurementsPage: React.FC = () => {
         <input
           className={'border p-2 mr-2'}
           onChange={handleSearchManagerChange}
-          placeholder={'Поиск по менеджеру (ID)'}
+          placeholder={'Поиск по менеджеру'}
           type={'text'}
           value={searchManager}
         />
         <input
           className={'border p-2 mr-2'}
           onChange={handleSearchCustomerChange}
-          placeholder={'Поиск по заказчику (ID)'}
+          placeholder={'Поиск по заказчику'}
           type={'text'}
           value={searchCustomer}
         />
@@ -151,7 +178,13 @@ export const ProcurementsPage: React.FC = () => {
         </label>
       </div>
 
-      <PurchaseTable data={filteredData} />
+      <PurchaseTable
+        data={filteredData.map(purchase => ({
+          ...purchase,
+          counterpartyName: getCounterpartyName(purchase.counterpartyId),
+          managerName: getWorkerName(purchase.userId),
+        }))}
+      />
     </div>
   )
 }

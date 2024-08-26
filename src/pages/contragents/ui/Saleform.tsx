@@ -17,7 +17,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
   const [deliveryDeadline, setDeliveryDeadline] = useState('') // Крайняя дата поставки
   const [prepaymentAmount, setPrepaymentAmount] = useState('') // Сумма предоплаты
   const [isFinalAmount, setIsFinalAmount] = useState(false) // Финальная сумма (чекбокс)
-  const [totalSaleAmount, setTotalSaleAmount] = useState('') // Общая сумма продажи
   const [isIndependentDeal, setIsIndependentDeal] = useState(false) // Самостоятельная сделка (чекбокс)
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
@@ -55,13 +54,12 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
       isFinalAmount, // Финальная сумма
       isIndependentDeal, // Самостоятельная сделка
       lastDeliveryDate: deliveryDateTime, // Крайняя дата поставки в формате DateTime
-      logisticsCost: 0, // Дефолтное значение
+      logisticsCost: 0, // Стоимость логистики
       margin: 0, // Дефолтное значение
       paidNow: 0, // Оплачено сейчас
       prepaymentAmount: parseFloat(prepaymentAmount) || 0, // Сумма предоплаты
-      purchaseCost: 0, // Дефолтное значение
+      purchaseCost: 0, // Стоимость закупки
       saleAmount, // Используем переданный saleAmount
-      totalSaleAmount: parseFloat(totalSaleAmount) || 0, // Общая сумма продажи
       userId, // Используем переданный userId
     }
 
@@ -142,16 +140,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
           />
           <span className={'ml-2'}>Финальная сумма</span>
         </label>
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Общая сумма продажи</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setTotalSaleAmount(e.target.value)}
-          type={'number'}
-          value={totalSaleAmount}
-        />
       </div>
 
       <div className={'ml-[200px] mb-4'}>

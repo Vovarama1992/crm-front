@@ -1,15 +1,19 @@
 /* eslint-disable max-lines */
 import type { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-import { useGetAllSalesQuery } from '@/entities/deal'
+import { useGetAllCounterpartiesQuery } from '@/entities/deal'
+import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
+import { SalesCreateForm } from './SalesCreateForm'
 import { SalesEditForm } from './SalesEditForm'
 
-const months = [
+type Monthes = Array<{ label: string; value: number }>
+
+const months: Monthes = [
   { label: 'Январь', value: 1 },
   { label: 'Февраль', value: 2 },
   { label: 'Март', value: 3 },
@@ -42,6 +46,10 @@ export const SalesListPage = () => {
   const { data: meData } = useMeQuery()
   const { data: salesData } = useGetAllSalesQuery()
   const { data: workersData } = useGetWorkersQuery()
+  const { data: counterpartiesData } = useGetAllCounterpartiesQuery()
+
+  const [updateSale] = useUpdateSaleMutation()
+
   const userId = meData?.id || null
   const percent = 0.1
 
@@ -50,32 +58,26 @@ export const SalesListPage = () => {
   const [selectedEndMonth, setSelectedEndMonth] = useState<string>('8')
   const [selectedYear, setSelectedYear] = useState<string>('2024')
   const [editingSale, setEditingSale] = useState<SaleDto | null>(null)
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false)
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
 
   const [sales, setSales] = useState<SaleDto[]>([])
+  const [invoiceFiles, setInvoiceFiles] = useState<{
+    [key: number]: { name: string; url: string } | undefined
+  }>({})
 
-  // Здесь добавляем useEffect для обработки дублирования
   useEffect(() => {
-    if (salesData) {
-      // Обработка дублирования записей с заполненным статусом
-      const processedSales = salesData.flatMap(sale => {
-        if (sale.signingStage) {
-          return [
-            sale,
-            {
-              ...sale,
-              margin: undefined,
-              signingStage: undefined,
-              statusSetDate: undefined,
-            },
-          ]
-        }
-
-        return [sale]
+    if (salesData && Array.isArray(salesData)) {
+      const filteredSales = salesData.filter(sale => {
+        return selectedEmployee === null || selectedEmployee === sale.userId
       })
 
-      setSales(processedSales)
+      const sortedSales = [...filteredSales] // Создаем копию массива
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      setSales(sortedSales)
     }
-  }, [salesData])
+  }, [salesData, selectedEmployee])
 
   const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
@@ -95,56 +97,75 @@ export const SalesListPage = () => {
     setSelectedYear(event.target.value)
   }
 
-  const filteredSalesByMonth = useMemo(() => {
-    const startMonth = Number(selectedStartMonth)
-    const endMonth = Number(selectedEndMonth)
-    const year = Number(selectedYear)
-
-    const salesByMonth: Record<string, SaleDto[]> = {}
-
-    sales.forEach(sale => {
-      const saleDate = new Date(sale.date)
-      const saleMonth = saleDate.getMonth() + 1
-      const saleYear = saleDate.getFullYear()
-
-      if (saleYear === year && saleMonth >= startMonth && saleMonth <= endMonth) {
-        const key = `${saleMonth}-${saleYear}`
-
-        if (!salesByMonth[key]) {
-          salesByMonth[key] = []
-        }
-
-        if (!selectedEmployee || sale.userId === selectedEmployee) {
-          salesByMonth[key].push(sale)
-        }
+  const handleSelectChange = (
+    sale: SaleDto,
+    field: 'deliveryStage' | 'signingStage',
+    value: string
+  ) => {
+    if (field === 'deliveryStage') {
+      // Обновляем стадию доставки без открытия формы
+      updateSale({ id: sale.id, sale: { ...sale, deliveryStage: value as DeliveryStage } })
+        .then(() => {
+          window.location.reload() // Перезагружает страницу после успешного обновления
+        })
+        .catch(error => {
+          console.error('Ошибка при обновлении продажи:', error)
+        })
+    } else if (field === 'signingStage') {
+      if (sale.signingStage === 'SIGNED_ON_PAPER' || sale.signingStage === 'SIGNED_IN_EDO') {
+        // Если стадия подписания уже "Конец", просто обновляем
+        updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
+          .then(() => {
+            window.location.reload() // Перезагружает страницу после успешного обновления
+          })
+          .catch(error => {
+            console.error('Ошибка при обновлении продажи:', error)
+          })
+      } else {
+        // Если стадия подписания "Начало", открываем форму создания новой записи
+        setEditingSale({
+          ...sale,
+          progressed: true,
+          signingStage: value as SigningStage,
+          statusSetDate: new Date().toISOString(),
+        })
+        setIsCreateFormOpen(true)
       }
-    })
+    }
+  }
 
-    return salesByMonth
-  }, [sales, selectedStartMonth, selectedEndMonth, selectedYear, selectedEmployee])
+  const getCounterpartyName = (id: number) => {
+    const counterparty = counterpartiesData?.find(cp => cp.id === id)
 
-  const salesStatsByMonth = useMemo(() => {
-    const statsByMonth: Record<string, { earned: number; margin: number; saleAmount: number }> = {}
+    return counterparty ? counterparty.name : '—'
+  }
 
-    Object.entries(filteredSalesByMonth).forEach(([key, sales]) => {
-      statsByMonth[key] = sales.reduce(
-        (acc, sale) => {
-          acc.margin += sale.margin || 0
-          acc.saleAmount += sale.saleAmount || 0
-          acc.earned += (sale.margin || 0) * percent
+  const handleFileUpload = (saleId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
 
-          return acc
-        },
-        { earned: 0, margin: 0, saleAmount: 0 }
-      )
-      // Округление значений до 2 знаков после запятой
-      statsByMonth[key].earned = parseFloat(statsByMonth[key].earned.toFixed(2))
-      statsByMonth[key].margin = parseFloat(statsByMonth[key].margin.toFixed(2))
-      statsByMonth[key].saleAmount = parseFloat(statsByMonth[key].saleAmount.toFixed(2))
-    })
+    if (file) {
+      const fileUrl = URL.createObjectURL(file)
+      const newInvoiceFiles = {
+        ...invoiceFiles,
+        [saleId]: { name: file.name, url: fileUrl },
+      }
 
-    return statsByMonth
-  }, [filteredSalesByMonth, percent])
+      setInvoiceFiles(newInvoiceFiles)
+      localStorage.setItem('invoiceFiles', JSON.stringify(newInvoiceFiles))
+    }
+  }
+
+  useEffect(() => {
+    const storedFiles = localStorage.getItem('invoiceFiles')
+
+    if (storedFiles) {
+      setInvoiceFiles(JSON.parse(storedFiles))
+    }
+  }, [])
+
+  const totalMargin = sales.reduce((acc, sale) => acc + (sale.margin || 0), 0)
+  const totalTurnover = sales.reduce((acc, sale) => acc + (sale.paidNow || 0), 0)
+  const totalEarned = (totalMargin * percent).toFixed(2)
 
   return (
     <div className={'absolute top-[15%] left-[15%] w-[70%] h-[70%] overflow-auto'}>
@@ -188,115 +209,169 @@ export const SalesListPage = () => {
           </select>
         </div>
       </div>
-      {Object.entries(filteredSalesByMonth).map(([key, sales]) => {
-        return (
-          <div key={key}>
-            <h2>{`${months[Number(key.split('-')[0]) - 1].label} ${key.split('-')[1]}`}</h2>
-            <table className={'min-w-full divide-y divide-gray-200 table-auto'}>
-              <thead className={'bg-gray-50'}>
-                <tr>
-                  {[
-                    'Номер продажи',
-                    'Дата',
-                    'ID контрагента',
-                    'ID сделки',
-                    'Номер счета',
-                    'Стоимость логистики',
-                    'Закупочная стоимость',
-                    'Стоимость продажи',
-                    'Маржа',
-                    'ID пользователя',
-                    'Стадия доставки',
-                    'Стадия подписания',
-                    'Дата проставления статуса',
-                    'Действия',
-                  ].map(header => (
-                    <th
-                      className={
-                        'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                      }
-                      key={header}
+      <table className={'min-w-full divide-y divide-gray-200 table-auto'}>
+        <thead className={'bg-gray-50'}>
+          <tr>
+            {[
+              'Номер продажи',
+              'Дата',
+              'Контрагент',
+              'Номер счета',
+              'Стоимость логистики',
+              'Закупочная стоимость',
+              'Стоимость продажи',
+              'Маржа',
+              'Стадия продажи', // <-- Добавьте этот заголовок
+              'Стадия доставки',
+              'Стадия подписания',
+              'Дата проставления статуса',
+              'Что',
+              'Действия',
+            ].map(header => (
+              <th
+                className={
+                  'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
+                }
+                key={header}
+              >
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className={'bg-white divide-y divide-gray-200'}>
+          {sales.map(sale => {
+            const invoice = invoiceFiles[sale.id] // Вынесем переменную за пределы JSX
+
+            return (
+              <tr key={sale.id}>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{sale.id}</td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.date.split('T')[0]}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {getCounterpartyName(sale.counterpartyId)}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.invoiceNumber || '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.logisticsCost || '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.purchaseCost || '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.paidNow || '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.margin !== undefined && sale.progressed ? sale.margin : '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.signingStage ? 'Конец' : 'Начало'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
+                  <select
+                    className={'border border-gray-300 rounded p-1 w-full'}
+                    onChange={e => handleSelectChange(sale, 'deliveryStage', e.target.value)}
+                    value={sale.deliveryStage || ''}
+                  >
+                    <option value={''}>—</option>
+                    {Object.entries(translatedDeliveryStage).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
+                  <select
+                    className={'border border-gray-300 rounded p-1 w-full'}
+                    onChange={e => handleSelectChange(sale, 'signingStage', e.target.value)}
+                    value={sale.signingStage || ''}
+                  >
+                    <option value={''}>—</option>
+                    {Object.entries(translatedSigningStage).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.statusSetDate?.split('T')[0] || '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {invoice ? (
+                    <a
+                      className={'text-blue-500'}
+                      href={invoice.url}
+                      rel={'noopener noreferrer'}
+                      target={'_blank'}
                     >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className={'bg-white divide-y divide-gray-200'}>
-                {sales.map(sale => (
-                  <tr key={sale.id}>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.id}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.date}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.counterpartyId}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.dealId}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.invoiceNumber || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.logisticsCost || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.purchaseCost || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.saleAmount || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.margin !== undefined ? sale.margin : '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.userId}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {translatedDeliveryStage[sale.deliveryStage as DeliveryStage] || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {translatedSigningStage[sale.signingStage as SigningStage] || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.statusSetDate || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      <button
-                        className={'bg-blue-500 text-white px-4 py-2 rounded'}
-                        onClick={() => setEditingSale(sale)}
-                      >
-                        Редактировать
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className={'mt-4 flex space-x-4 bg-gray-100 p-2 rounded'}>
-              <div className={'flex-1 text-center'}>
-                <p className={'font-semibold'}>Маржа</p>
-                <p>{salesStatsByMonth[key].margin}</p>
-              </div>
-              <div className={'flex-1 text-center'}>
-                <p className={'font-semibold'}>Оборот</p>
-                <p>{salesStatsByMonth[key].saleAmount}</p>
-              </div>
-              <div className={'flex-1 text-center'}>
-                <p className={'font-semibold'}>Заработал</p>
-                <p>{salesStatsByMonth[key].earned}</p>
-              </div>
-            </div>
-          </div>
-        )
-      })}
-      {editingSale && (
+                      {invoice.name}
+                    </a>
+                  ) : (
+                    <input
+                      className={'mb-2'}
+                      onChange={e => handleFileUpload(sale.id, e)}
+                      type={'file'}
+                    />
+                  )}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  <button
+                    className={'bg-blue-500 text-white px-4 py-2 rounded'}
+                    onClick={() => {
+                      setEditingSale(sale)
+                      setIsEditFormOpen(true)
+                    }}
+                  >
+                    Редактировать
+                  </button>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <div className={'mt-4 flex space-x-4 bg-gray-100 p-4 rounded'}>
+        <div className={'flex-1 text-center'}>
+          <p className={'font-semibold'}>Общая маржа</p>
+          <p>{totalMargin}</p>
+        </div>
+        <div className={'flex-1 text-center'}>
+          <p className={'font-semibold'}>Общий оборот</p>
+          <p>{totalTurnover}</p>
+        </div>
+        <div className={'flex-1 text-center'}>
+          <p className={'font-semibold'}>Общий заработок</p>
+          <p>{totalEarned}</p>
+        </div>
+      </div>
+      {isEditFormOpen && editingSale && (
         <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
           <div className={'bg-white p-4 rounded'}>
-            <SalesEditForm onClose={() => setEditingSale(null)} sale={editingSale} />
+            <SalesEditForm
+              onClose={() => {
+                setIsEditFormOpen(false)
+                setEditingSale(null)
+              }}
+              sale={editingSale}
+            />
+          </div>
+        </div>
+      )}
+      {isCreateFormOpen && editingSale && (
+        <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
+          <div className={'bg-white p-4 rounded'}>
+            <SalesCreateForm
+              onClose={() => {
+                setIsCreateFormOpen(false)
+                setEditingSale(null)
+              }}
+              sale={editingSale}
+            />
           </div>
         </div>
       )}

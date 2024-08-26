@@ -77,13 +77,13 @@ export type SaleDto = {
   isFinalAmount: boolean
   isIndependentDeal: boolean
   lastDeliveryDate?: string // DateTime в формате ISO
-  logisticsCost?: number
+  logisticsCost: number
   margin?: number
   paidNow: number
-
   prepaymentAmount: number
-  purchaseCost?: number
-  saleAmount?: number
+  progressed?: boolean
+  purchaseCost: number
+  saleAmount: number
   signingStage?: SigningStage
   // Новые поля:
   statusSetDate?: string // DateTime в формате ISO
