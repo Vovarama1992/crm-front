@@ -1,7 +1,6 @@
 import React from 'react'
 
-import { useGetAllDealsQuery } from '@/entities/deal'
-import { useGetAllSalesQuery } from '@/entities/deal'
+import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
 import { useCreateDepartureMutation } from '@/entities/departure/departure.api'
 import { useGetWorkersQuery } from '@/entities/workers'
 
@@ -18,12 +17,8 @@ const specificDestinationOptions = [
 ]
 
 export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { data: deals = [] } = useGetAllDealsQuery()
+  const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: workers = [] } = useGetWorkersQuery()
-  const { data: sales = [] } = useGetAllSalesQuery()
-
-  // Отфильтруем продажи по полю progressed
-  const progressedSales = sales
   const [createDeparture] = useCreateDepartureMutation()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -39,10 +34,8 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
       await createDeparture({
         arrivalDate: arrivalDate ? new Date(arrivalDate) : null,
         comments: formData.get('comments') as null | string,
-        counterpartyId:
-          deals.find((deal: any) => deal.id === Number(formData.get('dealId')))?.counterparty.id ||
-          0,
-        dealId: Number(formData.get('dealId')),
+        counterpartyId: Number(formData.get('counterpartyId')), // Выбираем ID контрагента
+        dealId: Number(formData.get('dealId')), // Должно быть предусмотрено получение dealId
         destination: formData.get('destination') as
           | 'RETURN_FROM_CLIENT'
           | 'RETURN_TO_SUPPLIER'
@@ -71,15 +64,14 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
       <h2 className={'text-lg font-bold mb-4'}>Создание отправления</h2>
 
       <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Номер продажи</label>{' '}
-        {/* Переименовали поле */}
-        <select className={'border rounded p-2 w-full'} name={'dealId'} required>
+        <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
+        <select className={'border rounded p-2 w-full'} name={'counterpartyId'} required>
           <option disabled value={''}>
-            Выберите номер продажи
+            Выберите контрагента
           </option>
-          {progressedSales.map(sale => (
-            <option key={sale.id} value={sale.id}>
-              {sale.id} {/* Используем ID продаж */}
+          {counterparties.map(counterparty => (
+            <option key={counterparty.id} value={counterparty.id}>
+              {counterparty.name} {/* Отображаем название контрагента */}
             </option>
           ))}
         </select>
