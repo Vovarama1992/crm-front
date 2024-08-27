@@ -68,6 +68,7 @@ export enum SigningStage {
 }
 
 export type SaleDto = {
+  counterparty?: any
   counterpartyId: number
   date: string // DateTime в формате ISO
   dealId: number
@@ -80,14 +81,16 @@ export type SaleDto = {
   logisticsCost: number
   margin?: number
   paidNow: number
+  pdfPath?: string
+  pdfUrl?: string
   prepaymentAmount: number
   progressed?: boolean
   purchaseCost: number
-  saleAmount: number
+  saleAmount?: number
   signingStage?: SigningStage
   // Новые поля:
   statusSetDate?: string // DateTime в формате ISO
-  totalSaleAmount: number
+  totalSaleAmount?: number
   userId: number
 }
 

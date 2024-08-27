@@ -13,3 +13,5 @@ export const baseQuery = fetchBaseQuery({
     return headers
   },
 })
+
+export const apiBaseUrl = import.meta.env.VITE_APP_API_URL

@@ -11,6 +11,7 @@ interface SalesCreateFormProps {
 
 export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale }) => {
   const [createSale] = useCreateSaleMutation()
+  const [isFinalAmount, setIsFinalAmount] = useState(false)
   const [formData, setFormData] = useState<SaleDto>({ ...sale } as SaleDto)
   const [error, setError] = useState<null | string>(null)
 
@@ -21,6 +22,8 @@ export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale 
     }))
   }
 
+  const saleAmount = sale.paidNow + sale.prepaymentAmount
+
   const handleSave = () => {
     if (!formData.saleAmount) {
       setError('Пожалуйста, заполните все обязательные поля: "Стоимость продажи"')
@@ -28,18 +31,27 @@ export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale 
       return
     }
 
-    const { id, ...newFormData } = formData
+    const { id, pdfUrl, ...newFormData } = formData
 
-    const newSale: Omit<SaleDto, 'id'> = {
+    const newSale: Omit<SaleDto, 'id' | 'pdfUrl'> = {
       ...newFormData,
+      isFinalAmount,
       progressed: true,
       statusSetDate: new Date().toISOString(),
     }
 
-    createSale(newSale).then(() => {
-      onClose()
-      //window.location.reload()
-    })
+    createSale(newSale)
+      .unwrap()
+      .then(() => {
+        onClose()
+        if (saleAmount !== newSale.totalSaleAmount) {
+          alert('Общая сумма продажи не совпадает с оплачено сейчас')
+        }
+      })
+      .catch(error => {
+        console.error('Error creating sale:', error)
+        alert('Произошла ошибка при создании продажи.')
+      })
   }
 
   return (
@@ -63,6 +75,16 @@ export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale 
           type={'number'}
           value={formData.saleAmount || ''}
         />
+      </div>
+      <div className={'ml-[200px] mb-4'}>
+        <label className={'inline-flex items-center'}>
+          <input
+            checked={isFinalAmount}
+            onChange={() => setIsFinalAmount(!isFinalAmount)}
+            type={'checkbox'}
+          />
+          <span className={'ml-2'}>Финальная сумма</span>
+        </label>
       </div>
       <button className={'mt-2 bg-blue-500 text-white p-2 rounded'} onClick={handleSave}>
         Создать

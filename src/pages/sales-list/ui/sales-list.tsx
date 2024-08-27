@@ -1,19 +1,17 @@
 /* eslint-disable max-lines */
-import type { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
-
 import React, { useEffect, useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
+import { SaleDto } from '@/entities/deal/deal.types'
+import { DeliveryStage, SigningStage } from '@/entities/deal/deal.types'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
 import { SalesCreateForm } from './SalesCreateForm'
 import { SalesEditForm } from './SalesEditForm'
 
-type Monthes = Array<{ label: string; value: number }>
-
-const months: Monthes = [
+const months = [
   { label: 'Январь', value: 1 },
   { label: 'Февраль', value: 2 },
   { label: 'Март', value: 3 },
@@ -28,7 +26,7 @@ const months: Monthes = [
   { label: 'Декабрь', value: 12 },
 ]
 
-const translatedDeliveryStage: Record<DeliveryStage, string> = {
+const translatedDeliveryStage = {
   IN_STOCK: 'На складе',
   ITEM_DELIVERED_FULL: 'Доставлен товар весь',
   ITEM_DELIVERED_PARTIAL: 'Доставлен товар частично',
@@ -37,7 +35,7 @@ const translatedDeliveryStage: Record<DeliveryStage, string> = {
   RETURN: 'Возврат',
 }
 
-const translatedSigningStage: Record<SigningStage, string> = {
+const translatedSigningStage = {
   SIGNED_IN_EDO: 'Подписано в ЭДО',
   SIGNED_ON_PAPER: 'Подписано на бумаге',
 }
@@ -51,6 +49,7 @@ export const SalesListPage = () => {
   const [updateSale] = useUpdateSaleMutation()
 
   const userId = meData?.id || null
+  const isDirector = meData?.roleName === 'Директор'
   const percent = 0.1
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(userId)
@@ -62,9 +61,6 @@ export const SalesListPage = () => {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
 
   const [sales, setSales] = useState<SaleDto[]>([])
-  const [invoiceFiles, setInvoiceFiles] = useState<{
-    [key: number]: { name: string; url: string } | undefined
-  }>({})
 
   useEffect(() => {
     if (salesData && Array.isArray(salesData)) {
@@ -72,8 +68,9 @@ export const SalesListPage = () => {
         return selectedEmployee === null || selectedEmployee === sale.userId
       })
 
-      const sortedSales = [...filteredSales] // Создаем копию массива
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      const sortedSales = [...filteredSales].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
 
       setSales(sortedSales)
     }
@@ -103,26 +100,23 @@ export const SalesListPage = () => {
     value: string
   ) => {
     if (field === 'deliveryStage') {
-      // Обновляем стадию доставки без открытия формы
       updateSale({ id: sale.id, sale: { ...sale, deliveryStage: value as DeliveryStage } })
         .then(() => {
-          window.location.reload() // Перезагружает страницу после успешного обновления
+          window.location.reload()
         })
         .catch(error => {
           console.error('Ошибка при обновлении продажи:', error)
         })
     } else if (field === 'signingStage') {
       if (sale.signingStage === 'SIGNED_ON_PAPER' || sale.signingStage === 'SIGNED_IN_EDO') {
-        // Если стадия подписания уже "Конец", просто обновляем
         updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
           .then(() => {
-            window.location.reload() // Перезагружает страницу после успешного обновления
+            window.location.reload()
           })
           .catch(error => {
             console.error('Ошибка при обновлении продажи:', error)
           })
       } else {
-        // Если стадия подписания "Начало", открываем форму создания новой записи
         setEditingSale({
           ...sale,
           progressed: true,
@@ -144,24 +138,38 @@ export const SalesListPage = () => {
     const file = event.target.files?.[0]
 
     if (file) {
-      const fileUrl = URL.createObjectURL(file)
-      const newInvoiceFiles = {
-        ...invoiceFiles,
-        [saleId]: { name: file.name, url: fileUrl },
-      }
+      const reader = new FileReader()
 
-      setInvoiceFiles(newInvoiceFiles)
-      localStorage.setItem('invoiceFiles', JSON.stringify(newInvoiceFiles))
+      reader.onload = function () {
+        const base64String = reader.result as string
+
+        localStorage.setItem(file.name, base64String)
+        // Отправляем только имя файла на сервер
+        updateSale({ id: saleId, sale: { pdfPath: file.name } })
+          .then(() => {
+            window.location.reload()
+          })
+          .catch(error => {
+            console.error('Ошибка при загрузке файла:', error)
+          })
+      }
+      reader.readAsDataURL(file)
     }
   }
 
-  useEffect(() => {
-    const storedFiles = localStorage.getItem('invoiceFiles')
+  const handleFileOpen = (fileName: string) => {
+    const fileData = localStorage.getItem(fileName)
 
-    if (storedFiles) {
-      setInvoiceFiles(JSON.parse(storedFiles))
+    if (fileData) {
+      const link = document.createElement('a')
+
+      link.href = fileData
+      link.target = '_blank'
+      link.click()
+    } else {
+      console.error('Файл не найден в localStorage')
     }
-  }, [])
+  }
 
   const totalMargin = sales.reduce((acc, sale) => acc + (sale.margin || 0), 0)
   const totalTurnover = sales.reduce((acc, sale) => acc + (sale.paidNow || 0), 0)
@@ -215,18 +223,15 @@ export const SalesListPage = () => {
             {[
               'Номер продажи',
               'Дата',
-              'Контрагент',
-              'Номер счета',
-              'Стоимость логистики',
-              'Закупочная стоимость',
-              'Стоимость продажи',
+              'Что', // Имя файла и ссылка на его открытие
+              'От кого',
+              'Логистика',
+              'Закупка',
+              'Продажа',
+              'Зашло', // `paidNow`
               'Маржа',
-              'Стадия продажи', // <-- Добавьте этот заголовок
               'Стадия доставки',
               'Стадия подписания',
-              'Дата проставления статуса',
-              'Что',
-              'Действия',
             ].map(header => (
               <th
                 className={
@@ -241,8 +246,6 @@ export const SalesListPage = () => {
         </thead>
         <tbody className={'bg-white divide-y divide-gray-200'}>
           {sales.map(sale => {
-            const invoice = invoiceFiles[sale.id] // Вынесем переменную за пределы JSX
-
             return (
               <tr key={sale.id}>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{sale.id}</td>
@@ -250,10 +253,25 @@ export const SalesListPage = () => {
                   {sale.date.split('T')[0]}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {getCounterpartyName(sale.counterpartyId)}
+                  {sale.pdfPath ? (
+                    <button
+                      className={'text-blue-500'}
+                      onClick={() => handleFileOpen(sale.pdfPath as string)}
+                    >
+                      {sale.pdfPath}
+                    </button>
+                  ) : (
+                    isDirector && (
+                      <input
+                        className={'mb-2'}
+                        onChange={e => handleFileUpload(sale.id, e)}
+                        type={'file'}
+                      />
+                    )
+                  )}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.invoiceNumber || '—'}
+                  {getCounterpartyName(sale.counterpartyId)}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.logisticsCost || '—'}
@@ -262,13 +280,13 @@ export const SalesListPage = () => {
                   {sale.purchaseCost || '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {sale.totalSaleAmount || '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.paidNow || '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.margin !== undefined && sale.progressed ? sale.margin : '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.signingStage ? 'Конец' : 'Начало'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
                   <select
@@ -298,38 +316,19 @@ export const SalesListPage = () => {
                     ))}
                   </select>
                 </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.statusSetDate?.split('T')[0] || '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {invoice ? (
-                    <a
-                      className={'text-blue-500'}
-                      href={invoice.url}
-                      rel={'noopener noreferrer'}
-                      target={'_blank'}
+                {isDirector && (
+                  <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                    <button
+                      className={'bg-blue-500 text-white px-4 py-2 rounded'}
+                      onClick={() => {
+                        setEditingSale(sale)
+                        setIsEditFormOpen(true)
+                      }}
                     >
-                      {invoice.name}
-                    </a>
-                  ) : (
-                    <input
-                      className={'mb-2'}
-                      onChange={e => handleFileUpload(sale.id, e)}
-                      type={'file'}
-                    />
-                  )}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  <button
-                    className={'bg-blue-500 text-white px-4 py-2 rounded'}
-                    onClick={() => {
-                      setEditingSale(sale)
-                      setIsEditFormOpen(true)
-                    }}
-                  >
-                    Редактировать
-                  </button>
-                </td>
+                      Редактировать
+                    </button>
+                  </td>
+                )}
               </tr>
             )
           })}

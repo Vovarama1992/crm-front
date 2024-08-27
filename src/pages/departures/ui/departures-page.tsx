@@ -1,8 +1,13 @@
 import React, { useState } from 'react'
 
-import { useGetDeparturesQuery } from '@/entities/departure/departure.api'
+import { DepartureDto } from '@/entities/departure'
+import {
+  useGetDeparturesQuery,
+  useUpdateDepartureMutation,
+} from '@/entities/departure/departure.api'
 
 import { CreateDepartureForm } from './CreateDepartureForm' // Импортируем форму создания
+import { EditDepartureForm } from './EditDepartureForm' // Импортируем форму редактирования
 
 const destinationOptions = {
   RETURN_FROM_CLIENT: 'Возврат от клиента',
@@ -24,11 +29,23 @@ const statusOptions = {
   SENT_PARTIALLY: 'Отправлено частично',
 }
 
+const formatDate = (date: Date | null | string) => {
+  if (!date) {
+    return ''
+  } // Проверка на null или undefined
+  const validDate = typeof date === 'string' ? new Date(date) : date
+
+  return validDate.toISOString().split('T')[0]
+}
+
 export const DeparturesPage = () => {
   const [filterNumber, setFilterNumber] = useState('')
   const [filterCounterparty, setFilterCounterparty] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [selectedDeparture, setSelectedDeparture] = useState<DepartureDto | null>(null)
   const { data: departuresData } = useGetDeparturesQuery()
+  const [updateDeparture] = useUpdateDepartureMutation()
 
   const handleFilterNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterNumber(e.target.value)
@@ -36,6 +53,18 @@ export const DeparturesPage = () => {
 
   const handleFilterCounterpartyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterCounterparty(e.target.value)
+  }
+
+  const handleSelectChange = (id: number, field: keyof DepartureDto, value: number | string) => {
+    updateDeparture({
+      data: { [field]: value },
+      id,
+    })
+  }
+
+  const handleEditClick = (departure: DepartureDto) => {
+    setSelectedDeparture(departure)
+    setIsEditing(true)
   }
 
   const filteredData =
@@ -73,6 +102,10 @@ export const DeparturesPage = () => {
 
       {isCreating && <CreateDepartureForm onClose={() => setIsCreating(false)} />}
 
+      {isEditing && selectedDeparture && (
+        <EditDepartureForm departure={selectedDeparture} onClose={() => setIsEditing(false)} />
+      )}
+
       <table className={'table-auto w-full border-collapse border'}>
         <thead>
           <tr>
@@ -88,6 +121,7 @@ export const DeparturesPage = () => {
             <th className={'border px-4 py-2'}>Менеджер</th>
             <th className={'border px-4 py-2'}>Комментарий</th>
             <th className={'border px-4 py-2'}>Статус</th>
+            <th className={'border px-4 py-2'}>Действия</th>
           </tr>
         </thead>
         <tbody>
@@ -96,20 +130,63 @@ export const DeparturesPage = () => {
               <td className={'border px-4 py-2'}>{departure.dealId}</td>
               <td className={'border px-4 py-2'}>{departure?.counterparty?.name}</td>
               <td className={'border px-4 py-2'}>
-                {destinationOptions[departure.destination] || departure.destination}
+                <select
+                  className={'border rounded p-1'}
+                  onChange={e => handleSelectChange(departure.id, 'destination', e.target.value)}
+                  value={departure.destination}
+                >
+                  {Object.entries(destinationOptions).map(([key, value]) => (
+                    <option key={key} value={key}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
               </td>
               <td className={'border px-4 py-2'}>{departure.transportCompany}</td>
               <td className={'border px-4 py-2'}>{departure.trackingNumber}</td>
               <td className={'border px-4 py-2'}>{departure.finalAmount}</td>
-              <td className={'border px-4 py-2'}>{String(departure.dispatchDate)}</td>
-              <td className={'border px-4 py-2'}>{String(departure.arrivalDate)}</td>
+              <td className={'border px-4 py-2'}>{formatDate(departure.dispatchDate)}</td>
+              <td className={'border px-4 py-2'}>{formatDate(departure.arrivalDate)}</td>
               <td className={'border px-4 py-2'}>
-                {specificDestinationOptions[departure.specificDestination] ||
-                  departure.specificDestination}
+                <select
+                  className={'border rounded p-1'}
+                  onChange={e =>
+                    handleSelectChange(departure.id, 'specificDestination', e.target.value)
+                  }
+                  value={departure.specificDestination}
+                >
+                  {Object.entries(specificDestinationOptions).map(([key, value]) => (
+                    <option key={key} value={key}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
               </td>
-              <td className={'border px-4 py-2'}>{departure.user.name}</td>
+              <td className={'border px-4 py-2'}>
+                {departure.user.name} {departure.user.surname}
+              </td>
               <td className={'border px-4 py-2'}>{departure.comments}</td>
-              <td className={'border px-4 py-2'}>{statusOptions[departure.status]}</td>
+              <td className={'border px-4 py-2'}>
+                <select
+                  className={'border rounded p-1'}
+                  onChange={e => handleSelectChange(departure.id, 'status', e.target.value)}
+                  value={departure.status}
+                >
+                  {Object.entries(statusOptions).map(([key, value]) => (
+                    <option key={key} value={key}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className={'border px-4 py-2'}>
+                <button
+                  className={'bg-blue-500 text-white px-2 py-1 rounded'}
+                  onClick={() => handleEditClick(departure)}
+                >
+                  Редактировать
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

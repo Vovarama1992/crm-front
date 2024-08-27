@@ -4,20 +4,21 @@ import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
 
 export type SaleFormProps = {
-  dealId: number // Пропс для dealId
-  onClose: () => void // Функция закрытия формы
-  saleAmount: number // Пропс для saleAmount
-  userId: number // Пропс для userId
+  dealId: number
+  onClose: () => void
+  userId: number
 }
 
-export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount, userId }) => {
+export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) => {
   const [selectedCounterpartyId, setSelectedCounterpartyId] = useState<null | number>(null)
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [inn, setInn] = useState('') // Состояние для ИНН
-  const [deliveryDeadline, setDeliveryDeadline] = useState('') // Крайняя дата поставки
-  const [prepaymentAmount, setPrepaymentAmount] = useState('') // Сумма предоплаты
-  const [isFinalAmount, setIsFinalAmount] = useState(false) // Финальная сумма (чекбокс)
-  const [isIndependentDeal, setIsIndependentDeal] = useState(false) // Самостоятельная сделка (чекбокс)
+  const [inn, setInn] = useState('')
+  const [deliveryDeadline, setDeliveryDeadline] = useState('')
+  const [prepaymentAmount, setPrepaymentAmount] = useState(0)
+  const [isFinalAmount, setIsFinalAmount] = useState(false)
+  const [isIndependentDeal, setIsIndependentDeal] = useState(false)
+  const [totalSaleAmount, setTotalSaleAmount] = useState(0) // Добавлено состояние для общей суммы продажи
+  const [selectedFileName, setSelectedFileName] = useState<string | undefined>(undefined)
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const [createSale] = useCreateSaleMutation()
@@ -29,7 +30,22 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
 
     const selectedCounterparty = counterparties.find((cp: any) => cp.id === selectedId)
 
-    setInn(selectedCounterparty?.inn || '') // Автоматически заполняем ИНН
+    setInn(selectedCounterparty?.inn || '')
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0]
+      const reader = new FileReader()
+
+      reader.onload = function () {
+        const base64String = reader.result as string
+
+        localStorage.setItem(file.name, base64String)
+        setSelectedFileName(file.name)
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,27 +57,25 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
       return
     }
 
-    // Преобразование дат в формат ISO для DateTime
-    const currentDateTime = new Date().toISOString()
-    const deliveryDateTime = deliveryDeadline ? new Date(deliveryDeadline).toISOString() : null
-
-    // Данные, которые будут отправлены с учетом новых полей
-    const saleData: any = {
+    const saleData = {
       counterpartyId: selectedCounterpartyId,
-      date: currentDateTime, // Текущая дата и время
-      dealId, // Используем переданный dealId
+      date: new Date().toISOString(),
+      dealId,
       invoiceNumber,
-      isFinalAmount, // Финальная сумма
-      isIndependentDeal, // Самостоятельная сделка
-      lastDeliveryDate: deliveryDateTime, // Крайняя дата поставки в формате DateTime
-      logisticsCost: 0, // Стоимость логистики
-      margin: 0, // Дефолтное значение
-      paidNow: 0, // Оплачено сейчас
-      prepaymentAmount: parseFloat(prepaymentAmount) || 0, // Сумма предоплаты
-      purchaseCost: 0, // Стоимость закупки
-      saleAmount, // Используем переданный saleAmount
-      userId, // Используем переданный userId
+      isFinalAmount,
+      isIndependentDeal,
+      lastDeliveryDate: deliveryDeadline ? new Date(deliveryDeadline).toISOString() : undefined,
+      logisticsCost: 0,
+      margin: 0,
+      paidNow: 0,
+      pdfPath: selectedFileName, // Отправляем имя файла на сервер
+      prepaymentAmount,
+      purchaseCost: 0,
+      totalSaleAmount, // Добавляем общую сумму продажи в данные
+      userId,
     }
+
+    console.log('file name: ' + selectedFileName)
 
     try {
       await createSale(saleData).unwrap()
@@ -125,9 +139,19 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
         <label className={'block text-sm font-bold mb-1'}>Сумма предоплаты</label>
         <input
           className={'border rounded p-2 w-full'}
-          onChange={e => setPrepaymentAmount(e.target.value)}
+          onChange={e => setPrepaymentAmount(Number(e.target.value))}
           type={'number'}
           value={prepaymentAmount}
+        />
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Общая сумма продажи</label>
+        <input
+          className={'border rounded p-2 w-full'}
+          onChange={e => setTotalSaleAmount(Number(e.target.value))}
+          type={'number'}
+          value={totalSaleAmount}
         />
       </div>
 
@@ -151,6 +175,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, saleAmount,
           />
           <span className={'ml-2'}>Самостоятельная сделка</span>
         </label>
+      </div>
+
+      <div className={'ml-[200px] mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Загрузить файл</label>
+        <input className={'border rounded p-2 w-full'} onChange={handleFileChange} type={'file'} />
       </div>
 
       <button className={'bg-blue-500 ml-[300px] text-white px-4 py-2 rounded'} type={'submit'}>

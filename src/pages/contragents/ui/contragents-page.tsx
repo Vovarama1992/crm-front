@@ -273,7 +273,6 @@ export const ContragentsPage = () => {
         <SaleForm
           dealId={currentDeal.id}
           onClose={handleSaleFormClose}
-          saleAmount={currentDeal.turnoverRub}
           userId={currentDeal.userId}
         />
       )}

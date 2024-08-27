@@ -21,6 +21,7 @@ export type DepartureDto = {
     department_id: number
     id: number
     name: string
+    surname: string
   } // Включаем данные о пользователе
   userId: number
 }
