@@ -100,7 +100,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
             paymentDate: line.paymentDate ? new Date(line.paymentDate).toISOString() : '',
             quantity: Number(formData.get(`supplierLine_quantity_${line.id}`)),
             shipmentDate: line.shipmentDate ? new Date(line.shipmentDate).toISOString() : '',
-            supplierId: line.supplierId, // Добавляем supplierId
+            //supplierId: line.supplierId, // Добавляем supplierId
             supplierInvoice: formData.get(`supplierLine_supplierInvoice_${line.id}`) as string,
             totalPurchaseAmount: Number(
               formData.get(`supplierLine_totalPurchaseAmount_${line.id}`)
@@ -296,7 +296,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
                     type={'number'}
                   />
                 </div>
-                <div>
+                {/*<div>
                   <label className={'block text-sm font-medium'}>ID поставщика</label>
                   <input
                     className={'border p-2 w-full'}
@@ -304,7 +304,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
                     name={`supplierLine_supplierId_${line.id}`}
                     type={'number'}
                   />
-                </div>
+                </div>*/}
                 <div>
                   <label className={'block text-sm font-medium'}>Счет поставщика</label>
                   <input
