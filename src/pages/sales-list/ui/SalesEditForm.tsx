@@ -3,6 +3,7 @@ import type { SaleDto } from '@/entities/deal/deal.types'
 import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery, useUpdateSaleMutation } from '@/entities/deal'
+import { useGetWorkersQuery } from '@/entities/workers'
 
 interface SalesEditFormProps {
   onClose: () => void
@@ -11,6 +12,7 @@ interface SalesEditFormProps {
 
 export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) => {
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
+  const { data: workers = [] } = useGetWorkersQuery() // Получаем всех пользователей
   const [updateSale] = useUpdateSaleMutation()
   const [isFinalAmount, setIsFinalAmount] = useState(false)
   const [formData, setFormData] = useState<SaleDto>({ ...sale })
@@ -44,7 +46,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
     // Рассчитать новое значение paidNow
     const newPaidNow = (formData.paidNow || 0) + additionalAmount - refundAmount
 
-    const { counterpartyId, dealId, id, pdfUrl, userId, ...dataWithoutId } = formData
+    const { counterpartyId, dealId, id, pdfUrl, ...dataWithoutId } = formData
 
     // Обновить объект с новыми значениями
     const updatedFields: Omit<SaleDto, 'counterpartyId' | 'dealId' | 'id' | 'pdfUrl' | 'userId'> = {
@@ -75,6 +77,14 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
     handleChange('counterpartyId', Number(e.target.value))
   }
 
+  const handleManagerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleChange('userId', Number(e.target.value))
+  }
+
+  const handleROPChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleChange('ropId', Number(e.target.value))
+  }
+
   return (
     <div className={'flex flex-col space-y-2'}>
       <div>
@@ -92,6 +102,44 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
               {counterparty.name}
             </option>
           ))}
+        </select>
+      </div>
+
+      <div>
+        <label>Менеджер:</label>
+        <select
+          className={'border rounded p-2 w-full'}
+          onChange={handleManagerChange}
+          value={formData.userId || ''}
+        >
+          <option disabled value={''}>
+            Выберите менеджера
+          </option>
+          {workers.map(worker => (
+            <option key={worker.id} value={worker.id}>
+              {worker.name} {worker.surname}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label>РОП:</label>
+        <select
+          className={'border rounded p-2 w-full'}
+          onChange={handleROPChange}
+          value={formData.ropId || ''}
+        >
+          <option disabled value={''}>
+            Выберите РОПа
+          </option>
+          {workers
+            .filter(worker => worker.roleName === 'РОП') // Фильтруем только пользователей с ролью "РОП"
+            .map(worker => (
+              <option key={worker.id} value={worker.id}>
+                {worker.name} {worker.surname}
+              </option>
+            ))}
         </select>
       </div>
 

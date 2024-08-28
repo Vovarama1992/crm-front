@@ -69,6 +69,37 @@ const sessionApi = baseApi.injectEndpoints({
         url: `/nlp/${dialogueId}/close`,
       }),
     }),
+
+    // Эндпоинт для загрузки PDF
+    uploadPdf: builder.mutation<
+      { message: string; pdfUrl: string },
+      { file: File; saleId: string }
+    >({
+      query: ({ file, saleId }) => {
+        const formData = new FormData()
+
+        formData.append('file', file)
+
+        return {
+          url: `/files/upload/pdf/${saleId}`,
+          method: 'POST',
+          body: formData,
+        }
+      },
+    }),
+
+    // Эндпоинт для скачивания PDF по запросу
+    lazyDownloadPdf: builder.query<Blob, { filename: string }>({
+      query: ({ filename }) => ({
+        url: `/files/download/pdf/${filename}`,
+        method: 'GET',
+        responseHandler: async response => {
+          const blob = await response.blob()
+
+          return blob
+        },
+      }),
+    }),
   }),
 })
 
@@ -81,4 +112,6 @@ export const {
   useSignOutMutation,
   useAskNlpMutation,
   useCloseDialogueMutation,
+  useUploadPdfMutation, // Экспортируем хук для загрузки PDF
+  useLazyDownloadPdfQuery, // Экспортируем хук для скачивания PDF по запросу
 } = sessionApi

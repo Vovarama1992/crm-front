@@ -1,10 +1,13 @@
+/* eslint-disable max-lines */
 import type {
   CounterpartyDto,
   CreateCounterpartyDto,
   CreateDealDto,
   CreateExpenseDto,
+  CreateInvoiceLineDto,
   CreatePaymentDto,
   CreateSaleDto,
+  CreateSupplierLineDto,
   DealDto,
   ExpenseDto,
   InvoiceLineDto,
@@ -48,6 +51,13 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    createInvoiceLine: builder.mutation<InvoiceLineDto, CreateInvoiceLineDto>({
+      query: invoiceLine => ({
+        body: invoiceLine,
+        method: 'POST',
+        url: `/purchases/${invoiceLine.purchaseId}/invoice-lines`,
+      }),
+    }),
     createMultiplePayments: builder.mutation<PaymentDto[], CreatePaymentDto[]>({
       query: payments => ({
         body: payments,
@@ -55,6 +65,7 @@ const dealApi = baseApi.injectEndpoints({
         url: '/payments/bulk',
       }),
     }),
+
     createPayment: builder.mutation<PaymentDto, CreatePaymentDto>({
       query: payment => ({
         body: payment,
@@ -68,6 +79,14 @@ const dealApi = baseApi.injectEndpoints({
         body: sale,
         method: 'POST',
         url: '/sales',
+      }),
+    }),
+
+    createSupplierLine: builder.mutation<SupplierLineDto, CreateSupplierLineDto>({
+      query: supplierLine => ({
+        body: supplierLine,
+        method: 'POST',
+        url: `/purchases/${supplierLine.purchaseId}/supplier-lines`,
       }),
     }),
 
@@ -258,9 +277,11 @@ export const {
   useCreateCounterpartyMutation,
   useCreateDealMutation,
   useCreateExpenseMutation,
+  useCreateInvoiceLineMutation,
   useCreateMultiplePaymentsMutation,
   useCreatePaymentMutation,
   useCreateSaleMutation,
+  useCreateSupplierLineMutation,
   useGetAllCounterpartiesQuery,
   useGetAllDealsQuery,
   useGetAllExpensesQuery,

@@ -86,6 +86,7 @@ export type SaleDto = {
   prepaymentAmount: number
   progressed?: boolean
   purchaseCost: number
+  ropId?: number
   saleAmount?: number
   signingStage?: SigningStage
   // Новые поля:
@@ -100,13 +101,13 @@ export type UpdateSaleDto = Partial<SaleDto>
 
 export type PurchaseDto = {
   counterpartyId: number
+  createdAt?: string
   dealId: number
   deliveryDeadline: string
   id: number
   invoiceLines: InvoiceLineDto[]
   invoiceToCustomer: number
   logisticsLines: LogisticsLineDto[]
-
   requestNumber: string
   supplierLines: SupplierLineDto[]
   userId: number
@@ -141,7 +142,6 @@ export type SupplierLineDto = {
   purchaseId: number
   quantity: number
   shipmentDate: string
-  supplierId: number
   supplierInvoice: string
   totalPurchaseAmount: number
 }

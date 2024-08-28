@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React from 'react'
+import React, { useState } from 'react'
 
 import {
   useGetAllCounterpartiesQuery,
@@ -13,6 +13,9 @@ import {
 } from '@/entities/deal'
 import { PurchaseDto } from '@/entities/deal/deal.types'
 import { useGetWorkersQuery } from '@/entities/workers'
+
+import CreateInvoiceLineModal from './CreateInvoiceLineModal'
+import CreateSupplierLineModal from './CreateSupplierLineModal'
 
 interface EditableFormProps {
   initialValue: PurchaseDto
@@ -33,13 +36,15 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery() // Получаем всех контрагентов
   const { data: workers = [] } = useGetWorkersQuery()
 
+  const [isAddingInvoiceLine, setIsAddingInvoiceLine] = useState(false)
+  const [isAddingSupplierLine, setIsAddingSupplierLine] = useState(false)
+
   const getCounterpartyName = (id: number) => {
     const counterparty = counterparties.find(c => c.id === id)
 
     return counterparty ? counterparty.name : 'Неизвестный контрагент'
   }
 
-  // Функция для получения имени сотрудника по ID
   const getWorkerName = (id: number) => {
     const worker = workers.find(w => w.id === id)
 
@@ -52,23 +57,21 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
     const formData = new FormData(e.target as HTMLFormElement)
 
     const purchaseData = {
-      counterpartyId: initialValue.counterpartyId, // Наследуется
-      dealId: initialValue.dealId, // Наследуется
+      counterpartyId: initialValue.counterpartyId,
+      dealId: initialValue.dealId,
       deliveryDeadline: formData.get('deliveryDeadline')
         ? new Date(formData.get('deliveryDeadline') as string).toISOString()
-        : initialValue.deliveryDeadline, // Обновляем, если было изменено
-      id: initialValue.id, // Наследуется
+        : initialValue.deliveryDeadline,
+      id: initialValue.id,
       invoiceToCustomer:
-        Number(formData.get('invoiceToCustomer')) || initialValue.invoiceToCustomer, // Обновляем, если было изменено
-      requestNumber: (formData.get('requestNumber') as string) || initialValue.requestNumber, // Преобразуем в строку и обновляем, если было изменено
-      userId: initialValue.userId, // Наследуется
+        Number(formData.get('invoiceToCustomer')) || initialValue.invoiceToCustomer,
+      requestNumber: (formData.get('requestNumber') as string) || initialValue.requestNumber,
+      userId: initialValue.userId,
     }
 
     try {
-      // Обновляем основную сущность Purchase
       await updatePurchase({ data: purchaseData, id: purchaseData.id }).unwrap()
 
-      // Обновляем связанные сущности
       await Promise.all(
         invoiceLines.map(line => {
           const lineData = {
@@ -81,7 +84,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
           }
 
           return updateInvoiceLine({
-            data: lineData, // Передаем данные без id
+            data: lineData,
             id: line.id,
           }).unwrap()
         })
@@ -97,7 +100,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
             paymentDate: line.paymentDate ? new Date(line.paymentDate).toISOString() : '',
             quantity: Number(formData.get(`supplierLine_quantity_${line.id}`)),
             shipmentDate: line.shipmentDate ? new Date(line.shipmentDate).toISOString() : '',
-
+            supplierId: line.supplierId, // Добавляем supplierId
             supplierInvoice: formData.get(`supplierLine_supplierInvoice_${line.id}`) as string,
             totalPurchaseAmount: Number(
               formData.get(`supplierLine_totalPurchaseAmount_${line.id}`)
@@ -105,7 +108,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
           }
 
           return updateSupplierLine({
-            data: lineData, // Передаем данные без id
+            data: lineData,
             id: line.id,
           }).unwrap()
         })
@@ -123,7 +126,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
           }
 
           return updateLogisticsLine({
-            data: lineData, // Передаем данные без id
+            data: lineData,
             id: line.id,
           }).unwrap()
         })
@@ -155,6 +158,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               <input
                 className={'border p-2 w-full'}
                 defaultValue={getCounterpartyName(initialValue.counterpartyId)}
+                readOnly
                 type={'text'}
               />
             </div>
@@ -172,6 +176,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               <input
                 className={'border p-2 w-full'}
                 defaultValue={getWorkerName(initialValue.userId)}
+                readOnly
                 type={'text'}
               />
             </div>
@@ -251,6 +256,14 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               </div>
             ))}
           </div>
+
+          <button
+            className={'bg-green-500 ml-[200px] text-white px-4 py-2 rounded mt-4'}
+            onClick={() => setIsAddingInvoiceLine(true)}
+            type={'button'}
+          >
+            Добавить строку счета
+          </button>
 
           <h3 className={'text-lg font-medium'}>Строки поставщика</h3>
           <div className={'space-y-2'}>
@@ -350,10 +363,18 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
             ))}
           </div>
 
+          <button
+            className={'bg-green-500 ml-[200px] text-white px-4 py-2 rounded mt-4'}
+            onClick={() => setIsAddingSupplierLine(true)}
+            type={'button'}
+          >
+            Добавить строку поставщика
+          </button>
+
           <h3 className={'text-lg font-medium'}>Строки логистики</h3>
           <div className={'space-y-2'}>
             {logisticsLines.map(line => (
-              <div className={'grid grid-cols-3 gap-4'} key={line.id}>
+              <div className={'grid grid-cols-4 gap-4'} key={line.id}>
                 <div>
                   <label className={'block text-sm font-medium'}>Дата</label>
                   <input
@@ -407,6 +428,28 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
             </button>
           </div>
         </form>
+
+        {isAddingInvoiceLine && (
+          <CreateInvoiceLineModal
+            onCancel={() => setIsAddingInvoiceLine(false)}
+            onSuccess={() => {
+              setIsAddingInvoiceLine(false)
+              onSave()
+            }}
+            purchaseId={initialValue.id}
+          />
+        )}
+
+        {isAddingSupplierLine && (
+          <CreateSupplierLineModal
+            onCancel={() => setIsAddingSupplierLine(false)}
+            onSuccess={() => {
+              setIsAddingSupplierLine(false)
+              onSave()
+            }}
+            purchaseId={initialValue.id}
+          />
+        )}
       </div>
     </div>
   )

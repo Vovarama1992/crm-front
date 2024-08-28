@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
-import { SaleDto } from '@/entities/deal/deal.types'
-import { DeliveryStage, SigningStage } from '@/entities/deal/deal.types'
+import { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
@@ -108,23 +107,13 @@ export const SalesListPage = () => {
           console.error('Ошибка при обновлении продажи:', error)
         })
     } else if (field === 'signingStage') {
-      if (sale.signingStage === 'SIGNED_ON_PAPER' || sale.signingStage === 'SIGNED_IN_EDO') {
-        updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
-          .then(() => {
-            window.location.reload()
-          })
-          .catch(error => {
-            console.error('Ошибка при обновлении продажи:', error)
-          })
-      } else {
-        setEditingSale({
-          ...sale,
-          progressed: true,
-          signingStage: value as SigningStage,
-          statusSetDate: new Date().toISOString(),
+      updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
+        .then(() => {
+          window.location.reload()
         })
-        setIsCreateFormOpen(true)
-      }
+        .catch(error => {
+          console.error('Ошибка при обновлении продажи:', error)
+        })
     }
   }
 
@@ -169,6 +158,10 @@ export const SalesListPage = () => {
     } else {
       console.error('Файл не найден в localStorage')
     }
+  }
+
+  const getSaleStage = (signingStage: SigningStage | undefined) => {
+    return signingStage ? 'Конец' : 'Начало'
   }
 
   const totalMargin = sales.reduce((acc, sale) => acc + (sale.margin || 0), 0)
@@ -232,6 +225,8 @@ export const SalesListPage = () => {
               'Маржа',
               'Стадия доставки',
               'Стадия подписания',
+              'Стадия сделки', // Новый столбец "Стадия сделки"
+              'Действия', // Добавлен столбец для кнопки "Редактировать"
             ].map(header => (
               <th
                 className={
@@ -316,19 +311,20 @@ export const SalesListPage = () => {
                     ))}
                   </select>
                 </td>
-                {isDirector && (
-                  <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                    <button
-                      className={'bg-blue-500 text-white px-4 py-2 rounded'}
-                      onClick={() => {
-                        setEditingSale(sale)
-                        setIsEditFormOpen(true)
-                      }}
-                    >
-                      Редактировать
-                    </button>
-                  </td>
-                )}
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {getSaleStage(sale.signingStage)}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  <button
+                    className={'bg-blue-500 text-white px-4 py-2 rounded'}
+                    onClick={() => {
+                      setEditingSale(sale)
+                      setIsEditFormOpen(true)
+                    }}
+                  >
+                    Редактировать
+                  </button>
+                </td>
               </tr>
             )
           })}

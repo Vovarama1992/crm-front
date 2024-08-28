@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
+import { useGetAllCounterpartiesQuery, useGetAllSalesQuery } from '@/entities/deal/deal.api'
 import { useCreateDepartureMutation } from '@/entities/departure/departure.api'
 import { useGetWorkersQuery } from '@/entities/workers'
 
@@ -19,6 +19,7 @@ const specificDestinationOptions = [
 export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: workers = [] } = useGetWorkersQuery()
+  const { data: sales } = useGetAllSalesQuery()
   const [createDeparture] = useCreateDepartureMutation()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -72,6 +73,20 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
           {counterparties.map(counterparty => (
             <option key={counterparty.id} value={counterparty.id}>
               {counterparty.name} {/* Отображаем название контрагента */}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className={'mb-4'}>
+        <label className={'block text-sm font-bold mb-1'}>Продажа</label>
+        <select className={'border rounded p-2 w-full'} name={'dealId'} required>
+          <option disabled value={''}>
+            Выберите продажу
+          </option>
+          {sales?.map((sale: any) => (
+            <option key={sale.id} value={sale.id}>
+              {sale.id} {/* Отображаем название контрагента */}
             </option>
           ))}
         </select>

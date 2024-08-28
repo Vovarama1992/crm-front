@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
+import { useGetWorkerByIdQuery } from '@/entities/workers'
 
 export type SaleFormProps = {
   dealId: number
@@ -21,7 +22,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   const [selectedFileName, setSelectedFileName] = useState<string | undefined>(undefined)
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
+  const { data: worker } = useGetWorkerByIdQuery(userId)
   const [createSale] = useCreateSaleMutation()
+  const ropId = worker?.managed_by
 
   const handleCounterpartyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = Number(e.target.value)
@@ -71,6 +74,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
       pdfPath: selectedFileName, // Отправляем имя файла на сервер
       prepaymentAmount,
       purchaseCost: 0,
+      ropId,
       totalSaleAmount, // Добавляем общую сумму продажи в данные
       userId,
     }
