@@ -16,7 +16,6 @@ interface SupplierLineInput {
   paymentDate: string
   quantity: number
   shipmentDate: string
-  //supplierId: number
   supplierInvoice: string
   totalPurchaseAmount: number
 }
@@ -35,13 +34,14 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
       paymentDate: '',
       quantity: 1,
       shipmentDate: '',
-      //supplierId: 0,
       supplierInvoice: '',
       totalPurchaseAmount: 0,
     },
   ])
 
   const [createSupplierLine] = useCreateSupplierLineMutation()
+
+  const [linesToAdd, setLinesToAdd] = useState(1) // Состояние для количества строк
 
   const handleInputChange = (
     index: number,
@@ -54,22 +54,20 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
     setSupplierLines(newSupplierLines)
   }
 
-  const handleAddLine = () => {
-    setSupplierLines([
-      ...supplierLines,
-      {
-        articleNumber: '',
-        comment: '',
-        delivered: false,
-        description: '',
-        paymentDate: '',
-        quantity: 1,
-        shipmentDate: '',
-        //supplierId: 0,
-        supplierInvoice: '',
-        totalPurchaseAmount: 0,
-      },
-    ])
+  const handleAddMultipleLines = () => {
+    const newLines = Array.from({ length: linesToAdd }, () => ({
+      articleNumber: '',
+      comment: '',
+      delivered: false,
+      description: '',
+      paymentDate: '',
+      quantity: 1,
+      shipmentDate: '',
+      supplierInvoice: '',
+      totalPurchaseAmount: 0,
+    }))
+
+    setSupplierLines([...supplierLines, ...newLines])
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,13 +197,22 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
             </div>
           ))}
           <div className={'mt-4 flex justify-between'}>
-            <button
-              className={'bg-gray-300 text-black px-4 py-2 rounded'}
-              onClick={handleAddLine}
-              type={'button'}
-            >
-              Добавить строку
-            </button>
+            <div>
+              <input
+                className={'border p-2 w-20 mr-2'}
+                min={1}
+                onChange={e => setLinesToAdd(Number(e.target.value))}
+                type={'number'}
+                value={linesToAdd}
+              />
+              <button
+                className={'bg-gray-300 text-black px-4 py-2 rounded'}
+                onClick={handleAddMultipleLines}
+                type={'button'}
+              >
+                Добавить {linesToAdd} строк(и)
+              </button>
+            </div>
             <div>
               <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
                 Создать

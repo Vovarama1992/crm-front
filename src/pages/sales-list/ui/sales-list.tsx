@@ -1,10 +1,11 @@
 /* eslint-disable max-lines */
 import React, { useEffect, useState } from 'react'
 
+import { useGetSaleByIdQuery } from '@/entities/deal'
 import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
 import { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
-import { useMeQuery } from '@/entities/session'
+import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
 import { SalesCreateForm } from './SalesCreateForm'
@@ -46,6 +47,7 @@ export const SalesListPage = () => {
   const { data: counterpartiesData } = useGetAllCounterpartiesQuery()
 
   const [updateSale] = useUpdateSaleMutation()
+  const { data: sale52Data } = useGetSaleByIdQuery('52')
 
   const userId = meData?.id || null
   const isDirector = meData?.roleName === 'Директор'
@@ -61,6 +63,8 @@ export const SalesListPage = () => {
 
   const [sales, setSales] = useState<SaleDto[]>([])
 
+  const [uploadPdf] = useUploadPdfMutation()
+
   useEffect(() => {
     if (salesData && Array.isArray(salesData)) {
       const filteredSales = salesData.filter(sale => {
@@ -74,6 +78,13 @@ export const SalesListPage = () => {
       setSales(sortedSales)
     }
   }, [salesData, selectedEmployee])
+
+  useEffect(() => {
+    // Если данные по продаже 52 уже есть, выводим их в консоль
+    if (sale52Data) {
+      console.log('Sale with ID 52:', sale52Data)
+    }
+  }, [sale52Data])
 
   const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
@@ -122,42 +133,39 @@ export const SalesListPage = () => {
 
     return counterparty ? counterparty.name : '—'
   }
-
-  const handleFileUpload = (saleId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (saleId: number, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
 
     if (file) {
-      const reader = new FileReader()
+      const extension = file.name.split('.').pop() // Получаем расширение файла
+      const filename = `deal_${saleId}.${extension}` // Формируем имя файла вручную
 
-      reader.onload = function () {
-        const base64String = reader.result as string
+      const formData = new FormData()
 
-        localStorage.setItem(file.name, base64String)
-        // Отправляем только имя файла на сервер
-        updateSale({ id: saleId, sale: { pdfPath: file.name } })
-          .then(() => {
-            window.location.reload()
-          })
-          .catch(error => {
-            console.error('Ошибка при загрузке файла:', error)
-          })
+      formData.append('file', file)
+      formData.append('filename', filename)
+
+      try {
+        const uploadResponse = await uploadPdf({ file, saleId: String(saleId) }).unwrap()
+
+        const pdfUrl = uploadResponse.sale.pdfUrl
+
+        await updateSale({ id: saleId, sale: { pdfUrl } }).unwrap()
+
+        window.location.reload()
+      } catch (error) {
+        console.error('Ошибка при загрузке файла:', error)
       }
-      reader.readAsDataURL(file)
     }
   }
 
-  const handleFileOpen = (fileName: string) => {
-    const fileData = localStorage.getItem(fileName)
+  const handleFileOpen = (pdfUrl: string) => {
+    // Открытие файла в новом окне
+    const link = document.createElement('a')
 
-    if (fileData) {
-      const link = document.createElement('a')
-
-      link.href = fileData
-      link.target = '_blank'
-      link.click()
-    } else {
-      console.error('Файл не найден в localStorage')
-    }
+    link.href = pdfUrl
+    link.target = '_blank'
+    link.click()
   }
 
   const getSaleStage = (signingStage: SigningStage | undefined) => {
@@ -248,12 +256,12 @@ export const SalesListPage = () => {
                   {sale.date.split('T')[0]}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.pdfPath ? (
+                  {sale.pdfUrl ? (
                     <button
                       className={'text-blue-500'}
-                      onClick={() => handleFileOpen(sale.pdfPath as string)}
+                      onClick={() => handleFileOpen(sale.pdfUrl as string)}
                     >
-                      {sale.pdfPath}
+                      {sale.pdfUrl ? sale.pdfUrl.split('/').pop() : 'No file available'}
                     </button>
                   ) : (
                     isDirector && (

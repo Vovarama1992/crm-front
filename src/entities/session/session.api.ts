@@ -1,4 +1,5 @@
 /* eslint-disable perfectionist/sort-objects */
+import type { SaleDto } from '../deal/deal.types'
 import type {
   BaseUserDto,
   LoginDto,
@@ -71,22 +72,21 @@ const sessionApi = baseApi.injectEndpoints({
     }),
 
     // Эндпоинт для загрузки PDF
-    uploadPdf: builder.mutation<
-      { message: string; pdfUrl: string },
-      { file: File; saleId: string }
-    >({
-      query: ({ file, saleId }) => {
-        const formData = new FormData()
+    uploadPdf: builder.mutation<{ message: string; sale: SaleDto }, { file: File; saleId: string }>(
+      {
+        query: ({ file, saleId }) => {
+          const formData = new FormData()
 
-        formData.append('file', file)
+          formData.append('file', file)
 
-        return {
-          url: `/files/upload/pdf/${saleId}`,
-          method: 'POST',
-          body: formData,
-        }
-      },
-    }),
+          return {
+            url: `/files/upload/pdf/${saleId}`,
+            method: 'POST',
+            body: formData,
+          }
+        },
+      }
+    ),
 
     // Эндпоинт для скачивания PDF по запросу
     lazyDownloadPdf: builder.query<Blob, { filename: string }>({

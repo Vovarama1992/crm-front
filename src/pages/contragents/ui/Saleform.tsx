@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
+import { useUpdateSaleMutation } from '@/entities/deal/deal.api'
+import { useUploadPdfMutation } from '@/entities/session' // Хук для обновления продажи
 import { useGetWorkerByIdQuery } from '@/entities/workers'
 
 export type SaleFormProps = {
@@ -18,12 +20,14 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   const [prepaymentAmount, setPrepaymentAmount] = useState(0)
   const [isFinalAmount, setIsFinalAmount] = useState(false)
   const [isIndependentDeal, setIsIndependentDeal] = useState(false)
-  const [totalSaleAmount, setTotalSaleAmount] = useState(0) // Добавлено состояние для общей суммы продажи
-  const [selectedFileName, setSelectedFileName] = useState<string | undefined>(undefined)
+  const [totalSaleAmount, setTotalSaleAmount] = useState(0)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null) // Хранение файла
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: worker } = useGetWorkerByIdQuery(userId)
   const [createSale] = useCreateSaleMutation()
+  const [uploadPdf] = useUploadPdfMutation() // Хук для загрузки PDF
+  const [updateSale] = useUpdateSaleMutation() // Хук для обновления продажи
   const ropId = worker?.managed_by
 
   const handleCounterpartyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -38,16 +42,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0]
-      const reader = new FileReader()
-
-      reader.onload = function () {
-        const base64String = reader.result as string
-
-        localStorage.setItem(file.name, base64String)
-        setSelectedFileName(file.name)
-      }
-      reader.readAsDataURL(file)
+      setSelectedFile(e.target.files[0]) // Сохраняем файл в состоянии
     }
   }
 
@@ -71,22 +66,55 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
       logisticsCost: 0,
       margin: 0,
       paidNow: 0,
-      pdfPath: selectedFileName, // Отправляем имя файла на сервер
+      pdfPath: '', // Изначально оставляем пустым
       prepaymentAmount,
       purchaseCost: 0,
       ropId,
-      totalSaleAmount, // Добавляем общую сумму продажи в данные
+      totalSaleAmount,
       userId,
     }
 
-    console.log('file name: ' + selectedFileName)
-
     try {
-      await createSale(saleData).unwrap()
-      alert('Продажа успешно создана!')
+      const saleResponse = await createSale(saleData).unwrap()
+      const saleId = saleResponse.id // Предполагается, что сервер возвращает созданный saleId
+
+      // Если файл выбран, загружаем его на сервер
+      if (selectedFile && saleId) {
+        uploadPdf({
+          file: selectedFile,
+          saleId: String(saleId),
+        })
+          .then(uploadResponse => {
+            // Логируем ответ от бэкенда после загрузки файла
+            console.log('Upload Response:', uploadResponse)
+
+            // Обновляем продажу с новым pdfUrl
+            if (uploadResponse?.data?.sale && uploadResponse?.data?.sale.pdfUrl) {
+              return updateSale({
+                id: saleId,
+                sale: {
+                  pdfUrl: uploadResponse?.data?.sale.pdfUrl,
+                },
+              }).unwrap()
+            } else {
+              throw new Error('Ошибка: Продажа не обновлена корректно.')
+            }
+          })
+          .then(updateResponse => {
+            console.log('Updated Sale after updating pdfUrl:', updateResponse)
+            alert('Продажа и файл успешно загружены!')
+          })
+          .catch(error => {
+            console.error('Ошибка при загрузке PDF или обновлении продажи:', error)
+            alert('Продажа создана, но произошла ошибка при загрузке файла.')
+          })
+      } else {
+        alert('Продажа успешно создана!')
+      }
+
       onClose()
     } catch (error) {
-      console.error('Error creating sale:', error)
+      console.error('Ошибка при создании продажи:', error)
       alert('Произошла ошибка при создании продажи.')
     }
   }

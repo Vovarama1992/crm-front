@@ -35,6 +35,8 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
 
   const [createInvoiceLine] = useCreateInvoiceLineMutation()
 
+  const [linesToAdd, setLinesToAdd] = useState(1) // Состояние для хранения количества строк
+
   const handleInputChange = (
     index: number,
     field: keyof InvoiceLineInput,
@@ -46,18 +48,17 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
     setInvoiceLines(newInvoiceLines)
   }
 
-  const handleAddLine = () => {
-    setInvoiceLines([
-      ...invoiceLines,
-      {
-        articleNumber: '',
-        comment: '',
-        description: '',
-        quantity: 1,
-        totalPrice: 0,
-        unitPrice: 0,
-      },
-    ])
+  const handleAddMultipleLines = () => {
+    const newLines = Array.from({ length: linesToAdd }, () => ({
+      articleNumber: '',
+      comment: '',
+      description: '',
+      quantity: 1,
+      totalPrice: 0,
+      unitPrice: 0,
+    }))
+
+    setInvoiceLines([...invoiceLines, ...newLines])
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,13 +152,22 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
             </div>
           ))}
           <div className={'mt-4 flex justify-between'}>
-            <button
-              className={'bg-gray-300 text-black px-4 py-2 rounded'}
-              onClick={handleAddLine}
-              type={'button'}
-            >
-              Добавить строку
-            </button>
+            <div>
+              <input
+                className={'border p-2 w-20 mr-2'}
+                min={1}
+                onChange={e => setLinesToAdd(Number(e.target.value))}
+                type={'number'}
+                value={linesToAdd}
+              />
+              <button
+                className={'bg-gray-300 text-black px-4 py-2 rounded'}
+                onClick={handleAddMultipleLines}
+                type={'button'}
+              >
+                Добавить {linesToAdd} строк(и)
+              </button>
+            </div>
             <div>
               <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
                 Создать
