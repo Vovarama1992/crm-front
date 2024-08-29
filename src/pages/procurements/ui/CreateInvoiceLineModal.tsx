@@ -35,7 +35,8 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
 
   const [createInvoiceLine] = useCreateInvoiceLineMutation()
 
-  const [linesToAdd, setLinesToAdd] = useState(1) // Состояние для хранения количества строк
+  const [bulkInput, setBulkInput] = useState('') // Состояние для текстового ввода
+  const [linesToAdd, setLinesToAdd] = useState(1) // Состояние для количества строк
 
   const handleInputChange = (
     index: number,
@@ -46,6 +47,33 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
 
     newInvoiceLines[index] = { ...newInvoiceLines[index], [field]: value }
     setInvoiceLines(newInvoiceLines)
+  }
+
+  const handleBulkInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setBulkInput(e.target.value)
+  }
+
+  const handleParseBulkInput = () => {
+    const lines = bulkInput.trim().split('\n')
+
+    const parsedLines = lines.map(line => {
+      const parts = line.trim().split(/\s+/) // Разбиваем строку на части по пробелам или табуляции
+
+      const [articleNumber, description, quantity, unitPrice, totalPrice, ...commentParts] = parts
+
+      const comment = commentParts.join(' ') // Соединяем все оставшиеся части как комментарий
+
+      return {
+        articleNumber: articleNumber?.trim() || '',
+        comment: comment.trim() || '',
+        description: description?.trim() || '',
+        quantity: Number(quantity?.trim()) || 0,
+        totalPrice: Number(totalPrice?.trim()) || 0,
+        unitPrice: Number(unitPrice?.trim()) || 0,
+      }
+    })
+
+    setInvoiceLines([...invoiceLines, ...parsedLines]) // Добавляем распарсенные строки к существующим
   }
 
   const handleAddMultipleLines = () => {
@@ -85,6 +113,38 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
       <div className={'bg-white p-6 rounded shadow-lg w-[800px] max-h-[90vh] overflow-auto'}>
         <h2 className={'text-lg font-semibold mb-4'}>Создать строки счета</h2>
         <form onSubmit={handleSubmit}>
+          <textarea
+            className={'border p-2 w-full mb-4'}
+            onChange={handleBulkInputChange}
+            placeholder={
+              'Введите строки в формате: Артикул, Описание, Количество, Цена за единицу, Общая сумма, Комментарий'
+            }
+            rows={10}
+            value={bulkInput}
+          />
+          <button
+            className={'bg-gray-300 text-black px-4 py-2 rounded mb-4'}
+            onClick={handleParseBulkInput}
+            type={'button'}
+          >
+            Парсить строки
+          </button>
+          <div className={'mb-4'}>
+            <input
+              className={'border p-2 w-20 mr-2'}
+              min={1}
+              onChange={e => setLinesToAdd(Number(e.target.value))}
+              type={'number'}
+              value={linesToAdd}
+            />
+            <button
+              className={'bg-gray-300 text-black px-4 py-2 rounded'}
+              onClick={handleAddMultipleLines}
+              type={'button'}
+            >
+              Добавить {linesToAdd} строк(и)
+            </button>
+          </div>
           {invoiceLines.map((line, index) => (
             <div className={'grid grid-cols-2 gap-4 mb-4'} key={index}>
               <div className={'space-y-2'}>
@@ -93,7 +153,6 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
                   <input
                     className={'border p-2 w-full'}
                     onChange={e => handleInputChange(index, 'articleNumber', e.target.value)}
-                    required
                     type={'text'}
                     value={line.articleNumber}
                   />
@@ -103,7 +162,6 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
                   <input
                     className={'border p-2 w-full'}
                     onChange={e => handleInputChange(index, 'description', e.target.value)}
-                    required
                     type={'text'}
                     value={line.description}
                   />
@@ -113,7 +171,6 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
                   <input
                     className={'border p-2 w-full'}
                     onChange={e => handleInputChange(index, 'quantity', Number(e.target.value))}
-                    required
                     type={'number'}
                     value={line.quantity}
                   />
@@ -125,7 +182,6 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
                   <input
                     className={'border p-2 w-full'}
                     onChange={e => handleInputChange(index, 'unitPrice', Number(e.target.value))}
-                    required
                     type={'number'}
                     value={line.unitPrice}
                   />
@@ -135,7 +191,6 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
                   <input
                     className={'border p-2 w-full'}
                     onChange={e => handleInputChange(index, 'totalPrice', Number(e.target.value))}
-                    required
                     type={'number'}
                     value={line.totalPrice}
                   />
@@ -152,34 +207,16 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
             </div>
           ))}
           <div className={'mt-4 flex justify-between'}>
-            <div>
-              <input
-                className={'border p-2 w-20 mr-2'}
-                min={1}
-                onChange={e => setLinesToAdd(Number(e.target.value))}
-                type={'number'}
-                value={linesToAdd}
-              />
-              <button
-                className={'bg-gray-300 text-black px-4 py-2 rounded'}
-                onClick={handleAddMultipleLines}
-                type={'button'}
-              >
-                Добавить {linesToAdd} строк(и)
-              </button>
-            </div>
-            <div>
-              <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
-                Создать
-              </button>
-              <button
-                className={'bg-gray-300 text-black px-4 py-2 rounded ml-2'}
-                onClick={onCancel}
-                type={'button'}
-              >
-                Отмена
-              </button>
-            </div>
+            <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
+              Создать
+            </button>
+            <button
+              className={'bg-gray-300 text-black px-4 py-2 rounded ml-2'}
+              onClick={onCancel}
+              type={'button'}
+            >
+              Отмена
+            </button>
           </div>
         </form>
       </div>
