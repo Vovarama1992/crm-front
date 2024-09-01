@@ -64,7 +64,6 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
       let unitPrice = 0
       let totalPrice = 0
       let comment = ''
-      let isDescription = false
 
       for (let i = 0; i < parts.length; i++) {
         const part = parts[i]
@@ -94,7 +93,6 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
         // Если артикул уже заполнен, а текущее значение нечисловое, добавляем его в описание
         else if (!isNaN(Number(parts[i + 1]))) {
           description += part.trim() + ' '
-          isDescription = true
         }
         // Продолжаем добавлять в описание
         else {
