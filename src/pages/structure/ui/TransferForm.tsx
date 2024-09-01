@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { DepartmentDto, WorkerDto } from '@/entities/workers'
-import { useUpdateWorkerMutation } from '@/entities/workers' // Импортируем хук для обновления
+import { useUpdateWorkerMutation } from '@/entities/workers'
 
 type TransferFormProps = {
   departments: DepartmentDto[]
@@ -24,27 +24,48 @@ const TransferForm: React.FC<TransferFormProps> = ({
 }) => {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<null | number>(null)
   const [departmentName, setDepartmentName] = useState<string>('')
-  const [newRopId, setNewRopId] = useState<null | number>(null)
-  const [demoteOption, setDemoteOption] = useState<'disband' | 'reassign' | null>(null)
 
-  const [updateWorker] = useUpdateWorkerMutation() // Используем хук для обновления данных сотрудника
-
-  // Находим текущий департамент сотрудника
+  // Найдем текущий департамент сотрудника
   const currentDepartment = departments.find(dept => dept.id === employee.department_id)
 
+  // Мутация для обновления данных сотрудника
+  const [updateWorker] = useUpdateWorkerMutation()
+
+  // Функция для поиска ropId в департаменте
+  function findRopId(departmentId: number) {
+    const department = departments.find(dep => dep.id === departmentId)
+
+    return department?.ropId
+  }
+
   const handleSubmit = async () => {
+    console.log('Форма отправлена')
+    console.log('Тип формы:', formType)
+
     if (formType === 'transfer') {
-      // Обновляем сотрудника, устанавливая department_id в null, если выбран "Без отдела"
-      await updateWorker({ ...employee, department_id: selectedDepartmentId })
-      onTransfer(employee, selectedDepartmentId) // Передаем null, если выбрана опция "Без отдела"
+      const managedBy = selectedDepartmentId ? findRopId(selectedDepartmentId) : undefined
+
+      console.log('Обновляем сотрудника:', {
+        ...employee,
+        department_id: selectedDepartmentId,
+        managed_by: managedBy,
+      })
+
+      await updateWorker({
+        ...employee,
+        department_id: selectedDepartmentId,
+        managed_by: managedBy, // Устанавливаем найденный ropId или undefined
+      })
+
+      console.log('Сотрудник успешно обновлен. Передаем данные в onTransfer.')
+
+      onTransfer(employee, selectedDepartmentId)
     } else if (formType === 'promote' && departmentName) {
       onPromote(employee, departmentName)
     } else if (formType === 'demote') {
-      if (demoteOption === 'reassign' && newRopId) {
-        // Назначение нового РОПа без расформирования отдела
-        onDemote(employee, newRopId)
-      } else if (demoteOption === 'disband') {
-        // Расформирование отдела
+      if (currentDepartment && currentDepartment.ropId) {
+        onDemote(employee, currentDepartment.ropId)
+      } else {
         onDemote(employee)
       }
     }
@@ -66,7 +87,7 @@ const TransferForm: React.FC<TransferFormProps> = ({
             onChange={e => setSelectedDepartmentId(Number(e.target.value) || null)}
             value={selectedDepartmentId || ''}
           >
-            <option value={''}>Без отдела</option> {/* Добавлена опция "Без отдела" */}
+            <option value={''}>Без отдела</option>
             {departments.map(dept => (
               <option key={dept.id} value={dept.id}>
                 {dept.name}
@@ -98,7 +119,7 @@ const TransferForm: React.FC<TransferFormProps> = ({
               <input
                 className={'form-radio'}
                 name={'demoteOption'}
-                onChange={() => setDemoteOption('reassign')}
+                onChange={() => console.log('Reassign selected')}
                 type={'radio'}
                 value={'reassign'}
               />
@@ -110,35 +131,13 @@ const TransferForm: React.FC<TransferFormProps> = ({
               <input
                 className={'form-radio'}
                 name={'demoteOption'}
-                onChange={() => setDemoteOption('disband')}
+                onChange={() => console.log('Disband selected')}
                 type={'radio'}
                 value={'disband'}
               />
               <span className={'ml-2'}>Расформировать отдел</span>
             </label>
           </div>
-
-          {demoteOption === 'reassign' && currentDepartment && (
-            <div className={'mt-4'}>
-              <label className={'block text-sm font-medium text-gray-700'}>
-                Выберите нового РОПа
-              </label>
-              <select
-                className={'mt-1 block w-full p-2 border border-gray-300 rounded-md'}
-                onChange={e => setNewRopId(Number(e.target.value))}
-                value={newRopId || ''}
-              >
-                <option value={''}>Выберите сотрудника</option>
-                {currentDepartment.users
-                  .filter((worker: any) => worker.id !== employee.id) // Исключаем текущего РОПа
-                  .map((worker: any) => (
-                    <option key={worker.id} value={worker.id}>
-                      {worker.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
         </div>
       )}
 

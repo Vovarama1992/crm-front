@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { useGetAllSalesQuery } from '@/entities/deal'
-import { PurchaseDto, SaleDto } from '@/entities/deal/deal.types' // Хук для получения всех продаж
+import { PurchaseDto, SaleDto } from '@/entities/deal/deal.types'
 
 import EditableForm from './EditableForm'
 
@@ -16,6 +16,12 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
 
   const { data: salesData } = useGetAllSalesQuery()
 
+  function findTotalAmount(id: number) {
+    const sale = salesData?.find((sale: SaleDto) => sale.id === id)
+
+    return sale?.totalSaleAmount || 0
+  }
+
   const handleEditClick = (purchase: PurchaseDto) => {
     setEditingOrder(purchase)
     setIsFormOpen(true)
@@ -26,17 +32,15 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
     setEditingOrder(null)
   }
 
-  const handleFileOpen = (fileName: string) => {
-    const fileData = localStorage.getItem(fileName)
-
-    if (fileData) {
+  const handleFileOpen = (pdfUrl: string) => {
+    if (pdfUrl) {
       const link = document.createElement('a')
 
-      link.href = fileData
+      link.href = pdfUrl
       link.target = '_blank'
       link.click()
     } else {
-      console.error('Файл не найден в localStorage')
+      console.error('PDF не найден')
     }
   }
 
@@ -47,8 +51,8 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
       data.forEach(purchase => {
         const matchingSale = salesData?.find((sale: SaleDto) => sale.id === purchase.dealId)
 
-        if (matchingSale && matchingSale.pdfPath) {
-          paths[purchase.id] = matchingSale.pdfPath
+        if (matchingSale && matchingSale.pdfUrl) {
+          paths[purchase.id] = matchingSale.pdfUrl
         } else {
           paths[purchase.id] = null
         }
@@ -74,7 +78,8 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
             <th className={'border px-4 py-2 bg-gray-100'}>Счет заказчику</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Менеджер</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Крайняя дата поставки</th>
-            <th className={'border px-4 py-2 bg-gray-100'}>PDF</th> {/* Новый столбец */}
+            <th className={'border px-4 py-2 bg-gray-100'}>PDF</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>Общая сумма продажи</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Действия</th>
           </tr>
         </thead>
@@ -82,10 +87,15 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
           {data.map(purchase => (
             <tr key={purchase.id}>
               <td className={'border px-4 py-2'}>{purchase.createdAt?.toString().split('T')[0]}</td>
-              <td className={'border px-4 py-2'}>{purchase.dealId}</td>
-              <td className={'border px-4 py-2'}>{purchase.requestNumber}</td>
+              <td
+                className={'border px-4 py-2 cursor-pointer text-blue-500'}
+                onClick={() => handleFileOpen(pdfPaths[purchase.id]!)}
+              >
+                {purchase.dealId}
+              </td>
+              <td className={'border px-4 py-2'}>{purchase.id}</td>
               <td className={'border px-4 py-2'}>{purchase.counterpartyName}</td>
-              <td className={'border px-4 py-2'}>{purchase.invoiceToCustomer}</td>
+              <td className={'border px-4 py-2'}>{purchase.requestNumber}</td>
               <td className={'border px-4 py-2'}>{purchase.managerName}</td>
               <td className={'border px-4 py-2'}>
                 {new Date(purchase.deliveryDeadline).toLocaleDateString()}
@@ -102,6 +112,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
                   'Нет PDF'
                 )}
               </td>
+              <td className={'border px-4 py-2'}>{findTotalAmount(purchase.dealId)}</td>
               <td className={'border px-4 py-2'}>
                 <button
                   className={'bg-blue-500 text-white px-2 py-1 rounded'}
@@ -120,6 +131,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
           initialValue={editingOrder}
           onCancel={() => setIsFormOpen(false)}
           onSave={handleFormSave}
+          totalSaleAmount={findTotalAmount(editingOrder.dealId) || 0} // Передаем сумму продажи
         />
       )}
     </div>

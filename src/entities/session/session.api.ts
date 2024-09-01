@@ -1,5 +1,5 @@
 /* eslint-disable perfectionist/sort-objects */
-import type { SaleDto } from '../deal/deal.types'
+import type { SaleDto, SupplierLineDto } from '../deal/deal.types'
 import type {
   BaseUserDto,
   LoginDto,
@@ -71,7 +71,7 @@ const sessionApi = baseApi.injectEndpoints({
       }),
     }),
 
-    // Эндпоинт для загрузки PDF
+    // Эндпоинт для загрузки PDF для продажи
     uploadPdf: builder.mutation<{ message: string; sale: SaleDto }, { file: File; saleId: string }>(
       {
         query: ({ file, saleId }) => {
@@ -88,10 +88,40 @@ const sessionApi = baseApi.injectEndpoints({
       }
     ),
 
-    // Эндпоинт для скачивания PDF по запросу
-    lazyDownloadPdf: builder.query<Blob, { filename: string }>({
+    // Эндпоинт для загрузки PDF для строк поставщиков
+    uploadSupplierPdf: builder.mutation<
+      { message: string; supplierLine: SupplierLineDto },
+      { file: File; supplierLineId: string }
+    >({
+      query: ({ file, supplierLineId }) => {
+        const formData = new FormData()
+
+        formData.append('file', file)
+
+        return {
+          url: `/files/upload/supplier-pdf/${supplierLineId}`,
+          method: 'POST',
+          body: formData,
+        }
+      },
+    }),
+
+    // Эндпоинт для скачивания PDF
+    downloadPdf: builder.query<Blob, { filename: string }>({
       query: ({ filename }) => ({
         url: `/files/download/pdf/${filename}`,
+        method: 'GET',
+        responseHandler: async response => {
+          const blob = await response.blob()
+
+          return blob
+        },
+      }),
+    }),
+
+    downloadSupplierPdf: builder.query<Blob, { filename: string }>({
+      query: ({ filename }) => ({
+        url: `/files/download/supplier-pdf/${filename}`,
         method: 'GET',
         responseHandler: async response => {
           const blob = await response.blob()
@@ -110,8 +140,12 @@ export const {
   useSignUpMutation,
   useSignInMutation,
   useSignOutMutation,
+  useDownloadPdfQuery,
+  useLazyDownloadSupplierPdfQuery,
+  useDownloadSupplierPdfQuery,
   useAskNlpMutation,
   useCloseDialogueMutation,
-  useUploadPdfMutation, // Экспортируем хук для загрузки PDF
-  useLazyDownloadPdfQuery, // Экспортируем хук для скачивания PDF по запросу
+  useUploadPdfMutation, // Хук для загрузки PDF для продажи
+  useUploadSupplierPdfMutation, // Хук для загрузки PDF для строк поставщиков
+  useLazyDownloadPdfQuery, // Хук для скачивания PDF по запросу
 } = sessionApi

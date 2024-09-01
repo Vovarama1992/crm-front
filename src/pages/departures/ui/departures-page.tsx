@@ -5,6 +5,8 @@ import {
   useGetDeparturesQuery,
   useUpdateDepartureMutation,
 } from '@/entities/departure/departure.api'
+import { WorkerDto } from '@/entities/workers'
+import { useGetWorkersQuery } from '@/entities/workers'
 
 import { CreateDepartureForm } from './CreateDepartureForm' // Импортируем форму создания
 import { EditDepartureForm } from './EditDepartureForm' // Импортируем форму редактирования
@@ -46,6 +48,17 @@ export const DeparturesPage = () => {
   const [selectedDeparture, setSelectedDeparture] = useState<DepartureDto | null>(null)
   const { data: departuresData } = useGetDeparturesQuery()
   const [updateDeparture] = useUpdateDepartureMutation()
+
+  const { data: workers } = useGetWorkersQuery()
+
+  function findCreator(id: number) {
+    const defaultWorker = { name: '', surname: '' }
+
+    const worker = workers?.find((worker: WorkerDto) => worker.id === id)
+
+    // Если worker найден, возвращаем его name, иначе — name из defaultWorker
+    return worker ? worker.name + ' ' + worker.surname : defaultWorker.name
+  }
 
   const handleFilterNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterNumber(e.target.value)
@@ -118,7 +131,8 @@ export const DeparturesPage = () => {
             <th className={'border px-4 py-2'}>Дата отправки</th>
             <th className={'border px-4 py-2'}>Дата поступления</th>
             <th className={'border px-4 py-2'}>Куда конкретно</th>
-            <th className={'border px-4 py-2'}>Менеджер</th>
+            <th className={'border px-4 py-2'}>Менеджер продажи</th>
+            <th className={'border px-4 py-2'}>Менеджер отправления</th>
             <th className={'border px-4 py-2'}>Комментарий</th>
             <th className={'border px-4 py-2'}>Статус</th>
             <th className={'border px-4 py-2'}>Действия</th>
@@ -165,6 +179,7 @@ export const DeparturesPage = () => {
               <td className={'border px-4 py-2'}>
                 {departure.user.name} {departure.user.surname}
               </td>
+              <td className={'border px-4 py-2'}>{findCreator(departure.departureCreator)}</td>
               <td className={'border px-4 py-2'}>{departure.comments}</td>
               <td className={'border px-4 py-2'}>
                 <select

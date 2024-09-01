@@ -57,19 +57,73 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
     const lines = bulkInput.trim().split('\n')
 
     const parsedLines = lines.map(line => {
-      const parts = line.trim().split(/\s+/) // Разбиваем строку на части по пробелам или табуляции
+      const parts = line.trim().split(/\s+/)
+      let articleNumber = ''
+      let description = ''
+      let quantity = 0
+      let unitPrice = 0
+      let totalPrice = 0
+      let comment = ''
+      let isDescription = false
 
-      const [articleNumber, description, quantity, unitPrice, totalPrice, ...commentParts] = parts
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i]
 
-      const comment = commentParts.join(' ') // Соединяем все оставшиеся части как комментарий
+        // Проверка на количество - это первое число в строке
+        if (!isNaN(Number(part))) {
+          quantity = Number(part.trim())
+          if (i + 1 < parts.length) {
+            unitPrice = Number(parts[++i]?.trim() || 0)
+          }
+          if (i + 1 < parts.length) {
+            totalPrice = Number(parts[++i]?.trim() || 0)
+          }
+          if (i + 1 < parts.length) {
+            comment = parts
+              .slice(i + 1)
+              .join(' ')
+              .trim()
+          }
+          break
+        }
+
+        // Если это первое нечисловое значение, помещаем его в артикул
+        if (!articleNumber) {
+          articleNumber = part.trim()
+        }
+        // Если артикул уже заполнен, а текущее значение нечисловое, добавляем его в описание
+        else if (!isNaN(Number(parts[i + 1]))) {
+          description += part.trim() + ' '
+          isDescription = true
+        }
+        // Продолжаем добавлять в описание
+        else {
+          description += part.trim() + ' '
+        }
+      }
+
+      // Условие для пропуска артикула, если нет второго нечислового значения
+      if (description.trim() === '') {
+        description = articleNumber
+        articleNumber = ''
+      }
+
+      // Если totalPrice или unitPrice не были определены, их нужно инициализировать корректным значением.
+      if (totalPrice === null || isNaN(totalPrice)) {
+        totalPrice = quantity * unitPrice // Рассчитываем общую стоимость
+      }
+
+      if (unitPrice === null || isNaN(unitPrice)) {
+        unitPrice = totalPrice / quantity // Рассчитываем цену за единицу
+      }
 
       return {
-        articleNumber: articleNumber?.trim() || '',
-        comment: comment.trim() || '',
-        description: description?.trim() || '',
-        quantity: Number(quantity?.trim()) || 0,
-        totalPrice: Number(totalPrice?.trim()) || 0,
-        unitPrice: Number(unitPrice?.trim()) || 0,
+        articleNumber,
+        comment,
+        description: description.trim(),
+        quantity,
+        totalPrice: totalPrice || 0, // Гарантируем, что значение не будет null
+        unitPrice: unitPrice || 0, // Гарантируем, что значение не будет null
       }
     })
 
@@ -116,9 +170,7 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
           <textarea
             className={'border p-2 w-full mb-4'}
             onChange={handleBulkInputChange}
-            placeholder={
-              'Введите строки в формате: Артикул, Описание, Количество, Цена за единицу, Общая сумма, Комментарий'
-            }
+            placeholder={'Введите строки '}
             rows={10}
             value={bulkInput}
           />
@@ -207,7 +259,14 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
             </div>
           ))}
           <div className={'mt-4 flex justify-between'}>
-            <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
+            <button
+              className={'bg-blue-500 text-white px-4 py-2 rounded'}
+              onClick={e => {
+                e.preventDefault()
+                handleSubmit(e)
+              }}
+              type={'submit'}
+            >
               Создать
             </button>
             <button

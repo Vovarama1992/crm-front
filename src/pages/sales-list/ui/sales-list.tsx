@@ -1,7 +1,6 @@
 /* eslint-disable max-lines */
 import React, { useEffect, useState } from 'react'
 
-import { useGetSaleByIdQuery } from '@/entities/deal'
 import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
 import { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
@@ -47,7 +46,7 @@ export const SalesListPage = () => {
   const { data: counterpartiesData } = useGetAllCounterpartiesQuery()
 
   const [updateSale] = useUpdateSaleMutation()
-  const { data: sale52Data } = useGetSaleByIdQuery('52')
+  const [uploadPdf] = useUploadPdfMutation()
 
   const userId = meData?.id || null
   const isDirector = meData?.roleName === 'Директор'
@@ -63,8 +62,6 @@ export const SalesListPage = () => {
 
   const [sales, setSales] = useState<SaleDto[]>([])
 
-  const [uploadPdf] = useUploadPdfMutation()
-
   useEffect(() => {
     if (salesData && Array.isArray(salesData)) {
       const filteredSales = salesData.filter(sale => {
@@ -78,13 +75,6 @@ export const SalesListPage = () => {
       setSales(sortedSales)
     }
   }, [salesData, selectedEmployee])
-
-  useEffect(() => {
-    // Если данные по продаже 52 уже есть, выводим их в консоль
-    if (sale52Data) {
-      console.log('Sale with ID 52:', sale52Data)
-    }
-  }, [sale52Data])
 
   const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
@@ -133,25 +123,16 @@ export const SalesListPage = () => {
 
     return counterparty ? counterparty.name : '—'
   }
+
   const handleFileUpload = async (saleId: number, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
 
     if (file) {
-      const extension = file.name.split('.').pop() // Получаем расширение файла
-      const filename = `deal_${saleId}.${extension}` // Формируем имя файла вручную
-
-      const formData = new FormData()
-
-      formData.append('file', file)
-      formData.append('filename', filename)
-
       try {
         const uploadResponse = await uploadPdf({ file, saleId: String(saleId) }).unwrap()
-
         const pdfUrl = uploadResponse.sale.pdfUrl
 
         await updateSale({ id: saleId, sale: { pdfUrl } }).unwrap()
-
         window.location.reload()
       } catch (error) {
         console.error('Ошибка при загрузке файла:', error)
@@ -160,7 +141,6 @@ export const SalesListPage = () => {
   }
 
   const handleFileOpen = (pdfUrl: string) => {
-    // Открытие файла в новом окне
     const link = document.createElement('a')
 
     link.href = pdfUrl
@@ -264,13 +244,24 @@ export const SalesListPage = () => {
                       {sale.pdfUrl ? sale.pdfUrl.split('/').pop() : 'No file available'}
                     </button>
                   ) : (
-                    isDirector && (
+                    'Нет PDF'
+                  )}
+                  {isDirector && (
+                    <div className={'mt-2'}>
                       <input
                         className={'mb-2'}
+                        id={`file-upload-${sale.id}`} // Присваиваем уникальный ID для управления элементом
                         onChange={e => handleFileUpload(sale.id, e)}
+                        style={{ display: 'none' }} // Скрывает стандартный элемент ввода файла
                         type={'file'}
                       />
-                    )
+                      <label
+                        className={'bg-blue-500 text-white px-4 py-2 rounded cursor-pointer'}
+                        htmlFor={`file-upload-${sale.id}`}
+                      >
+                        Загрузить другой PDF
+                      </label>
+                    </div>
                   )}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
@@ -286,7 +277,7 @@ export const SalesListPage = () => {
                   {sale.totalSaleAmount || '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.paidNow || '—'}
+                  {sale.paidNow + sale.prepaymentAmount || '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.margin !== undefined && sale.progressed ? sale.margin : '—'}

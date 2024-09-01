@@ -8,6 +8,7 @@ export type DepartureDto = {
   } | null // Включаем данные о контрагенте
   counterpartyId: number
   dealId: number
+  departureCreator: number
   destination: 'RETURN_FROM_CLIENT' | 'RETURN_TO_SUPPLIER' | 'TO_CLIENT' | 'TO_US'
   dispatchDate: Date
   expectedArrivalDate: Date | null

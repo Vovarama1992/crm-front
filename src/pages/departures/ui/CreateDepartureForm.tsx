@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 
-import { useGetAllCounterpartiesQuery, useGetAllSalesQuery } from '@/entities/deal/deal.api'
+import { useGetAllSalesQuery } from '@/entities/deal/deal.api'
 import { useCreateDepartureMutation } from '@/entities/departure/departure.api'
-import { useGetWorkersQuery } from '@/entities/workers'
+import { useMeQuery } from '@/entities/session'
 
 const destinationOptions = [
   { label: 'До клиента', value: 'TO_CLIENT' },
@@ -16,11 +16,41 @@ const specificDestinationOptions = [
   { label: 'до двери', value: 'TO_DOOR' },
 ]
 
+const statusOptions = [
+  { label: 'Отправлено полностью', value: 'SENT_ALL' },
+  { label: 'Доставлено полностью', value: 'DELIVERED_ALL' },
+  { label: 'Доставлено частично', value: 'DELIVERED_PARTIALLY' },
+  { label: 'Проблема', value: 'PROBLEM' },
+  { label: 'Отправлено частично', value: 'SENT_PARTIALLY' },
+]
+
 export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
-  const { data: workers = [] } = useGetWorkersQuery()
-  const { data: sales } = useGetAllSalesQuery()
+  const { data: sales = [] } = useGetAllSalesQuery()
   const [createDeparture] = useCreateDepartureMutation()
+
+  const [selectedUserId, setSelectedUserId] = useState<null | number>(null)
+  const [selectedCounterpartyId, setSelectedCounterpartyId] = useState<null | number>(null)
+  const [selectedStatus, setSelectedStatus] = useState<
+    'DELIVERED_ALL' | 'DELIVERED_PARTIALLY' | 'PROBLEM' | 'SENT_ALL' | 'SENT_PARTIALLY'
+  >('SENT_ALL')
+
+  const { data: user } = useMeQuery()
+
+  const departureCreator = user?.id || 9999
+
+  const handleSaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedSaleId = Number(e.target.value)
+    const selectedSale = sales.find(sale => sale.id === selectedSaleId)
+
+    if (selectedSale) {
+      setSelectedUserId(selectedSale.userId)
+      setSelectedCounterpartyId(selectedSale.counterpartyId)
+
+      console.log('Продажа выбрана:', selectedSale)
+      console.log('Извлечен userId:', selectedSale.userId)
+      console.log('Извлечен counterpartyId:', selectedSale.counterpartyId)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -31,26 +61,31 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
     const dispatchDate = formData.get('dispatchDate') as string
     const expectedArrivalDate = formData.get('expectedArrivalDate') as null | string
 
+    const departureData = {
+      arrivalDate: arrivalDate ? new Date(arrivalDate) : null,
+      comments: formData.get('comments') as null | string,
+      counterpartyId: selectedCounterpartyId!,
+      dealId: Number(formData.get('dealId')),
+      departureCreator,
+      destination: formData.get('destination') as
+        | 'RETURN_FROM_CLIENT'
+        | 'RETURN_TO_SUPPLIER'
+        | 'TO_CLIENT'
+        | 'TO_US',
+      dispatchDate: new Date(dispatchDate),
+      expectedArrivalDate: expectedArrivalDate ? new Date(expectedArrivalDate) : null,
+      finalAmount: formData.get('finalAmount') ? Number(formData.get('finalAmount')) : null,
+      specificDestination: formData.get('specificDestination') as 'TO_DOOR' | 'TO_TERMINAL',
+      status: selectedStatus, // Теперь статус выбран из заранее определенных значений
+      trackingNumber: formData.get('trackingNumber') as null | string,
+      transportCompany: formData.get('transportCompany') as string,
+      userId: selectedUserId!,
+    }
+
+    console.log('Данные отправляемые на сервер:', departureData)
+
     try {
-      await createDeparture({
-        arrivalDate: arrivalDate ? new Date(arrivalDate) : null,
-        comments: formData.get('comments') as null | string,
-        counterpartyId: Number(formData.get('counterpartyId')), // Выбираем ID контрагента
-        dealId: Number(formData.get('dealId')), // Должно быть предусмотрено получение dealId
-        destination: formData.get('destination') as
-          | 'RETURN_FROM_CLIENT'
-          | 'RETURN_TO_SUPPLIER'
-          | 'TO_CLIENT'
-          | 'TO_US',
-        dispatchDate: new Date(dispatchDate),
-        expectedArrivalDate: expectedArrivalDate ? new Date(expectedArrivalDate) : null,
-        finalAmount: formData.get('finalAmount') ? Number(formData.get('finalAmount')) : null,
-        specificDestination: formData.get('specificDestination') as 'TO_DOOR' | 'TO_TERMINAL',
-        status: 'SENT_ALL', // Или сделать выбор статуса в форме
-        trackingNumber: formData.get('trackingNumber') as null | string,
-        transportCompany: formData.get('transportCompany') as string,
-        userId: Number(formData.get('userId')),
-      }).unwrap()
+      await createDeparture(departureData).unwrap()
 
       alert('Отправление успешно создано!')
       onClose()
@@ -65,28 +100,19 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
       <h2 className={'text-lg font-bold mb-4'}>Создание отправления</h2>
 
       <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
-        <select className={'border rounded p-2 w-full'} name={'counterpartyId'} required>
-          <option disabled value={''}>
-            Выберите контрагента
-          </option>
-          {counterparties.map(counterparty => (
-            <option key={counterparty.id} value={counterparty.id}>
-              {counterparty.name} {/* Отображаем название контрагента */}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className={'mb-4'}>
         <label className={'block text-sm font-bold mb-1'}>Продажа</label>
-        <select className={'border rounded p-2 w-full'} name={'dealId'} required>
+        <select
+          className={'border rounded p-2 w-full'}
+          name={'dealId'}
+          onChange={handleSaleChange}
+          required
+        >
           <option disabled value={''}>
             Выберите продажу
           </option>
-          {sales?.map((sale: any) => (
+          {sales.map(sale => (
             <option key={sale.id} value={sale.id}>
-              {sale.id} {/* Отображаем название контрагента */}
+              {sale.id} {/* Отображаем ID продажи */}
             </option>
           ))}
         </select>
@@ -165,15 +191,31 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
         <input className={'border rounded p-2 w-full'} name={'comments'} type={'text'} />
       </div>
 
+      {/* Поля для userId и counterpartyId, которые устанавливаются автоматически */}
+      <input name={'userId'} type={'hidden'} value={selectedUserId || ''} />
+      <input name={'counterpartyId'} type={'hidden'} value={selectedCounterpartyId || ''} />
+
       <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Имя менеджера</label>
-        <select className={'border rounded p-2 w-full'} name={'userId'} required>
-          <option disabled value={''}>
-            Выберите менеджера
-          </option>
-          {workers.map(worker => (
-            <option key={worker.id} value={worker.id}>
-              {worker.name}
+        <label className={'block text-sm font-bold mb-1'}>Статус отправления</label>
+        <select
+          className={'border rounded p-2 w-full'}
+          name={'status'}
+          onChange={e =>
+            setSelectedStatus(
+              e.target.value as
+                | 'DELIVERED_ALL'
+                | 'DELIVERED_PARTIALLY'
+                | 'PROBLEM'
+                | 'SENT_ALL'
+                | 'SENT_PARTIALLY'
+            )
+          }
+          required
+          value={selectedStatus}
+        >
+          {statusOptions.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>

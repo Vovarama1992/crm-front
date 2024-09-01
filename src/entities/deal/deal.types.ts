@@ -122,6 +122,7 @@ export type InvoiceLineDto = {
   comment?: string
   description: string
   id: number
+  purchase?: any
   purchaseId: number
   quantity: number
   totalPrice: number
@@ -139,9 +140,11 @@ export type SupplierLineDto = {
   description: string
   id: number
   paymentDate: string
+  pdfUrl?: string
   purchaseId: number
   quantity: number
   shipmentDate: string
+  supplierId: number
   supplierInvoice: string
   totalPurchaseAmount: number
 }
@@ -155,6 +158,7 @@ export type LogisticsLineDto = {
   carrier: string
   date: string
   description: string
+  destination: Destination
   id: number
   purchaseId: number
 }
@@ -181,4 +185,11 @@ export type CreatePaymentDto = {
   date?: string // Опциональное поле, по умолчанию будет установлено текущая дата и время
   type?: PaymentType // Опциональное поле, с дефолтным значением SALARY
   userId: number
+}
+
+export enum Destination {
+  RETURN_FROM_CLIENT = 'RETURN_FROM_CLIENT',
+  RETURN_TO_SUPPLIER = 'RETURN_TO_SUPPLIER',
+  TO_CLIENT = 'TO_CLIENT',
+  TO_US = 'TO_US',
 }

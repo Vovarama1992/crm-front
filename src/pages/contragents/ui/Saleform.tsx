@@ -48,6 +48,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('ropid: ' + ropId)
 
     if (selectedCounterpartyId === null) {
       alert('Выберите контрагента!')
@@ -89,11 +90,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
             console.log('Upload Response:', uploadResponse)
 
             // Обновляем продажу с новым pdfUrl
-            if (uploadResponse?.data?.sale && uploadResponse?.data?.sale.pdfUrl) {
+            if (uploadResponse.data?.sale?.pdfUrl) {
               return updateSale({
                 id: saleId,
                 sale: {
-                  pdfUrl: uploadResponse?.data?.sale.pdfUrl,
+                  pdfUrl: uploadResponse.data?.sale.pdfUrl,
                 },
               }).unwrap()
             } else {

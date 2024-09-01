@@ -83,6 +83,21 @@ export const StructurePage = () => {
     window.location.reload() // Перезагружаем страницу после отправки формы
   }
 
+  const handleTransfer = async (worker: WorkerDto, newDepartmentId: null | number) => {
+    // Найти ropId для нового департамента
+    const newDepartment = departmentsData.find(dept => dept.id === newDepartmentId)
+    const managedBy = newDepartment?.ropId ?? undefined
+
+    // Обновляем сотрудника с новым department_id и managed_by
+    await updateWorker({
+      ...worker,
+      department_id: newDepartmentId,
+      managed_by: managedBy,
+    })
+
+    handleFormSubmit()
+  }
+
   const handleCreateDepartmentForRop = async (worker: WorkerDto) => {
     const departmentName = prompt('Введите название нового отдела:')
 
@@ -111,7 +126,7 @@ export const StructurePage = () => {
             {department.workers.map(worker => (
               <li className={'mb-2'} key={worker.id}>
                 {worker.name} {worker.middleName} {worker.surname} ({worker.roleName})
-                {(worker.roleName === 'Менеджер' || worker.roleName === 'Логист') && ( // Добавлено условие для Логистов
+                {(worker.roleName === 'Менеджер' || worker.roleName === 'Логист') && (
                   <>
                     <button
                       className={'ml-2 text-red-500'}
@@ -196,10 +211,7 @@ export const StructurePage = () => {
               handleFormSubmit()
             }
           }}
-          onTransfer={async (worker: WorkerDto, newDepartmentId: null | number) => {
-            await updateWorker({ ...worker, department_id: newDepartmentId })
-            handleFormSubmit()
-          }}
+          onTransfer={handleTransfer}
         />
       )}
     </div>
