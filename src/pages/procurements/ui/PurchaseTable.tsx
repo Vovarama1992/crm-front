@@ -131,7 +131,8 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
           initialValue={editingOrder}
           onCancel={() => setIsFormOpen(false)}
           onSave={handleFormSave}
-          totalSaleAmount={findTotalAmount(editingOrder.dealId) || 0} // Передаем сумму продажи
+          pdfUrl={pdfPaths[editingOrder.id] || null} // Передаем путь к PDF-файлу
+          totalSaleAmount={findTotalAmount(editingOrder.dealId) || 0}
         />
       )}
     </div>

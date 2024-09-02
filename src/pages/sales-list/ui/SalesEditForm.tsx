@@ -184,7 +184,9 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
           className={'border border-gray-300 rounded p-1 w-full'}
           readOnly
           type={'number'}
-          value={formData.paidNow || ''}
+          value={
+            formData.paidNow !== undefined && formData.paidNow !== null ? formData.paidNow : ''
+          }
         />
       </div>
 

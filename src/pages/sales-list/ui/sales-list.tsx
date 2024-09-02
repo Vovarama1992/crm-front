@@ -94,27 +94,30 @@ export const SalesListPage = () => {
     setSelectedYear(event.target.value)
   }
 
-  const handleSelectChange = (
+  const handleSelectChange = async (
     sale: SaleDto,
     field: 'deliveryStage' | 'signingStage',
     value: string
   ) => {
-    if (field === 'deliveryStage') {
-      updateSale({ id: sale.id, sale: { ...sale, deliveryStage: value as DeliveryStage } })
-        .then(() => {
+    try {
+      if (field === 'signingStage') {
+        if (!sale.signingStage && value) {
+          // Если стадия подписания не была установлена, и теперь ее меняют, открываем форму создания
+          const updatedSale = { ...sale, signingStage: value as SigningStage }
+
+          setEditingSale(updatedSale)
+          setIsCreateFormOpen(true)
+        } else {
+          // Обновляем существующую продажу
+          await updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
           window.location.reload()
-        })
-        .catch(error => {
-          console.error('Ошибка при обновлении продажи:', error)
-        })
-    } else if (field === 'signingStage') {
-      updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
-        .then(() => {
-          window.location.reload()
-        })
-        .catch(error => {
-          console.error('Ошибка при обновлении продажи:', error)
-        })
+        }
+      } else if (field === 'deliveryStage') {
+        await updateSale({ id: sale.id, sale: { ...sale, deliveryStage: value as DeliveryStage } })
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Ошибка при обновлении продажи:', error)
     }
   }
 
@@ -149,7 +152,9 @@ export const SalesListPage = () => {
   }
 
   const getSaleStage = (signingStage: SigningStage | undefined) => {
-    return signingStage ? 'Конец' : 'Начало'
+    return signingStage === 'SIGNED_IN_EDO' || signingStage === 'SIGNED_ON_PAPER'
+      ? 'Конец'
+      : 'Начало'
   }
 
   const totalMargin = sales.reduce((acc, sale) => acc + (sale.margin || 0), 0)
@@ -280,7 +285,9 @@ export const SalesListPage = () => {
                   {sale.paidNow + sale.prepaymentAmount || '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.margin !== undefined && sale.progressed ? sale.margin : '—'}
+                  {sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец'
+                    ? sale.margin
+                    : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
                   <select

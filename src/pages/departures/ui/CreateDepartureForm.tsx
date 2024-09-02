@@ -55,6 +55,12 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
+    if (!selectedCounterpartyId) {
+      alert('Пожалуйста, выберите продажу перед созданием отправления.')
+
+      return
+    }
+
     const formData = new FormData(e.currentTarget)
 
     const arrivalDate = formData.get('arrivalDate') as null | string
@@ -221,7 +227,7 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
         </select>
       </div>
 
-      <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
+      <button className={'ml-[150px] bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
         Создать отправление
       </button>
     </form>

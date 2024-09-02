@@ -26,6 +26,7 @@ interface EditableFormProps {
   initialValue: PurchaseDto
   onCancel: () => void
   onSave: () => void
+  pdfUrl: null | string
   totalSaleAmount: number
 }
 
@@ -40,6 +41,7 @@ const EditableForm: React.FC<EditableFormProps> = ({
   initialValue,
   onCancel,
   onSave,
+  pdfUrl, // Получаем путь к PDF-файлу
   totalSaleAmount,
 }) => {
   const { data: invoiceLines = [] } = useGetInvoiceLinesByPurchaseIdQuery(initialValue.id)
@@ -75,6 +77,18 @@ const EditableForm: React.FC<EditableFormProps> = ({
     } catch (error) {
       console.error('Ошибка при создании уведомления:', error)
       alert('Не удалось создать уведомление')
+    }
+  }
+
+  const handleFileOpen = () => {
+    if (pdfUrl) {
+      const link = document.createElement('a')
+
+      link.href = pdfUrl
+      link.target = '_blank'
+      link.click()
+    } else {
+      console.error('PDF не найден')
     }
   }
 
@@ -287,6 +301,22 @@ const EditableForm: React.FC<EditableFormProps> = ({
                 type={'text'}
               />
             </div>
+
+            <div>
+              <label className={'block text-sm font-medium'}>Загружженный в продаже PDF</label>
+              {pdfUrl ? (
+                <button
+                  className={'text-blue-500 underline'}
+                  onClick={handleFileOpen}
+                  type={'button'}
+                >
+                  Открыть PDF
+                </button>
+              ) : (
+                'PDF не найден'
+              )}
+            </div>
+
             <div>
               <label className={'block text-sm font-medium'}>Заказчик</label>
               <input
