@@ -28,8 +28,8 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
   }
 
   const handleFormSave = () => {
-    setIsFormOpen(false)
-    setEditingOrder(null)
+    //setIsFormOpen(false)
+    //setEditingOrder(null)
   }
 
   const handleFileOpen = (pdfUrl: string) => {

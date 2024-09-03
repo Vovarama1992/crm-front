@@ -8,8 +8,8 @@ import {
 import { WorkerDto } from '@/entities/workers'
 import { useGetWorkersQuery } from '@/entities/workers'
 
-import { CreateDepartureForm } from './CreateDepartureForm' // Импортируем форму создания
-import { EditDepartureForm } from './EditDepartureForm' // Импортируем форму редактирования
+import { CreateDepartureForm } from './CreateDepartureForm'
+import { EditDepartureForm } from './EditDepartureForm'
 
 const destinationOptions = {
   RETURN_FROM_CLIENT: 'Возврат от клиента',
@@ -34,7 +34,7 @@ const statusOptions = {
 const formatDate = (date: Date | null | string) => {
   if (!date) {
     return ''
-  } // Проверка на null или undefined
+  }
   const validDate = typeof date === 'string' ? new Date(date) : date
 
   return validDate.toISOString().split('T')[0]
@@ -43,9 +43,15 @@ const formatDate = (date: Date | null | string) => {
 export const DeparturesPage = () => {
   const [filterNumber, setFilterNumber] = useState('')
   const [filterCounterparty, setFilterCounterparty] = useState('')
+  const [filterDestination, setFilterDestination] = useState('')
+  const [filterTransportCompany, setFilterTransportCompany] = useState('')
+  const [filterSalesManager, setFilterSalesManager] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+
   const [isCreating, setIsCreating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [selectedDeparture, setSelectedDeparture] = useState<DepartureDto | null>(null)
+
   const { data: departuresData } = useGetDeparturesQuery()
   const [updateDeparture] = useUpdateDepartureMutation()
 
@@ -56,7 +62,6 @@ export const DeparturesPage = () => {
 
     const worker = workers?.find((worker: WorkerDto) => worker.id === id)
 
-    // Если worker найден, возвращаем его name, иначе — name из defaultWorker
     return worker ? worker.name + ' ' + worker.surname : defaultWorker.name
   }
 
@@ -66,6 +71,22 @@ export const DeparturesPage = () => {
 
   const handleFilterCounterpartyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterCounterparty(e.target.value)
+  }
+
+  const handleFilterDestinationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterDestination(e.target.value)
+  }
+
+  const handleFilterTransportCompanyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterTransportCompany(e.target.value)
+  }
+
+  const handleFilterSalesManagerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterSalesManager(e.target.value)
+  }
+
+  const handleFilterStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterStatus(e.target.value)
   }
 
   const handleSelectChange = (id: number, field: keyof DepartureDto, value: number | string) => {
@@ -85,7 +106,19 @@ export const DeparturesPage = () => {
       departure =>
         (!filterNumber || departure.dealId.toString().includes(filterNumber)) &&
         (!filterCounterparty ||
-          departure?.counterparty?.name.toLowerCase().includes(filterCounterparty.toLowerCase()))
+          departure?.counterparty?.name
+            ?.toLowerCase()
+            .includes(filterCounterparty.toLowerCase())) &&
+        (!filterDestination || departure.destination === filterDestination) &&
+        (!filterTransportCompany ||
+          departure.transportCompany
+            ?.toLowerCase()
+            .includes(filterTransportCompany.toLowerCase())) &&
+        (!filterSalesManager ||
+          `${departure.user.name} ${departure.user.surname}`
+            .toLowerCase()
+            .includes(filterSalesManager.toLowerCase())) &&
+        (!filterStatus || departure.status === filterStatus)
     ) || []
 
   return (
@@ -105,6 +138,44 @@ export const DeparturesPage = () => {
           type={'text'}
           value={filterCounterparty}
         />
+        <select
+          className={'border rounded px-2 py-1 mr-2'}
+          onChange={handleFilterDestinationChange}
+          value={filterDestination}
+        >
+          <option value={''}>Все направления</option>
+          {Object.entries(destinationOptions).map(([key, value]) => (
+            <option key={key} value={key}>
+              {value}
+            </option>
+          ))}
+        </select>
+        <input
+          className={'border rounded px-2 py-1 mr-2'}
+          onChange={handleFilterTransportCompanyChange}
+          placeholder={'Фильтр по транспортной компании'}
+          type={'text'}
+          value={filterTransportCompany}
+        />
+        <input
+          className={'border rounded px-2 py-1 mr-2'}
+          onChange={handleFilterSalesManagerChange}
+          placeholder={'Фильтр по менеджеру продажи'}
+          type={'text'}
+          value={filterSalesManager}
+        />
+        <select
+          className={'border rounded px-2 py-1 mr-2'}
+          onChange={handleFilterStatusChange}
+          value={filterStatus}
+        >
+          <option value={''}>Все статусы</option>
+          {Object.entries(statusOptions).map(([key, value]) => (
+            <option key={key} value={key}>
+              {value}
+            </option>
+          ))}
+        </select>
         <button
           className={'bg-green-500 text-white px-4 py-2 rounded'}
           onClick={() => setIsCreating(true)}

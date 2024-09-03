@@ -42,62 +42,36 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   const handleParseBulkInput = () => {
     const lines = bulkInput.trim().split('\n')
 
-    const parsedLines = lines.map(line => {
-      const parts = line.trim().split(/\s+/)
-      let articleNumber = ''
-      let description = ''
-      let quantity = 0
-      let totalPurchaseAmount = 0
-      let supplierInvoice = ''
-      let comment = ''
-      let numberFound = false
-      let articleSkipped = false
+    const parsedLines = lines
+      .map(line => {
+        const parts = line.split('\t') // Разделение по табуляции (копирование из Excel)
 
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i]
-
-        if (!isNaN(Number(part))) {
-          // Если часть - это число, назначаем количество, далее ищем сумму закупки и счет поставщика
-          if (!numberFound) {
-            quantity = Number(part.trim())
-            numberFound = true
-          } else if (totalPurchaseAmount === 0) {
-            totalPurchaseAmount = Number(part.trim())
-          } else if (!supplierInvoice) {
-            supplierInvoice = part.trim()
-          }
-        } else {
-          // Логика для нечисловых значений
-          if (!articleSkipped && (i + 1 >= parts.length || !isNaN(Number(parts[i + 1])))) {
-            // Если только одно нечисловое значение или следующее значение число, пропускаем артикул и записываем в описание
-            description += part.trim() + ' '
-            articleSkipped = true // Помечаем, что артикул пропущен
-          } else if (!articleSkipped) {
-            // Если артикул еще не назначен и он не был пропущен, назначаем его
-            articleNumber = part.trim()
-            articleSkipped = true
-          } else if (!numberFound) {
-            // Если артикул был пропущен и еще нет числового значения, продолжаем заполнять описание
-            description += part.trim() + ' '
-          } else {
-            // Все нечисловые значения после чисел попадают в комментарий, включая ссылки
-            comment += part.trim() + ' '
-          }
+        if (parts.length < 6) {
+          return null // Пропуск строк, где меньше 6 столбцов
         }
-      }
 
-      return {
-        articleNumber: articleNumber.trim() || '', // Если пусто, возвращаем пустую строку
-        comment: comment.trim() || '', // Если пусто, возвращаем пустую строку
-        delivered: false,
-        description: description.trim() || '', // Если пусто, возвращаем пустую строку
-        paymentDate: new Date().toISOString(), // Устанавливаем текущую дату в формате ISO-8601
-        quantity: quantity || 1, // Если quantity = 0 или null, возвращаем 1
-        shipmentDate: new Date().toISOString(), // Устанавливаем текущую дату в формате ISO-8601
-        supplierInvoice: supplierInvoice.trim() || '', // Если пусто, возвращаем пустую строку
-        totalPurchaseAmount: totalPurchaseAmount || 0, // Если totalPurchaseAmount = 0 или null, возвращаем 0
-      }
-    })
+        const [
+          articleNumber,
+          description,
+          quantity,
+          totalPurchaseAmount,
+          supplierInvoice,
+          comment,
+        ] = parts
+
+        return {
+          articleNumber: articleNumber.trim(),
+          comment: comment.trim(),
+          delivered: false,
+          description: description.trim(),
+          paymentDate: new Date().toISOString(), // Устанавливаем текущую дату в формате ISO-8601
+          quantity: Number(quantity.trim()),
+          shipmentDate: new Date().toISOString(), // Устанавливаем текущую дату в формате ISO-8601
+          supplierInvoice: supplierInvoice.trim(),
+          totalPurchaseAmount: Number(totalPurchaseAmount.trim()),
+        }
+      })
+      .filter(item => item !== null) as SupplierLineInput[]
 
     setSupplierLines(parsedLines) // Устанавливаем только распарсенные строки
   }

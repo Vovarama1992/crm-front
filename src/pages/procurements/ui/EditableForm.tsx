@@ -218,19 +218,24 @@ const EditableForm: React.FC<EditableFormProps> = ({
     }
 
     try {
+      // Перед отправкой очищаем данные от вложенных объектов и проверяем на null
       await updatePurchase({ data: purchaseData, id: purchaseData.id }).unwrap()
 
       await Promise.all(
         invoiceLines.map(line => {
           const lineData = {
-            articleNumber: formData.get(`invoiceLine_articleNumber_${line.id}`) as string,
-            comment: formData.get(`invoiceLine_comment_${line.id}`) as string,
-            description: formData.get(`invoiceLine_description_${line.id}`) as string,
-            quantity: Number(formData.get(`invoiceLine_quantity_${line.id}`)),
+            articleNumber:
+              (formData.get(`invoiceLine_articleNumber_${line.id}`) as string) ||
+              line.articleNumber ||
+              '',
+            comment: (formData.get(`invoiceLine_comment_${line.id}`) as string) || '',
+            description: (formData.get(`invoiceLine_description_${line.id}`) as string) || '',
+            quantity: Number(formData.get(`invoiceLine_quantity_${line.id}`)) || line.quantity || 0,
             totalPrice:
               Number(formData.get(`invoiceLine_unitPrice_${line.id}`)) *
               Number(formData.get(`invoiceLine_quantity_${line.id}`)),
-            unitPrice: Number(formData.get(`invoiceLine_unitPrice_${line.id}`)),
+            unitPrice:
+              Number(formData.get(`invoiceLine_unitPrice_${line.id}`)) || line.unitPrice || 0,
           }
 
           return updateInvoiceLine({
@@ -243,18 +248,25 @@ const EditableForm: React.FC<EditableFormProps> = ({
       await Promise.all(
         supplierLines.map(line => {
           const lineData = {
-            articleNumber: formData.get(`supplierLine_articleNumber_${line.id}`) as string,
-            comment: formData.get(`supplierLine_comment_${line.id}`) as string,
+            articleNumber:
+              (formData.get(`supplierLine_articleNumber_${line.id}`) as string) ||
+              line.articleNumber ||
+              '',
+            comment: (formData.get(`supplierLine_comment_${line.id}`) as string) || '',
             delivered: formData.get(`supplierLine_delivered_${line.id}`) === 'on',
-            description: formData.get(`supplierLine_description_${line.id}`) as string,
+            description: (formData.get(`supplierLine_description_${line.id}`) as string) || '',
             paymentDate: line.paymentDate ? new Date(line.paymentDate).toISOString() : '',
-            quantity: Number(formData.get(`supplierLine_quantity_${line.id}`)),
+            quantity:
+              Number(formData.get(`supplierLine_quantity_${line.id}`)) || line.quantity || 0,
             shipmentDate: line.shipmentDate ? new Date(line.shipmentDate).toISOString() : '',
-            supplierId: Number(formData.get(`supplierLine_supplierId_${line.id}`)),
-            supplierInvoice: formData.get(`supplierLine_supplierInvoice_${line.id}`) as string,
-            totalPurchaseAmount: Number(
-              formData.get(`supplierLine_totalPurchaseAmount_${line.id}`)
-            ),
+            supplierId:
+              Number(formData.get(`supplierLine_supplierId_${line.id}`)) || line.supplierId,
+            supplierInvoice:
+              (formData.get(`supplierLine_supplierInvoice_${line.id}`) as string) || '',
+            totalPurchaseAmount:
+              Number(formData.get(`supplierLine_totalPurchaseAmount_${line.id}`)) ||
+              line.totalPurchaseAmount ||
+              0,
           }
 
           return updateSupplierLine({
@@ -267,10 +279,10 @@ const EditableForm: React.FC<EditableFormProps> = ({
       await Promise.all(
         logisticsLines.map(line => {
           const lineData = {
-            amount: line.amount,
-            carrier: line.carrier,
-            date: line.date,
-            description: line.description,
+            amount: line.amount || 0,
+            carrier: line.carrier || '',
+            date: line.date || '',
+            description: line.description || '',
           }
 
           return updateLogisticsLine({
@@ -450,6 +462,15 @@ const EditableForm: React.FC<EditableFormProps> = ({
                   <div>
                     <label className={'block text-sm font-medium'}>№</label>
                     <input className={'border p-2 w-full'} readOnly type={'text'} value={line.id} />
+                  </div>
+                  <div>
+                    <label className={'block text-sm font-medium'}>артикул</label>
+                    <input
+                      className={'border p-2 w-full'}
+                      readOnly
+                      type={'text'}
+                      value={line.articleNumber}
+                    />
                   </div>
                   <div>
                     <label className={'block text-sm font-medium'}>Поставщик</label>

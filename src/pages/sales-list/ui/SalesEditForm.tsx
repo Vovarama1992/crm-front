@@ -14,7 +14,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: workers = [] } = useGetWorkersQuery() // Получаем всех пользователей
   const [updateSale] = useUpdateSaleMutation()
-  const [isFinalAmount, setIsFinalAmount] = useState(false)
+  const [isFinalAmount, setIsFinalAmount] = useState(sale.isFinalAmount)
   const [formData, setFormData] = useState<SaleDto>({ ...sale })
   const [additionalAmount, setAdditionalAmount] = useState<number>(0)
   const [refundAmount, setRefundAmount] = useState<number>(0)
@@ -185,7 +185,9 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
           readOnly
           type={'number'}
           value={
-            formData.paidNow !== undefined && formData.paidNow !== null ? formData.paidNow : ''
+            formData.paidNow !== undefined && formData.paidNow !== null
+              ? formData.paidNow + formData.prepaymentAmount
+              : ''
           }
         />
       </div>

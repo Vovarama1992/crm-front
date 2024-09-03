@@ -56,76 +56,28 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
   const handleParseBulkInput = () => {
     const lines = bulkInput.trim().split('\n')
 
-    const parsedLines = lines.map(line => {
-      const parts = line.trim().split(/\s+/)
-      let articleNumber = ''
-      let description = ''
-      let quantity = 0
-      let unitPrice = 0
-      let totalPrice = 0
-      let comment = ''
+    const parsedLines = lines
+      .map(line => {
+        const parts = line.split('\t') // Разделение по табуляции (копирование из Excel)
 
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i]
-
-        // Проверка на количество - это первое число в строке
-        if (!isNaN(Number(part))) {
-          quantity = Number(part.trim())
-          if (i + 1 < parts.length) {
-            unitPrice = Number(parts[++i]?.trim() || 0)
-          }
-          if (i + 1 < parts.length) {
-            totalPrice = Number(parts[++i]?.trim() || 0)
-          }
-          if (i + 1 < parts.length) {
-            comment = parts
-              .slice(i + 1)
-              .join(' ')
-              .trim()
-          }
-          break
+        if (parts.length < 6) {
+          return null // Пропуск строк, где меньше 6 столбцов
         }
 
-        // Если это первое нечисловое значение, помещаем его в артикул
-        if (!articleNumber) {
-          articleNumber = part.trim()
+        const [articleNumber, description, quantity, unitPrice, totalPrice, comment] = parts
+
+        return {
+          articleNumber: articleNumber.trim(),
+          comment: comment.trim(),
+          description: description.trim(),
+          quantity: Number(quantity.trim()),
+          totalPrice: Number(totalPrice.trim()),
+          unitPrice: Number(unitPrice.trim()),
         }
-        // Если артикул уже заполнен, а текущее значение нечисловое, добавляем его в описание
-        else if (!isNaN(Number(parts[i + 1]))) {
-          description += part.trim() + ' '
-        }
-        // Продолжаем добавлять в описание
-        else {
-          description += part.trim() + ' '
-        }
-      }
+      })
+      .filter(item => item !== null)
 
-      // Условие для пропуска артикула, если нет второго нечислового значения
-      if (description.trim() === '') {
-        description = articleNumber
-        articleNumber = ''
-      }
-
-      // Если totalPrice или unitPrice не были определены, их нужно инициализировать корректным значением.
-      if (totalPrice === null || isNaN(totalPrice)) {
-        totalPrice = quantity * unitPrice // Рассчитываем общую стоимость
-      }
-
-      if (unitPrice === null || isNaN(unitPrice)) {
-        unitPrice = totalPrice / quantity // Рассчитываем цену за единицу
-      }
-
-      return {
-        articleNumber,
-        comment,
-        description: description.trim(),
-        quantity,
-        totalPrice: totalPrice || 0, // Гарантируем, что значение не будет null
-        unitPrice: unitPrice || 0, // Гарантируем, что значение не будет null
-      }
-    })
-
-    setInvoiceLines([...invoiceLines, ...parsedLines]) // Добавляем распарсенные строки к существующим
+    setInvoiceLines([...invoiceLines, ...(parsedLines as InvoiceLineInput[])]) // Добавляем распарсенные строки к существующим
   }
 
   const handleAddMultipleLines = () => {
