@@ -13,6 +13,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
 
   const [formData, setFormData] = useState<WorkerDto>({
     ...existingWorker,
+    margin_percent: existingWorker.margin_percent || 0, // Default value for marginPercent
     roleName: '', // Default value for role
     salary: existingWorker.salary || 0, // Default value for salary
   })
@@ -20,8 +21,8 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
 
-    // Convert salary to number if the field is salary
-    if (name === 'salary') {
+    // Convert salary and marginPercent to numbers
+    if (name === 'salary' || name === 'margin_percent') {
       setFormData(prevData => ({
         ...prevData,
         [name]: parseFloat(value) || 0, // Convert to float
@@ -37,7 +38,9 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await updateWorker(formData).unwrap()
+      const { id, ...updateData } = formData // Извлекаем id отдельно, а все остальное — в updateData
+
+      await updateWorker({ id, updateData }).unwrap() // Передаем id и набор данных для обновления
       onClose()
     } catch (error) {
       console.error('Failed to update the worker:', error)
@@ -189,6 +192,21 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 onChange={handleChange}
                 type={'number'}
                 value={formData.salary}
+              />
+            </div>
+
+            {/* New field for margin percent */}
+            <div className={'flex flex-col'}>
+              <label className={'block text-gray-700'}>Процент маржи</label>
+              <input
+                className={
+                  'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
+                }
+                name={'margin_percent'}
+                onChange={handleChange}
+                step={'0.01'} // Шаг изменения установлен на 0.01
+                type={'number'}
+                value={formData.margin_percent}
               />
             </div>
 

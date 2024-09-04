@@ -14,6 +14,7 @@ import type {
   LogisticsLineDto,
   PaymentDto,
   PurchaseDto,
+  RemainingSaleDto,
   SaleDto,
   SupplierLineDto,
   UpdateInvoiceLineDto,
@@ -74,6 +75,15 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    // Эндпоинт для создания нового RemainingSale
+    createRemainingSale: builder.mutation<RemainingSaleDto, RemainingSaleDto>({
+      query: remainingSale => ({
+        body: remainingSale,
+        method: 'POST',
+        url: '/remaining-sales', // Маршрут для создания RemainingSale
+      }),
+    }),
+
     createSale: builder.mutation<SaleDto, CreateSaleDto>({
       query: sale => ({
         body: sale,
@@ -118,6 +128,14 @@ const dealApi = baseApi.injectEndpoints({
     getAllPurchases: builder.query<PurchaseDto[], void>({
       query: () => ({
         url: '/purchases',
+      }),
+    }),
+
+    // Эндпоинт для получения всех RemainingSales
+    getAllRemainingSales: builder.query<RemainingSaleDto[], void>({
+      query: () => ({
+        method: 'GET',
+        url: '/remaining-sales', // Маршрут на бэкенде для получения всех RemainingSales
       }),
     }),
 
@@ -251,11 +269,30 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    // Эндпоинт для обновления существующего RemainingSale
+    updateRemainingSale: builder.mutation<
+      RemainingSaleDto,
+      { data: Partial<RemainingSaleDto>; id: number }
+    >({
+      query: ({ data, id }) => ({
+        body: data,
+        method: 'PUT',
+        url: `/remaining-sales/${id}`, // Маршрут для обновления RemainingSale по id
+      }),
+    }),
+
     updateSale: builder.mutation<SaleDto, { id: number; sale: UpdateSaleDto }>({
       query: ({ id, sale }) => ({
         body: sale,
         method: 'PUT',
         url: `/sales/${id}`,
+      }),
+    }),
+    updateSaleWithRemaining: builder.mutation<SaleDto, { id: number; sale: UpdateSaleDto }>({
+      query: ({ id, sale }) => ({
+        body: sale,
+        method: 'PUT',
+        url: `/sales/${id}/with-remaining-sale`, // Маршрут на бэкенде для обновления Sale и создания RemainingSale
       }),
     }),
 
@@ -280,6 +317,7 @@ export const {
   useCreateInvoiceLineMutation,
   useCreateMultiplePaymentsMutation,
   useCreatePaymentMutation,
+  useCreateRemainingSaleMutation,
   useCreateSaleMutation,
   useCreateSupplierLineMutation,
   useGetAllCounterpartiesQuery,
@@ -287,6 +325,7 @@ export const {
   useGetAllExpensesQuery,
   useGetAllPaymentsQuery,
   useGetAllPurchasesQuery,
+  useGetAllRemainingSalesQuery,
   useGetAllSalesQuery,
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
   useGetDealsByDateRangeQuery,
@@ -302,9 +341,11 @@ export const {
   useUpdateDealMutation,
   useUpdateInvoiceLineMutation,
   useUpdateLogisticsLineMutation,
-  useUpdatePaymentMutation, // Добавляем хук для обновления выплаты
+  useUpdatePaymentMutation,
   useUpdatePurchaseMutation,
+  useUpdateRemainingSaleMutation,
   useUpdateSaleMutation,
+  useUpdateSaleWithRemainingMutation,
   useUpdateSupplierLineMutation,
   util: dealUtil,
 } = dealApi

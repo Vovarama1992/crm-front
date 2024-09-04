@@ -119,8 +119,9 @@ export const SalaryReportsPage: React.FC = () => {
 
         // Данные о заработке (маржа) за месяц
         const marginData = margins.find(m => m.userId === user.id)
+        const margin = user?.margin_percent || 0.1
         const earnings =
-          marginData?.monthlyData.find((m: any) => m.month === index + 1)?.totalMargin || 0
+          marginData?.monthlyData.find((m: any) => m.month === index + 1)?.totalMargin * margin || 0
 
         // Выплаты за месяц
         const paid = expenses

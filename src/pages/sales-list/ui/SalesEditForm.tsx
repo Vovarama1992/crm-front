@@ -85,6 +85,10 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
     handleChange('ropId', Number(e.target.value))
   }
 
+  const handleTotalSaleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleChange('totalSaleAmount', Number(e.target.value))
+  }
+
   return (
     <div className={'flex flex-col space-y-2'}>
       <div>
@@ -209,6 +213,16 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
           onChange={handleRefundAmountChange}
           type={'number'}
           value={refundAmount}
+        />
+      </div>
+
+      <div>
+        <label>Общая сумма продажи:</label> {/* Новый input для общей суммы продажи */}
+        <input
+          className={'border border-gray-300 rounded p-1 w-full'}
+          onChange={handleTotalSaleAmountChange} // Обработчик для изменения общей суммы продажи
+          type={'number'}
+          value={formData.totalSaleAmount || ''}
         />
       </div>
 

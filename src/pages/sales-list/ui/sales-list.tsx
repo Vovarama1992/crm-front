@@ -2,7 +2,11 @@
 import React, { useEffect, useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal'
-import { useGetAllSalesQuery, useUpdateSaleMutation } from '@/entities/deal'
+import {
+  useGetAllRemainingSalesQuery,
+  useGetAllSalesQuery,
+  useUpdateSaleMutation,
+} from '@/entities/deal'
 import { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
 import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
@@ -39,9 +43,14 @@ const translatedSigningStage = {
   SIGNED_ON_PAPER: 'Подписано на бумаге',
 }
 
+const getSaleStage = (signingStage: SigningStage | undefined): string => {
+  return signingStage ? 'Конец' : 'Начало'
+}
+
 export const SalesListPage = () => {
   const { data: meData } = useMeQuery()
   const { data: salesData } = useGetAllSalesQuery()
+  const { data: remainingSalesData } = useGetAllRemainingSalesQuery() // Получаем данные о ремейнингах
   const { data: workersData } = useGetWorkersQuery()
   const { data: counterpartiesData } = useGetAllCounterpartiesQuery()
 
@@ -60,11 +69,26 @@ export const SalesListPage = () => {
   const [isEditFormOpen, setIsEditFormOpen] = useState(false)
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
 
-  const [sales, setSales] = useState<SaleDto[]>([])
+  const [sales, setSales] = useState<any[]>([])
 
+  // Добавляем ремейнинги после соответствующих продаж
   useEffect(() => {
-    if (salesData && Array.isArray(salesData)) {
-      const filteredSales = salesData.filter(sale => {
+    if (salesData && remainingSalesData) {
+      const combinedSalesWithRem: any = []
+
+      salesData.forEach(sale => {
+        // Добавляем продажу
+        combinedSalesWithRem.push(sale)
+
+        // Добавляем ремейнинг, если он есть
+        const rem = remainingSalesData.find(r => r.saleId === sale.id)
+
+        if (rem) {
+          combinedSalesWithRem.push({ ...rem, isRemaining: true }) // Метка, что это ремейнинг
+        }
+      })
+
+      const filteredSales = combinedSalesWithRem.filter((sale: any) => {
         return selectedEmployee === null || selectedEmployee === sale.userId
       })
 
@@ -74,7 +98,7 @@ export const SalesListPage = () => {
 
       setSales(sortedSales)
     }
-  }, [salesData, selectedEmployee])
+  }, [salesData, remainingSalesData, selectedEmployee])
 
   const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
@@ -102,13 +126,11 @@ export const SalesListPage = () => {
     try {
       if (field === 'signingStage') {
         if (!sale.signingStage && value) {
-          // Если стадия подписания не была установлена, и теперь ее меняют, открываем форму создания
           const updatedSale = { ...sale, signingStage: value as SigningStage }
 
           setEditingSale(updatedSale)
           setIsCreateFormOpen(true)
         } else {
-          // Обновляем существующую продажу
           await updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
           window.location.reload()
         }
@@ -149,12 +171,6 @@ export const SalesListPage = () => {
     link.href = pdfUrl
     link.target = '_blank'
     link.click()
-  }
-
-  const getSaleStage = (signingStage: SigningStage | undefined) => {
-    return signingStage === 'SIGNED_IN_EDO' || signingStage === 'SIGNED_ON_PAPER'
-      ? 'Конец'
-      : 'Начало'
   }
 
   const totalMargin = sales.reduce((acc, sale) => acc + (sale.margin || 0), 0)
@@ -209,17 +225,18 @@ export const SalesListPage = () => {
             {[
               'Номер продажи',
               'Дата',
-              'Что', // Имя файла и ссылка на его открытие
+              'Что',
               'От кого',
               'Логистика',
               'Закупка',
               'Продажа',
-              'Зашло', // `paidNow`
+              'Зашло',
               'Маржа',
               'Стадия доставки',
               'Стадия подписания',
-              'Стадия сделки', // Новый столбец "Стадия сделки"
-              'Действия', // Добавлен столбец для кнопки "Редактировать"
+              'Стадия сделки',
+              'Дата проставления статуса',
+              'Действия',
             ].map(header => (
               <th
                 className={
@@ -232,10 +249,12 @@ export const SalesListPage = () => {
             ))}
           </tr>
         </thead>
+
         <tbody className={'bg-white divide-y divide-gray-200'}>
-          {sales.map(sale => {
-            return (
-              <tr key={sale.id}>
+          {sales.map(sale => (
+            <React.Fragment key={sale.id}>
+              {/* Отображение продажи */}
+              <tr>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{sale.id}</td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.date.split('T')[0]}
@@ -246,7 +265,7 @@ export const SalesListPage = () => {
                       className={'text-blue-500'}
                       onClick={() => handleFileOpen(sale.pdfUrl as string)}
                     >
-                      {sale.pdfUrl ? sale.pdfUrl.split('/').pop() : 'No file available'}
+                      {sale.pdfUrl ? sale.pdfUrl.split('/').pop() : 'Нет файла'}
                     </button>
                   ) : (
                     'Нет PDF'
@@ -255,9 +274,9 @@ export const SalesListPage = () => {
                     <div className={'mt-2'}>
                       <input
                         className={'mb-2'}
-                        id={`file-upload-${sale.id}`} // Присваиваем уникальный ID для управления элементом
-                        onChange={e => handleFileUpload(sale.id, e)}
-                        style={{ display: 'none' }} // Скрывает стандартный элемент ввода файла
+                        id={`file-upload-${sale.id}`}
+                        onChange={e => handleFileUpload(sale.id, e)} // Вот здесь используется handleFileUpload
+                        style={{ display: 'none' }}
                         type={'file'}
                       />
                       <label
@@ -321,6 +340,11 @@ export const SalesListPage = () => {
                   {getSaleStage(sale.signingStage)}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                  {getSaleStage(sale.signingStage) === 'Конец' && sale.statusSetDate
+                    ? sale.statusSetDate.split('T')[0]
+                    : '—'}
+                </td>
+                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   <button
                     className={'bg-blue-500 text-white px-4 py-2 rounded'}
                     onClick={() => {
@@ -332,8 +356,47 @@ export const SalesListPage = () => {
                   </button>
                 </td>
               </tr>
-            )
-          })}
+
+              {/* Отображение ремейнинга после продажи */}
+              {remainingSalesData
+                ?.filter((rem: any) => rem.saleId === sale.id) // Находим все ремейнинги для данной продажи
+                .map((rem: any) => (
+                  <tr className={'bg-gray-100'} key={`remaining-${rem.id}`}>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {rem.saleId} {/* Здесь показываем saleId */}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {rem.date.split('T')[0]}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {'Нет PDF'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {getCounterpartyName(rem.counterpartyId)}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {rem.logisticsCost || '—'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {rem.purchaseCost || '—'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {rem.totalSaleAmount || '—'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {rem.paidNow + rem.prepaymentAmount || '—'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'—'}</td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'—'}</td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'-'}</td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                      {'Начало'}
+                    </td>
+                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'—'}</td>
+                  </tr>
+                ))}
+            </React.Fragment>
+          ))}
         </tbody>
       </table>
       <div className={'mt-4 flex space-x-4 bg-gray-100 p-4 rounded'}>

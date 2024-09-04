@@ -1,38 +1,36 @@
-import { MouseEvent, useEffect, useState } from 'react'
+import { MouseEvent, useState } from 'react'
 
-// Тип для уведомлений
-interface Notification {
-  content: string
-  readBy?: number[]
-  title: string
-}
+import { NotificationDto } from '@/entities/notifications'
+import {
+  useGetNotificationsQuery,
+  useMarkNotificationAsSeenMutation,
+} from '@/entities/notifications'
+import { useMeQuery } from '@/entities/session'
 
 export function NotificationPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
+  const { data: meData } = useMeQuery()
+  const userId = meData?.id || 1
 
-  useEffect(() => {
-    // Получаем уведомления из localStorage
-    const storedNotifications = JSON.parse(
-      localStorage.getItem('notifications') || '[]'
-    ) as Notification[]
+  // Используем хук для получения уведомлений
+  const { data: notifications = [], refetch } = useGetNotificationsQuery(userId)
 
-    setNotifications(storedNotifications)
-  }, [])
+  // Хук для отметки уведомления как прочитанного
+  const [markAsSeen] = useMarkNotificationAsSeenMutation()
 
-  const handleNotificationClick = (notification: Notification) => {
+  const [selectedNotification, setSelectedNotification] = useState<NotificationDto | null>(null)
+
+  // Обработка клика по уведомлению
+  const handleNotificationClick = async (notification: NotificationDto) => {
     setSelectedNotification(notification)
+
+    // Помечаем уведомление как прочитанное, если пользователь не в списке прочитавших
+    if (!notification.seenBy?.includes(userId)) {
+      await markAsSeen({ id: notification.id, userId }) // Вызываем API для отметки
+      refetch() // Перезапрашиваем уведомления после обновления
+    }
   }
 
-  const handleRemoveNotification = (notificationToRemove: Notification) => {
-    const updatedNotifications = notifications.filter(
-      notification => notification !== notificationToRemove
-    )
-
-    setNotifications(updatedNotifications)
-    localStorage.setItem('notifications', JSON.stringify(updatedNotifications))
-  }
-
+  // Закрытие модального окна
   const closeModal = () => {
     setSelectedNotification(null)
   }
@@ -55,7 +53,7 @@ export function NotificationPage() {
                   className={'text-red-500'}
                   onClick={(e: MouseEvent<HTMLButtonElement>) => {
                     e.stopPropagation()
-                    handleRemoveNotification(notification)
+                    // Тут могло бы быть удаление уведомления, но так как в API его нет, убираем.
                   }}
                 >
                   &#x2716;

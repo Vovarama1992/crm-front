@@ -1,19 +1,22 @@
-import type { SaleDto } from '@/entities/deal/deal.types'
-
 import React, { useState } from 'react'
 
-import { useCreateSaleMutation } from '@/entities/deal'
+import { useUpdateSaleWithRemainingMutation } from '@/entities/deal'
+import { SaleDto } from '@/entities/deal/deal.types'
+import { useCreateNotificationMutation } from '@/entities/notifications'
+import { useMeQuery } from '@/entities/session'
 
 interface SalesCreateFormProps {
   onClose: () => void
-  sale: Omit<SaleDto, 'id'>
+  sale: SaleDto
 }
 
 export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale }) => {
-  const [createSale] = useCreateSaleMutation()
+  const [updateSaleWithRemaining] = useUpdateSaleWithRemainingMutation() // Используем правильный хук для обновления продажи с созданием ремейнинга
+  const [createNotification] = useCreateNotificationMutation()
   const [isFinalAmount, setIsFinalAmount] = useState(false)
   const [formData, setFormData] = useState<SaleDto>({ ...sale } as SaleDto)
   const [error, setError] = useState<null | string>(null)
+  const { data: meData } = useMeQuery()
 
   const handleChange = (field: keyof SaleDto, value: number | string) => {
     setFormData(prevState => ({
@@ -33,24 +36,35 @@ export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale 
 
     const { id, pdfUrl, ...newFormData } = formData
 
-    const newSale: Omit<SaleDto, 'id' | 'pdfUrl'> = {
+    const updatedSale: Omit<SaleDto, 'id' | 'pdfUrl'> = {
       ...newFormData,
       isFinalAmount,
       progressed: true,
       statusSetDate: new Date().toISOString(),
     }
 
-    createSale(newSale)
+    updateSaleWithRemaining({ id: sale.id, sale: updatedSale }) // Используем обновление с созданием RemainingSale
       .unwrap()
       .then(() => {
         onClose()
-        if (saleAmount !== newSale.totalSaleAmount) {
-          alert('Общая сумма продажи не совпадает с оплачено сейчас')
+        if (saleAmount !== updatedSale.totalSaleAmount) {
+          createNotification({
+            content: `Общая сумма продажи (${updatedSale.totalSaleAmount}) не совпадает с оплаченной суммой (${saleAmount}). 
+                      Продавец: ${meData?.surname || 'неизвестен'}`,
+            createdBy: meData?.id || 1,
+            seenBy: [],
+            title: `Разница в суммах продажи для счета #${formData.invoiceNumber}`,
+          })
         }
       })
       .catch(error => {
-        console.error('Error creating sale:', error)
-        alert('Произошла ошибка при создании продажи.')
+        console.error('Ошибка при обновлении продажи:', error)
+        createNotification({
+          content: 'Произошла ошибка при обновлении продажи.',
+          createdBy: meData?.id || 1,
+          seenBy: [],
+          title: 'Ошибка обновления продажи',
+        })
       })
   }
 
@@ -87,7 +101,7 @@ export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale 
         </label>
       </div>
       <button className={'mt-2 bg-blue-500 text-white p-2 rounded'} onClick={handleSave}>
-        Создать
+        Сохранить
       </button>
     </div>
   )

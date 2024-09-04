@@ -27,18 +27,45 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   onSuccess,
   purchaseId,
 }) => {
-  const [supplierLines, setSupplierLines] = useState<SupplierLineInput[]>([])
+  const [supplierLines, setSupplierLines] = useState<SupplierLineInput[]>([
+    {
+      articleNumber: '',
+      comment: '',
+      delivered: false,
+      description: '',
+      paymentDate: new Date().toISOString(),
+      quantity: 1,
+      shipmentDate: new Date().toISOString(),
+      supplierInvoice: '',
+      totalPurchaseAmount: 0,
+    },
+  ]) // Начальные данные с пустой строкой
 
   const [selectedSupplierId, setSelectedSupplierId] = useState<null | number>(null)
   const [bulkInput, setBulkInput] = useState('') // Состояние для текстового ввода
+  const [linesToAdd, setLinesToAdd] = useState(1) // Состояние для количества строк
 
   const { data: suppliers, isLoading: isSuppliersLoading } = useGetSuppliersQuery()
   const [createSupplierLine] = useCreateSupplierLineMutation()
 
+  // Обработка изменения полей ввода вручную
+  const handleInputChange = (
+    index: number,
+    field: keyof SupplierLineInput,
+    value: boolean | number | string
+  ) => {
+    const newSupplierLines = [...supplierLines]
+
+    newSupplierLines[index] = { ...newSupplierLines[index], [field]: value }
+    setSupplierLines(newSupplierLines)
+  }
+
+  // Обработка изменения текстового ввода для парсера
   const handleBulkInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setBulkInput(e.target.value)
   }
 
+  // Парсинг строк из текстового ввода
   const handleParseBulkInput = () => {
     const lines = bulkInput.trim().split('\n')
 
@@ -64,16 +91,33 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
           comment: comment.trim(),
           delivered: false,
           description: description.trim(),
-          paymentDate: new Date().toISOString(), // Устанавливаем текущую дату в формате ISO-8601
+          paymentDate: new Date().toISOString(),
           quantity: Number(quantity.trim()),
-          shipmentDate: new Date().toISOString(), // Устанавливаем текущую дату в формате ISO-8601
+          shipmentDate: new Date().toISOString(),
           supplierInvoice: supplierInvoice.trim(),
           totalPurchaseAmount: Number(totalPurchaseAmount.trim()),
         }
       })
       .filter(item => item !== null) as SupplierLineInput[]
 
-    setSupplierLines(parsedLines) // Устанавливаем только распарсенные строки
+    setSupplierLines([...supplierLines, ...parsedLines]) // Добавляем распарсенные строки к существующим
+  }
+
+  // Добавление нескольких строк вручную
+  const handleAddMultipleLines = () => {
+    const newLines = Array.from({ length: linesToAdd }, () => ({
+      articleNumber: '',
+      comment: '',
+      delivered: false,
+      description: '',
+      paymentDate: new Date().toISOString(),
+      quantity: 1,
+      shipmentDate: new Date().toISOString(),
+      supplierInvoice: '',
+      totalPurchaseAmount: 0,
+    }))
+
+    setSupplierLines([...supplierLines, ...newLines])
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,6 +188,22 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
           >
             Парсить строки
           </button>
+          <div className={'mb-4'}>
+            <input
+              className={'border p-2 w-20 mr-2'}
+              min={1}
+              onChange={e => setLinesToAdd(Number(e.target.value))}
+              type={'number'}
+              value={linesToAdd}
+            />
+            <button
+              className={'bg-gray-300 text-black px-4 py-2 rounded'}
+              onClick={handleAddMultipleLines}
+              type={'button'}
+            >
+              Добавить {linesToAdd} строк(и)
+            </button>
+          </div>
           {supplierLines.map((line, index) => (
             <div className={'grid grid-cols-2 gap-4 mb-4'} key={index}>
               <div className={'space-y-2'}>
@@ -151,7 +211,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <label className={'block text-sm font-medium'}>Артикул</label>
                   <input
                     className={'border p-2 w-full'}
-                    readOnly
+                    onChange={e => handleInputChange(index, 'articleNumber', e.target.value)}
                     type={'text'}
                     value={line.articleNumber}
                   />
@@ -160,7 +220,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <label className={'block text-sm font-medium'}>Описание</label>
                   <input
                     className={'border p-2 w-full'}
-                    readOnly
+                    onChange={e => handleInputChange(index, 'description', e.target.value)}
                     type={'text'}
                     value={line.description}
                   />
@@ -169,7 +229,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <label className={'block text-sm font-medium'}>Количество</label>
                   <input
                     className={'border p-2 w-full'}
-                    readOnly
+                    onChange={e => handleInputChange(index, 'quantity', Number(e.target.value))}
                     type={'number'}
                     value={line.quantity}
                   />
@@ -180,7 +240,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <label className={'block text-sm font-medium'}>Счет поставщика</label>
                   <input
                     className={'border p-2 w-full'}
-                    readOnly
+                    onChange={e => handleInputChange(index, 'supplierInvoice', e.target.value)}
                     type={'text'}
                     value={line.supplierInvoice}
                   />
@@ -189,7 +249,9 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <label className={'block text-sm font-medium'}>Сумма закупки</label>
                   <input
                     className={'border p-2 w-full'}
-                    readOnly
+                    onChange={e =>
+                      handleInputChange(index, 'totalPurchaseAmount', Number(e.target.value))
+                    }
                     type={'number'}
                     value={line.totalPurchaseAmount}
                   />
@@ -198,7 +260,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <label className={'block text-sm font-medium'}>Дата оплаты</label>
                   <input
                     className={'border p-2 w-full'}
-                    readOnly
+                    onChange={e => handleInputChange(index, 'paymentDate', e.target.value)}
                     type={'date'}
                     value={line.paymentDate.substring(0, 10)}
                   />
@@ -207,7 +269,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <label className={'block text-sm font-medium'}>Дата отгрузки</label>
                   <input
                     className={'border p-2 w-full'}
-                    readOnly
+                    onChange={e => handleInputChange(index, 'shipmentDate', e.target.value)}
                     type={'date'}
                     value={line.shipmentDate.substring(0, 10)}
                   />
@@ -217,13 +279,17 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
                   <input
                     checked={line.delivered}
                     className={'border p-2'}
-                    readOnly
+                    onChange={e => handleInputChange(index, 'delivered', e.target.checked)}
                     type={'checkbox'}
                   />
                 </div>
                 <div>
                   <label className={'block text-sm font-medium'}>Комментарий</label>
-                  <textarea className={'border p-2 w-full'} readOnly value={line.comment} />
+                  <textarea
+                    className={'border p-2 w-full'}
+                    onChange={e => handleInputChange(index, 'comment', e.target.value)}
+                    value={line.comment}
+                  />
                 </div>
               </div>
             </div>

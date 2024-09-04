@@ -89,12 +89,15 @@ const workersApi = baseApi.injectEndpoints({
         url: `users/departments/${body.id}`,
       }),
     }),
-    updateWorker: builder.mutation<WorkerDto, Partial<UserAuthenticatedDto>>({
+    updateWorker: builder.mutation<
+      WorkerDto,
+      { id: number; updateData: Partial<UserAuthenticatedDto> }
+    >({
       invalidatesTags: [WORKERS_TAG],
-      query: body => ({
-        body,
+      query: ({ id, updateData }) => ({
+        body: updateData,
         method: 'PATCH',
-        url: `/users/${body.id}`,
+        url: `/users/${id}`, // id теперь передается в URL
       }),
     }),
   }),

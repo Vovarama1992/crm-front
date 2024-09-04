@@ -190,10 +190,9 @@ const EditableForm: React.FC<EditableFormProps> = ({
   }
 
   const calculateTotalPurchase = () => {
-    const invoiceTotal = invoiceLines.reduce((acc, line) => acc + line.totalPrice, 0)
     const supplierTotal = supplierLines.reduce((acc, line) => acc + line.totalPurchaseAmount, 0)
 
-    return invoiceTotal + supplierTotal
+    return supplierTotal
   }
 
   const calculateProfit = () => {

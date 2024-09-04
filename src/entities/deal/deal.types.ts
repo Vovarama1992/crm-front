@@ -97,6 +97,28 @@ export type SaleDto = {
 
 export type CreateSaleDto = Omit<SaleDto, 'id'>
 
+export type RemainingSaleDto = {
+  counterpartyId: number
+  date: string // DateTime в формате ISO
+  dealId: number
+  id: number
+  invoiceNumber?: string
+  isFinalAmount: boolean
+  isIndependentDeal: boolean
+  lastDeliveryDate?: string // DateTime в формате ISO
+  logisticsCost: number
+  paidNow: number
+  prepaymentAmount: number
+  purchaseCost: number
+  saleAmount: number
+  saleId: number
+  statusSetDate?: string // DateTime в формате ISO
+  totalSaleAmount?: number
+  userId: number
+}
+
+export type CreateRemainingSaleDto = Omit<RemainingSaleDto, 'id'>
+
 export type UpdateSaleDto = Partial<SaleDto>
 
 export type PurchaseDto = {
