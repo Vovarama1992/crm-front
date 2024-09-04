@@ -40,7 +40,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
     try {
       const { id, ...updateData } = formData // Извлекаем id отдельно, а все остальное — в updateData
 
-      await updateWorker({ id, updateData }).unwrap() // Передаем id и набор данных для обновления
+      await updateWorker({ id, ...updateData }).unwrap() // Передаем id и набор данных для обновления
       onClose()
     } catch (error) {
       console.error('Failed to update the worker:', error)
