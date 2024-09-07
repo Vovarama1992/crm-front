@@ -275,7 +275,7 @@ export const SalesListPage = () => {
                       <input
                         className={'mb-2'}
                         id={`file-upload-${sale.id}`}
-                        onChange={e => handleFileUpload(sale.id, e)} // Вот здесь используется handleFileUpload
+                        onChange={e => handleFileUpload(sale.id, e)}
                         style={{ display: 'none' }}
                         type={'file'}
                       />
@@ -357,7 +357,7 @@ export const SalesListPage = () => {
                 </td>
               </tr>
 
-              {/* Отображение ремейнинга после продажи */}
+              {/* Отображение ремейнинга после продажи с наследованием полей */}
               {remainingSalesData
                 ?.filter((rem: any) => rem.saleId === sale.id) // Находим все ремейнинги для данной продажи
                 .map((rem: any) => (
@@ -369,10 +369,19 @@ export const SalesListPage = () => {
                       {rem.date.split('T')[0]}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {'Нет PDF'}
+                      {sale.pdfUrl ? (
+                        <button
+                          className={'text-blue-500'}
+                          onClick={() => handleFileOpen(sale.pdfUrl as string)}
+                        >
+                          {sale.pdfUrl.split('/').pop()}
+                        </button>
+                      ) : (
+                        'Нет PDF'
+                      )}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {getCounterpartyName(rem.counterpartyId)}
+                      {getCounterpartyName(sale.counterpartyId)}
                     </td>
                     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                       {rem.logisticsCost || '—'}

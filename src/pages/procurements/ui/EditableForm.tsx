@@ -441,9 +441,9 @@ const EditableForm: React.FC<EditableFormProps> = ({
             Добавить строку счета
           </button>
 
-          <h3 className={'text-lg font-medium'}>Строки поставщика</h3>
-          <div className={'space-y-2'}>
-            {supplierLines.map(line => {
+          <h3 className={'text-sm font-medium'}>Строки поставщика</h3>
+          <div className={'space-y-8'}>
+            {supplierLines.map((line, index) => {
               const today = new Date()
               const paymentDate = new Date(line.paymentDate)
               const shipmentDate = new Date(line.shipmentDate)
@@ -457,116 +457,121 @@ const EditableForm: React.FC<EditableFormProps> = ({
               )
 
               return (
-                <div className={'grid grid-cols-6 gap-4'} key={line.id}>
-                  <div>
-                    <label className={'block text-sm font-medium'}>№</label>
-                    <input className={'border p-2 w-full'} readOnly type={'text'} value={line.id} />
-                  </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>артикул</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      readOnly
-                      type={'text'}
-                      value={line.articleNumber}
-                    />
-                  </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>Поставщик</label>
-                    <select
-                      className={'border p-2 w-full'}
-                      defaultValue={line.supplierId}
-                      name={`supplierLine_supplierId_${line.id}`}
-                    >
-                      <option value={''}>Выберите поставщика</option>
-                      {suppliers.map((supplier: any) => (
-                        <option key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>Счет поставщика</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      onChange={e => handleFileUpload(line.id, e)}
-                      type={'file'}
-                    />
-                    {line.pdfUrl && (
-                      <button
-                        className={'text-blue-500 underline'}
-                        onClick={() => handleFileDownload(line.pdfUrl as string)}
-                        type={'button'}
+                <div key={line.id}>
+                  <div className={'grid grid-cols-8 gap-2'}>
+                    <div>
+                      <label className={'block text-xs font-medium'}>№</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        readOnly
+                        type={'text'}
+                        value={line.id}
+                      />
+                    </div>
+                    <div>
+                      <label className={'block text-xs font-medium'}>Артикул</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        readOnly
+                        type={'text'}
+                        value={line.articleNumber}
+                      />
+                    </div>
+                    <div>
+                      <label className={'block text-xs font-medium'}>Поставщик</label>
+                      <select
+                        className={'border p-1 w-full text-xs'}
+                        defaultValue={line.supplierId}
+                        name={`supplierLine_supplierId_${line.id}`}
                       >
-                        Скачать PDF
-                      </button>
-                    )}
+                        <option value={''}>Выберите поставщика</option>
+                        {suppliers.map((supplier: any) => (
+                          <option key={supplier.id} value={supplier.id}>
+                            {supplier.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={'block text-xs font-medium'}>Счет поставщика</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        onChange={e => handleFileUpload(line.id, e)}
+                        type={'file'}
+                      />
+                      {line.pdfUrl && (
+                        <button
+                          className={'text-blue-500 underline text-xs'}
+                          onClick={() => handleFileDownload(line.pdfUrl as string)}
+                          type={'button'}
+                        >
+                          Скачать PDF
+                        </button>
+                      )}
+                    </div>
+                    <div>
+                      <label className={'block text-xs font-medium'}>Сумма</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        defaultValue={line.totalPurchaseAmount}
+                        name={`supplierLine_totalPurchaseAmount_${line.id}`}
+                        type={'number'}
+                      />
+                    </div>
+                    <div>
+                      <label className={'block text-xs font-medium'}>Дата оплаты</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        defaultValue={line.paymentDate.substring(0, 10)}
+                        name={`supplierLine_paymentDate_${line.id}`}
+                        type={'date'}
+                      />
+                    </div>
+                    <div>
+                      <label className={'block text-xs font-medium'}>Дата отгрузки</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        defaultValue={line.shipmentDate.substring(0, 10)}
+                        name={`supplierLine_shipmentDate_${line.id}`}
+                        type={'date'}
+                      />
+                    </div>
+                    <div className={'col-span-8 grid grid-cols-3 gap-2'}>
+                      <div>
+                        <label className={'block text-xs font-medium'}>Дней до оплаты</label>
+                        <input
+                          className={'border p-1 w-full text-xs'}
+                          readOnly
+                          type={'text'}
+                          value={daysToPayment >= 0 ? `${daysToPayment} дней` : 'Срок истек'}
+                        />
+                      </div>
+                      <div>
+                        <label className={'block text-xs font-medium'}>Дней до отгрузки</label>
+                        <input
+                          className={'border p-1 w-full text-xs'}
+                          readOnly
+                          type={'text'}
+                          value={daysToShipment >= 0 ? `${daysToShipment} дней` : 'Срок истек'}
+                        />
+                      </div>
+                      <div>
+                        <label className={'block text-xs font-medium'}>Комментарий</label>
+                        <input
+                          className={'border p-1 w-full text-xs'}
+                          defaultValue={line.comment || ''}
+                          name={`supplierLine_comment_${line.id}`}
+                          type={'text'}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>Сумма закупки</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      defaultValue={line.totalPurchaseAmount}
-                      name={`supplierLine_totalPurchaseAmount_${line.id}`}
-                      type={'number'}
-                    />
-                  </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>Дата оплаты</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      defaultValue={line.paymentDate.substring(0, 10)}
-                      name={`supplierLine_paymentDate_${line.id}`}
-                      type={'date'}
-                    />
-                    <label className={'block text-sm font-medium mt-2'}>Дней до оплаты</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      readOnly
-                      type={'text'}
-                      value={daysToPayment >= 0 ? `${daysToPayment} дней` : 'Срок истек'}
-                    />
-                  </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>Дата отгрузки</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      defaultValue={line.shipmentDate.substring(0, 10)}
-                      name={`supplierLine_shipmentDate_${line.id}`}
-                      type={'date'}
-                    />
-                    <label className={'block text-sm font-medium mt-2'}>Дней до отгрузки</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      readOnly
-                      type={'text'}
-                      value={daysToShipment >= 0 ? `${daysToShipment} дней` : 'Срок истек'}
-                    />
-                  </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>Доставлено</label>
-                    <input
-                      className={'border p-2'}
-                      defaultChecked={line.delivered}
-                      name={`supplierLine_delivered_${line.id}`}
-                      type={'checkbox'}
-                    />
-                  </div>
-                  <div>
-                    <label className={'block text-sm font-medium'}>Комментарий</label>
-                    <input
-                      className={'border p-2 w-full'}
-                      defaultValue={line.comment || ''}
-                      name={`supplierLine_comment_${line.id}`}
-                      type={'text'}
-                    />
-                  </div>
+                  {/* Добавляем разделительную черту, если это не последняя строка */}
+                  {index < supplierLines.length - 1 && <hr className={'my-4 border-gray-300'} />}
                 </div>
               )
             })}
           </div>
-
           <button
             className={'bg-green-500 ml-[200px] text-white px-4 py-2 rounded mt-4'}
             onClick={() => setIsAddingSupplierLine(true)}

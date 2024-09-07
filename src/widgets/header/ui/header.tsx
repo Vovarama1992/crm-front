@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useGetNotificationsQuery } from '@/entities/notifications'
+import { useMeQuery } from '@/entities/session'
 import { SignOutButton } from '@/features/auth/sign-out'
 import { ModeToggle } from '@/features/change-theme'
 import { ROUTER_PATHS } from '@/shared/config/routes'
@@ -23,7 +25,14 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
   const [notificationsCount, setNotificationsCount] = useState<number>(0)
   const [showNotificationEffect, setShowNotificationEffect] = useState<boolean>(false)
 
-  console.log('user: ' + !!user)
+  // Получаем текущего пользователя
+  const { data: meData } = useMeQuery()
+  const userId = meData?.id || null // Получаем id пользователя через хук
+
+  // Используем хук для получения уведомлений, если юзер авторизован
+  const { data: notifications = [] } = useGetNotificationsQuery(userId || 0, {
+    skip: !userId,
+  })
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -47,25 +56,17 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
   }, [])
 
   useEffect(() => {
-    const checkNotifications = () => {
-      console.log('check')
-      const notifications = JSON.parse(localStorage.getItem('notifications') || '[]')
-      const count = notifications.length
+    // Проверяем, если количество уведомлений изменилось
+    const newNotificationsCount = notifications.length
 
-      if (count !== notificationsCount) {
-        setNotificationsCount(count)
-        setShowNotificationEffect(true)
-        setTimeout(() => setShowNotificationEffect(false), 500) // Remove effect after 500ms
-      }
+    if (newNotificationsCount !== notificationsCount) {
+      setNotificationsCount(newNotificationsCount)
+      setShowNotificationEffect(true)
+
+      // Убираем эффект мигания через 500 мс
+      setTimeout(() => setShowNotificationEffect(false), 500)
     }
-
-    checkNotifications()
-
-    // Optional: set up a listener if notifications could be added from other sources
-    const intervalId = setInterval(checkNotifications, 5000) // Check every 5 seconds
-
-    return () => clearInterval(intervalId)
-  })
+  }, [notifications, notificationsCount])
 
   const formattedTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`
 
@@ -102,7 +103,7 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
             <Link className={'relative'} to={ROUTER_PATHS.NOTIFICATIONS}>
               {notificationsCount > 0 && (
                 <span
-                  className={`absolute -top-2 -right-2 rounded-full bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center ${showNotificationEffect ? 'animate-pulse' : ''}`}
+                  className={`absolute -top-2 -right-2 rounded-full bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center ${showNotificationEffect ? 'animate-pulse bg-red-700' : ''}`}
                 >
                   {notificationsCount}
                 </span>

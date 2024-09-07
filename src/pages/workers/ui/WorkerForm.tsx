@@ -20,7 +20,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
     dobNumber: 0,
     email: '',
     hireDate: new Date().toISOString().split('T')[0], // Текущая дата по умолчанию
-    margin_percent: 0.1,
+    margin_percent: 10,
     middleName: '',
     mobile: '',
     name: '',
@@ -58,15 +58,17 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Создание нового работника
-    await createWorker(formState)
+    // Преобразуем процент маржи перед отправкой
+    const workerData = {
+      ...formState,
+      margin_percent: formState.margin_percent / 100,
+    }
 
-    // Дополнительная логика по завершению формы
+    await createWorker(workerData)
+
     alert('Данные сотрудника успешно сохранены!')
-
     window.location.reload()
 
-    // Закрываем форму после сохранения данных
     if (onClose) {
       onClose()
     }
@@ -100,6 +102,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
         </svg>
       </button>
       <div className={'grid grid-cols-1 sm:grid-cols-2 gap-4'}>
+        {/* Имя */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Имя</label>
           <input
@@ -113,6 +116,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.name}
           />
         </div>
+        {/* Отчество */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Отчество</label>
           <input
@@ -126,6 +130,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.middleName}
           />
         </div>
+        {/* Фамилия */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Фамилия</label>
           <input
@@ -139,6 +144,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.surname}
           />
         </div>
+        {/* Должность */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Должность</label>
           <input
@@ -152,6 +158,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.position}
           />
         </div>
+        {/* Почта */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Почта</label>
           <input
@@ -165,6 +172,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.email}
           />
         </div>
+        {/* Добавочный номер */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Добавочный номер</label>
           <input
@@ -178,6 +186,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.dobNumber}
           />
         </div>
+        {/* Мобильный */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Мобильный</label>
           <input
@@ -191,6 +200,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.mobile}
           />
         </div>
+        {/* Процент маржи */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Процент маржи</label>
           <input
@@ -200,10 +210,11 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             name={'margin_percent'}
             onChange={handleChange}
             required
-            type={'text'}
+            type={'number'} // Поле числовое
             value={formState.margin_percent}
           />
         </div>
+        {/* Дата рождения */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Дата рождения</label>
           <input
@@ -217,6 +228,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.birthday}
           />
         </div>
+        {/* Номер карты */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Номер карты для перевода</label>
           <input
@@ -230,6 +242,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.cardNumber}
           />
         </div>
+        {/* Адрес */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Адрес</label>
           <input
@@ -243,6 +256,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.address || ''}
           />
         </div>
+        {/* Дата принятия на работу */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Дата принятия на работу</label>
           <input
@@ -256,6 +270,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.hireDate}
           />
         </div>
+        {/* Пароль */}
         <div className={'flex flex-col'}>
           <label className={'text-gray-700 text-sm'}>Пароль</label>
           <input
@@ -269,6 +284,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             value={formState.password}
           />
         </div>
+        {/* Роль */}
         <div className={'flex flex-col col-span-full'}>
           <label className={'text-gray-700 text-sm'}>Роль</label>
           <div className={'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2'}>
@@ -286,6 +302,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             ))}
           </div>
         </div>
+        {/* Оклад */}
         <div className={'flex flex-col col-span-full'}>
           <label className={'text-gray-700 text-sm'}>Оклад</label>
           <input
@@ -295,7 +312,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             name={'salary'}
             onChange={handleChange}
             required
-            type={'text'}
+            type={'number'}
             value={formState.salary || ''}
           />
         </div>

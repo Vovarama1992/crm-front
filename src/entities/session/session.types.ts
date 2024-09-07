@@ -25,7 +25,7 @@ export type RegistrationDto = {
   hireDate?: string
   isActive?: boolean
   managed_by?: number
-  margin_percent?: number
+  margin_percent: number
   middleName: string
   mobile: string
   name: string

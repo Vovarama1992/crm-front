@@ -4,7 +4,7 @@ import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
 import { useUpdateSaleMutation } from '@/entities/deal/deal.api'
 import { useUploadPdfMutation } from '@/entities/session' // Хук для обновления продажи
-import { useGetWorkerByIdQuery } from '@/entities/workers'
+import { useMeQuery } from '@/entities/session'
 
 export type SaleFormProps = {
   dealId: number
@@ -24,7 +24,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   const [selectedFile, setSelectedFile] = useState<File | null>(null) // Хранение файла
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
-  const { data: worker } = useGetWorkerByIdQuery(userId)
+  const { data: worker } = useMeQuery()
   const [createSale] = useCreateSaleMutation()
   const [uploadPdf] = useUploadPdfMutation() // Хук для загрузки PDF
   const [updateSale] = useUpdateSaleMutation() // Хук для обновления продажи
