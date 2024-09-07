@@ -26,7 +26,11 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
   const [showNotificationEffect, setShowNotificationEffect] = useState<boolean>(false)
 
   // Получаем текущего пользователя
-  const { data: meData } = useMeQuery()
+  const token = localStorage.getItem('token')
+
+  const { data: meData } = useMeQuery(undefined, {
+    skip: !token, // Пропускаем запрос, если токена нет
+  })
   const userId = meData?.id || null // Получаем id пользователя через хук
 
   // Используем хук для получения уведомлений, если юзер авторизован
