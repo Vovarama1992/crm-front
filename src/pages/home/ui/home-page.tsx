@@ -3,7 +3,7 @@ import type { AuthContext } from '@/app/providers/router/types'
 import { useEffect, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 
-import { useAskNlpMutation, useCloseDialogueMutation, useMeQuery } from '@/entities/session'
+import { useAskNlpMutation, useCloseDialogueMutation } from '@/entities/session'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { Typography } from '@/shared/ui/typography'
 
@@ -56,9 +56,6 @@ export const HomePage = () => {
   const context = useOutletContext<AuthContext>()
 
   const { permissions } = context
-  const { data } = useMeQuery()
-  const roleName = data?.roleName || ''
-  const isDirector = roleName === 'Директор'
 
   const [modalIsOpen, setIsOpen] = useState(false)
   const [question, setQuestion] = useState('')
@@ -121,18 +118,6 @@ export const HomePage = () => {
                 </Typography>
               </Link>
             )
-        )}
-        {isDirector && (
-          <Link
-            className={
-              'p-4 lg:p-6 border rounded-lg hover:bg-gray-100 transition transform lg:translate-y-[-10%] lg:translate-x-[-10%]'
-            }
-            to={ROUTER_PATHS.SIGN_UP}
-          >
-            <Typography className={'lg:text-lg'} variant={'link2'}>
-              Регистрация нового пользователя
-            </Typography>
-          </Link>
         )}
       </div>
       <div className={'mt-8'}>
