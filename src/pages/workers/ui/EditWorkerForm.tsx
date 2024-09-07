@@ -38,7 +38,10 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const { id, ...updateData } = formData // Извлекаем id отдельно, а все остальное — в updateData
+      const margin = formData.margin_percent / 100 // Извлекаем id отдельно, а все остальное — в updateData
+
+      formData.margin_percent = margin
+      const { id, ...updateData } = formData
 
       await updateWorker({ id, ...updateData }).unwrap() // Передаем id и набор данных для обновления
       onClose()

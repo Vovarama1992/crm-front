@@ -8,7 +8,7 @@ export type WorkerDto = {
   hireDate?: string // Дата принятия на работу (необязательное поле)
   id: number // Уникальный идентификатор работника
   managed_by?: number // Имя менеджера (необязательное поле)
-  margin_percent?: number
+  margin_percent: number
   middleName: string
   mobile?: string // Мобильный телефон
   name: string // ФИО работника
