@@ -56,28 +56,29 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
   const handleParseBulkInput = () => {
     const lines = bulkInput.trim().split('\n')
 
-    const parsedLines = lines
-      .map(line => {
-        const parts = line.split('\t') // Разделение по табуляции (копирование из Excel)
+    const parsedLines = lines.reduce<InvoiceLineInput[]>((acc, line) => {
+      const parts = line.split('\t').map(part => part.trim()) // Разделение и тримминг
 
-        if (parts.length < 6) {
-          return null // Пропуск строк, где меньше 6 столбцов
+      // Проверяем наличие критичных полей (партномер, описание, количество, цена)
+      if (parts.length >= 4) {
+        const [articleNumber, description, quantity, unitPrice, comment = ''] = parts
+
+        const newLine: InvoiceLineInput = {
+          articleNumber,
+          comment, // Комментарий может быть пустым
+          description,
+          quantity: Number(quantity),
+          totalPrice: Number(quantity) * Number(unitPrice), // Общая сумма рассчитывается автоматически
+          unitPrice: Number(unitPrice),
         }
 
-        const [articleNumber, description, quantity, unitPrice, totalPrice, comment] = parts
+        acc.push(newLine) // Добавляем только валидные строки
+      }
 
-        return {
-          articleNumber: articleNumber.trim(),
-          comment: comment.trim(),
-          description: description.trim(),
-          quantity: Number(quantity.trim()),
-          totalPrice: Number(totalPrice.trim()),
-          unitPrice: Number(unitPrice.trim()),
-        }
-      })
-      .filter(item => item !== null)
+      return acc
+    }, [])
 
-    setInvoiceLines([...invoiceLines, ...(parsedLines as InvoiceLineInput[])]) // Добавляем распарсенные строки к существующим
+    setInvoiceLines([...invoiceLines, ...parsedLines]) // Добавляем только валидные строки к существующим
   }
 
   const handleAddMultipleLines = () => {

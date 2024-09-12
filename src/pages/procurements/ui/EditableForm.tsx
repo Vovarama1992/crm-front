@@ -2,6 +2,8 @@
 import React, { useState } from 'react'
 
 import {
+  useDeleteInvoiceLineMutation,
+  useDeleteSupplierLineMutation,
   useGetAllCounterpartiesQuery,
   useGetInvoiceLinesByPurchaseIdQuery,
   useGetLogisticsLinesByPurchaseIdQuery,
@@ -51,6 +53,9 @@ const EditableForm: React.FC<EditableFormProps> = ({
 
   const [updatePurchase] = useUpdatePurchaseMutation()
   const [updateInvoiceLine] = useUpdateInvoiceLineMutation()
+  const [deleteInvoiceLine] = useDeleteInvoiceLineMutation()
+  const [deleteSupplierLine] = useDeleteSupplierLineMutation()
+
   const [updateSupplierLine] = useUpdateSupplierLineMutation()
   const [updateLogisticsLine] = useUpdateLogisticsLineMutation()
   const [createNotification] = useCreateNotificationMutation()
@@ -123,6 +128,24 @@ const EditableForm: React.FC<EditableFormProps> = ({
       link.remove()
     } else {
       console.error('PDF файл не найден')
+    }
+  }
+
+  const handleDeleteInvoiceLine = async (id: number) => {
+    try {
+      await deleteInvoiceLine(id).unwrap()
+      alert('Строка счета удалена успешно.')
+    } catch (error) {
+      console.error('Ошибка при удалении строки счета:', error)
+    }
+  }
+
+  const handleDeleteSupplierLine = async (id: number) => {
+    try {
+      await deleteSupplierLine(id).unwrap()
+      alert('Строка поставщика удалена успешно.')
+    } catch (error) {
+      console.error('Ошибка при удалении строки поставщика:', error)
     }
   }
 
@@ -429,6 +452,15 @@ const EditableForm: React.FC<EditableFormProps> = ({
                     type={'text'}
                   />
                 </div>
+                <div>
+                  <button
+                    className={'ml-[200px] bg-red-500 text-white rounded-full px-3 py-1'}
+                    onClick={() => handleDeleteInvoiceLine(line.id)}
+                    type={'button'}
+                  >
+                    Удалить
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -563,6 +595,15 @@ const EditableForm: React.FC<EditableFormProps> = ({
                           name={`supplierLine_comment_${line.id}`}
                           type={'text'}
                         />
+                      </div>
+                      <div>
+                        <button
+                          className={'ml-[200px] bg-red-500 text-white rounded-full px-3 py-1'}
+                          onClick={() => handleDeleteSupplierLine(line.id)}
+                          type={'button'}
+                        >
+                          Удалить
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { useUpdateSaleWithRemainingMutation } from '@/entities/deal'
 import { useCreateNotificationMutation } from '@/entities/notifications'
 import { useMeQuery } from '@/entities/session'
 
@@ -11,19 +12,28 @@ interface SalesCreateFormProps {
 export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale }) => {
   const [createNotification] = useCreateNotificationMutation()
   const { data: meData } = useMeQuery()
+  const [updateSaleWithRemaining] = useUpdateSaleWithRemainingMutation()
 
   const handleSave = () => {
-    // Создаем уведомление о том, что продажа обновлена
-    createNotification({
-      content: `Продажа #${sale.id} была успешно обновлена.`,
-      createdBy: meData?.id || 1,
-      seenBy: [],
-      title: 'Обновление продажи',
-    }).catch(error => {
-      console.error('Ошибка при создании уведомления:', error)
-    })
+    // Обновляем продажу с оставшейся частью
+    updateSaleWithRemaining({ id: sale.id, sale: { ...sale } })
+      .unwrap()
+      .then(() => {
+        // После успешного обновления создаем уведомление
+        createNotification({
+          content: `Продажа #${sale.id} была успешно обновлена.`,
+          createdBy: meData?.id || 1,
+          seenBy: [],
+          title: 'Обновление продажи',
+        }).catch(error => {
+          console.error('Ошибка при создании уведомления:', error)
+        })
 
-    onClose() // Закрываем окно после уведомления
+        onClose() // Закрываем окно после уведомления
+      })
+      .catch(error => {
+        console.error('Ошибка при обновлении продажи:', error)
+      })
   }
 
   return (

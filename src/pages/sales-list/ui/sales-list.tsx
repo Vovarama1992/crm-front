@@ -129,14 +129,24 @@ export const SalesListPage = () => {
           const updatedSale = { ...sale, signingStage: value as SigningStage }
 
           setEditingSale(updatedSale)
-          setIsCreateFormOpen(true)
+          setIsCreateFormOpen(true) // Открываем окно создания, если стадия подписания отсутствовала
         } else {
           await updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
           window.location.reload()
         }
       } else if (field === 'deliveryStage') {
-        await updateSale({ id: sale.id, sale: { ...sale, deliveryStage: value as DeliveryStage } })
-        window.location.reload()
+        if (!sale.deliveryStage && value) {
+          const updatedSale = { ...sale, deliveryStage: value as DeliveryStage }
+
+          setEditingSale(updatedSale)
+          setIsCreateFormOpen(true) // Открываем окно создания, если стадия доставки отсутствовала
+        } else {
+          await updateSale({
+            id: sale.id,
+            sale: { ...sale, deliveryStage: value as DeliveryStage },
+          })
+          window.location.reload()
+        }
       }
     } catch (error) {
       console.error('Ошибка при обновлении продажи:', error)

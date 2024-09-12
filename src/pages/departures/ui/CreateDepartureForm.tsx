@@ -109,12 +109,13 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
         <label className={'block text-sm font-bold mb-1'}>Продажа</label>
         <select
           className={'border rounded p-2 w-full'}
+          defaultValue={''} // Дефолтное значение пустое
           name={'dealId'}
           onChange={handleSaleChange}
           required
         >
           <option disabled value={''}>
-            Выберите продажу
+            — Выберите продажу —
           </option>
           {sales.map(sale => (
             <option key={sale.id} value={sale.id}>

@@ -100,6 +100,21 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    deleteInvoiceLine: builder.mutation<void, number>({
+      query: id => ({
+        method: 'DELETE',
+        url: `/purchases/invoice-line/${id}`,
+      }),
+    }),
+
+    // Эндпоинт для удаления supplier line
+    deleteSupplierLine: builder.mutation<void, number>({
+      query: id => ({
+        method: 'DELETE',
+        url: `/purchases/supplier-line/${id}`,
+      }),
+    }),
+
     getAllCounterparties: builder.query<CounterpartyDto[], void>({
       query: () => ({
         url: '/counterparties',
@@ -268,7 +283,6 @@ const dealApi = baseApi.injectEndpoints({
         url: `purchases/${id}`,
       }),
     }),
-
     // Эндпоинт для обновления существующего RemainingSale
     updateRemainingSale: builder.mutation<
       RemainingSaleDto,
@@ -288,6 +302,7 @@ const dealApi = baseApi.injectEndpoints({
         url: `/sales/${id}`,
       }),
     }),
+
     updateSaleWithRemaining: builder.mutation<SaleDto, { id: number; sale: UpdateSaleDto }>({
       query: ({ id, sale }) => ({
         body: sale,
@@ -320,6 +335,8 @@ export const {
   useCreateRemainingSaleMutation,
   useCreateSaleMutation,
   useCreateSupplierLineMutation,
+  useDeleteInvoiceLineMutation,
+  useDeleteSupplierLineMutation,
   useGetAllCounterpartiesQuery,
   useGetAllDealsQuery,
   useGetAllExpensesQuery,
