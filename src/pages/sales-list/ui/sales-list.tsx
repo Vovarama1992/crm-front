@@ -107,7 +107,6 @@ export const SalesListPage = () => {
     const value = event.target.value
 
     setSelectedEmployee(value === 'self' ? userId : Number(value))
-    console.log(selectedEmployee)
   }
 
   const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
