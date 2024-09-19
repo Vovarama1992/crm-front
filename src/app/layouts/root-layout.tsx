@@ -50,27 +50,18 @@ export const RootLayout = () => {
     return <div>Loading...</div>
   }
 
-  if (isAuthenticated) {
-    return (
-      <>
-        <Header user={user} />
-        <div
-          className={
-            'px-8 flex h-screen flex-1 gap-5 md:grid md:grid-cols-[220px_minmax(0,1fr)] lg:justify-center lg:items-center justify-center items-center lg:grid-cols-[220px_minmax(0,1fr)]'
-          }
-          translate={'no'}
-        >
-          <Sidebar />
-          {renderMain}
-        </div>
-      </>
-    )
-  }
-
   return (
-    <div className={'h-screen min-w-full flex flex-col'}>
-      <Header />
-      {!isLoading && renderMain}
-    </div>
+    <>
+      <Header user={user} />
+      <div
+        className={
+          'px-8 flex h-screen flex-1 gap-5 md:grid md:grid-cols-[220px_minmax(0,1fr)] lg:justify-center lg:items-center justify-center items-center lg:grid-cols-[220px_minmax(0,1fr)]'
+        }
+        translate={'no'}
+      >
+        <Sidebar />
+        {renderMain}
+      </div>
+    </>
   )
 }

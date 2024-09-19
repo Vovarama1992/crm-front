@@ -61,7 +61,7 @@ export const SalesListPage = () => {
   const isDirector = meData?.roleName === 'Директор'
   const percent = 0.1
 
-  const [selectedEmployee, setSelectedEmployee] = useState<null | number>(userId)
+  const [selectedEmployee, setSelectedEmployee] = useState<null | number | string>(userId)
   const [selectedStartMonth, setSelectedStartMonth] = useState<string>('8')
   const [selectedEndMonth, setSelectedEndMonth] = useState<string>('8')
   const [selectedYear, setSelectedYear] = useState<string>('2024')
@@ -88,9 +88,12 @@ export const SalesListPage = () => {
         }
       })
 
-      const filteredSales = combinedSalesWithRem.filter((sale: any) => {
-        return selectedEmployee === null || selectedEmployee === sale.userId
-      })
+      const filteredSales =
+        selectedEmployee === 9999
+          ? combinedSalesWithRem
+          : combinedSalesWithRem.filter((sale: any) => {
+              return selectedEmployee === sale.userId
+            })
 
       const sortedSales = [...filteredSales].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -104,6 +107,7 @@ export const SalesListPage = () => {
     const value = event.target.value
 
     setSelectedEmployee(value === 'self' ? userId : Number(value))
+    console.log(selectedEmployee)
   }
 
   const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -220,7 +224,7 @@ export const SalesListPage = () => {
           <label className={'mr-2'}>Выберите сотрудника:</label>
           <select onChange={handleEmployeeChange} value={selectedEmployee || ''}>
             <option value={'self'}>Я сам</option>
-            <option value={''}>Все</option>
+            <option value={9999}>Все</option>
             {workersData?.map(employee => (
               <option key={employee.id} value={employee.id}>
                 {employee.name}
