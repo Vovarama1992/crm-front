@@ -16,7 +16,7 @@ export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale 
 
   const handleSave = () => {
     // Обновляем продажу с оставшейся частью
-    updateSaleWithRemaining({ id: sale.id, sale: { ...sale } })
+    updateSaleWithRemaining({ id: sale.id, sale: { ...sale, progressed: true } })
       .unwrap()
       .then(() => {
         // После успешного обновления создаем уведомление
