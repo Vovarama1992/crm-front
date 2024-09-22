@@ -300,5 +300,3 @@ export const CommonSalesPage: React.FC = () => {
     </div>
   )
 }
-
-name

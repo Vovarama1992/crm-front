@@ -3,10 +3,10 @@ import React from 'react'
 import { formatCurrency } from '@/pages/kopeechnik'
 
 type Report = {
-  margin: number // строго число
+  margin: number // маржа
   month: string
-  planned_margin: number // строго число
-  revenue: number // строго число
+  planned_margin: number // план маржа
+  revenue: number // оборот
 }
 
 type Employee = {
@@ -26,79 +26,57 @@ type CommonSalesTableProps = {
   onDataChange: (newData: DepartmentData[]) => void
 }
 
-// Преобразование в проценты, но данные остаются числами
-const calculateMarginPercentage = (margin: number, revenue: number): string => {
-  if (!revenue || isNaN(revenue) || isNaN(margin)) {
-    return '0.00 рублей 0 копеек' // Возвращаем 0, если данных недостаточно
-  }
+// Функция для расчета итогов по отделу
+const calculateDepartmentTotal = (
+  employees: Employee[],
+  field: keyof Report,
+  month: string
+): number => {
+  return employees.reduce((empTotal, employee) => {
+    const report = employee.reports.find(r => r.month === month)
 
-  const percentage = (margin / revenue) * 100
-
-  return formatCurrency(percentage.toFixed(2)) // Форматируем для отображения
+    return empTotal + (report ? Number(report[field]) : 0)
+  }, 0)
 }
 
-// Функция для вычисления общей суммы за год (возвращаем число)
+// Функция для вычисления процента маржи
+const calculateMarginPercentage = (margin: number, revenue: number): number => {
+  if (!revenue || isNaN(revenue) || isNaN(margin)) {
+    return 0
+  }
 
-// Функция для вычисления суммы за месяц (числовое значение)
+  return (margin / revenue) * 100
+}
+
+// Функция для вычисления итогов за месяц по всем отделам
 const calculateMonthlyTotal = (
   data: DepartmentData[],
   field: keyof Report,
   month: string
-): string => {
-  const total = data.reduce((total, department) => {
+): number => {
+  return data.reduce((total, department) => {
+    return total + calculateDepartmentTotal(department.employees, field, month)
+  }, 0)
+}
+
+// Функция для вычисления итогов за год по всем отделам
+const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): number => {
+  return data.reduce((total, department) => {
     return (
       total +
       department.employees.reduce((empTotal, employee) => {
-        const report = employee.reports.find(r => r.month === month)
-
-        return Number(empTotal) + (report ? Number(report[field]) : 0) // Числовые данные
+        return (
+          empTotal +
+          employee.reports.reduce((repTotal, report) => {
+            return repTotal + Number(report[field])
+          }, 0)
+        )
       }, 0)
     )
   }, 0)
-
-  return formatCurrency(total) // Отображение через форматирование
 }
 
-// Компонент таблицы
 const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDataChange }) => {
-  const [editState, setEditState] = React.useState<{ [key: string]: boolean }>({})
-
-  const toggleEdit = (key: string) => {
-    setEditState(prev => ({ ...prev, [key]: !prev[key] }))
-  }
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    departmentIndex: number,
-    employeeIndex: number,
-    month: string,
-    field: keyof Report
-  ) => {
-    const newData = [...data]
-    const employee = newData[departmentIndex].employees[employeeIndex]
-    const report = employee.reports.find(r => r.month === month)
-
-    if (report) {
-      const value = parseFloat(e.target.value) // Оставляем как число
-
-      if (!isNaN(value)) {
-        // Явно приводим тип, чтобы TypeScript понимал, что поле имеет числовой тип
-        ;(report[field as keyof Report] as number) = value // Присваиваем числовое значение
-        onDataChange(newData)
-      }
-    }
-  }
-
-  // Функция для вычисления итогов по отделу
-  const calculateDepartmentTotal = (department: DepartmentData, field: keyof Report): number => {
-    return department.employees.reduce((total, employee) => {
-      return (
-        total +
-        employee.reports.reduce((reportTotal, report) => reportTotal + Number(report[field]), 0)
-      )
-    }, 0)
-  }
-
   return (
     <table className={'table-auto w-full border-collapse'}>
       <thead>
@@ -134,52 +112,25 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                 </React.Fragment>
               ))}
             </tr>
-            {department.employees.map((employee, employeeIndex) => (
+            {department.employees.map(employee => (
               <tr key={employee.surname}>
                 <td className={'border px-4 py-2'}>
                   {employee.name} {employee.surname}
                 </td>
                 {months.map(month => {
                   const report = employee.reports.find(r => r.month === month)
-                  const keyPrefix = `${departmentIndex}-${employeeIndex}-${month}`
 
                   return (
                     <React.Fragment key={month}>
-                      {['revenue', 'margin'].map(field => (
-                        <td className={'border px-4 py-2'} key={`${keyPrefix}-${field}`}>
-                          <div className={'w-full h-full'} style={{ minWidth: '100px' }}>
-                            {editState[`${keyPrefix}-${field}`] ? (
-                              <input
-                                className={'w-full px-1 py-1 border-none'}
-                                onBlur={() => toggleEdit(`${keyPrefix}-${field}`)}
-                                onChange={e =>
-                                  handleInputChange(
-                                    e,
-                                    departmentIndex,
-                                    employeeIndex,
-                                    month,
-                                    field as keyof Report
-                                  )
-                                }
-                                style={{ width: '100%' }}
-                                type={'number'}
-                                value={report ? report[field as keyof Report] : ''}
-                              />
-                            ) : (
-                              <span
-                                className={'block w-full h-full px-2 py-1 text-sm cursor-pointer'}
-                                onClick={() => toggleEdit(`${keyPrefix}-${field}`)}
-                                style={{ display: 'block', width: '100%' }}
-                              >
-                                {report ? formatCurrency(report[field as keyof Report]) : '-'}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      ))}
+                      <td className={'border px-4 py-2'}>
+                        {report ? formatCurrency(report.revenue) : '-'}
+                      </td>
+                      <td className={'border px-4 py-2'}>
+                        {report ? formatCurrency(report.margin) : '-'}
+                      </td>
                       <td className={'border px-4 py-2'}>
                         {report
-                          ? calculateMarginPercentage(report.margin, report.revenue) + '%'
+                          ? calculateMarginPercentage(report.margin, report.revenue).toFixed(2)
                           : '-'}
                       </td>
                     </React.Fragment>
@@ -197,40 +148,56 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                 </td>
               </tr>
             ))}
-            {/* Итоги по отделу */}
             <tr>
               <td className={'border px-4 py-2 font-bold'}>Итого по отделу</td>
               {months.map(month => (
                 <React.Fragment key={month}>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {formatCurrency(calculateDepartmentTotal(department, 'revenue'))}
+                    {formatCurrency(
+                      calculateDepartmentTotal(department.employees, 'revenue', month)
+                    )}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {formatCurrency(calculateDepartmentTotal(department, 'margin'))}
+                    {formatCurrency(
+                      calculateDepartmentTotal(department.employees, 'margin', month)
+                    )}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
                     {calculateMarginPercentage(
-                      calculateDepartmentTotal(department, 'margin'),
-                      calculateDepartmentTotal(department, 'revenue')
-                    ) + '%'}
+                      calculateDepartmentTotal(department.employees, 'margin', month),
+                      calculateDepartmentTotal(department.employees, 'revenue', month)
+                    ).toFixed(2)}
                   </td>
                 </React.Fragment>
               ))}
               <td className={'border px-4 py-2 font-bold'}>
-                {formatCurrency(calculateDepartmentTotal(department, 'revenue'))}
+                {formatCurrency(
+                  department.employees.reduce(
+                    (total, employee) =>
+                      total +
+                      employee.reports.reduce((empTotal, report) => empTotal + report.revenue, 0),
+                    0
+                  )
+                )}
               </td>
               <td className={'border px-4 py-2 font-bold'}>
-                {formatCurrency(calculateDepartmentTotal(department, 'margin'))}
+                {formatCurrency(
+                  department.employees.reduce(
+                    (total, employee) =>
+                      total +
+                      employee.reports.reduce((empTotal, report) => empTotal + report.margin, 0),
+                    0
+                  )
+                )}
               </td>
             </tr>
           </React.Fragment>
         ))}
-        {/* Общая маржа по всем отделам */}
         <tr>
           <td className={'border px-4 py-2 font-bold'}>Общая маржа</td>
           {months.map(month => (
             <td className={'border px-4 py-2 font-bold'} colSpan={3} key={month}>
-              {calculateMonthlyTotal(data, 'margin', month)}
+              {formatCurrency(calculateMonthlyTotal(data, 'margin', month))}
             </td>
           ))}
         </tr>
