@@ -132,26 +132,24 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
     }
 
     try {
-      // Создаем строки поставщика и загружаем файл для каждой строки
-      await Promise.all(
-        supplierLines.map(async line => {
-          const createdLine = await createSupplierLine({
-            ...line,
-            purchaseId: Number(purchaseId),
-            supplierId: selectedSupplierId,
-            supplierInvoice: '', // Пустое значение для PDF
+      // Создаем строки поставщика и загружаем файл для каждой строки последовательно
+      for (const line of supplierLines) {
+        const createdLine = await createSupplierLine({
+          ...line,
+          purchaseId: Number(purchaseId),
+          supplierId: selectedSupplierId,
+          supplierInvoice: '', // Пустое значение для PDF
+        }).unwrap()
+
+        if (invoiceFile) {
+          await uploadSupplierPdf({
+            file: invoiceFile,
+            supplierLineId: String(createdLine.id), // Используем уникальный ID созданной строки
           }).unwrap()
+        }
+      }
 
-          if (invoiceFile) {
-            await uploadSupplierPdf({
-              file: invoiceFile,
-              supplierLineId: String(createdLine.id), // Используем уникальный ID созданной строки
-            }).unwrap()
-          }
-        })
-      )
-
-      onSuccess() // Уведомляем о успешной операции
+      onSuccess() // Уведомляем об успешной операции
     } catch (error) {
       console.error('Ошибка при создании строк поставщика и загрузке файлов:', error)
     }

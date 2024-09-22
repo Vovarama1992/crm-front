@@ -22,16 +22,7 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
   onSuccess,
   purchaseId,
 }) => {
-  const [invoiceLines, setInvoiceLines] = useState<InvoiceLineInput[]>([
-    {
-      articleNumber: '',
-      comment: '',
-      description: '',
-      quantity: 1,
-      totalPrice: 0,
-      unitPrice: 0,
-    },
-  ])
+  const [invoiceLines, setInvoiceLines] = useState<InvoiceLineInput[]>([])
 
   const [createInvoiceLine] = useCreateInvoiceLineMutation()
 
@@ -54,7 +45,10 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
   }
 
   const handleParseBulkInput = () => {
-    const lines = bulkInput.trim().split('\n')
+    const lines = bulkInput
+      .trim()
+      .split('\n')
+      .filter(line => line.trim() !== '') // Удаляем пустые строки
 
     const parsedLines = lines.reduce<InvoiceLineInput[]>((acc, line) => {
       const parts = line.split('\t').map(part => part.trim()) // Разделение и тримминг
@@ -98,16 +92,15 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
     e.preventDefault()
 
     try {
-      await Promise.all(
-        invoiceLines.map(async line => {
-          await createInvoiceLine({
-            ...line,
-            purchaseId: Number(purchaseId),
-          }).unwrap()
-        })
-      )
+      // Выполняем создание строк последовательно
+      for (const line of invoiceLines) {
+        await createInvoiceLine({
+          ...line,
+          purchaseId: Number(purchaseId),
+        }).unwrap()
+      }
 
-      onSuccess()
+      onSuccess() // Вызываем успешный результат после завершения всех запросов
     } catch (error) {
       console.error('Ошибка при создании строк счета:', error)
     }

@@ -95,7 +95,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months }) => {
                       <td className={'border px-4 py-2'}>{margin}</td>
                       <td className={'border px-4 py-2'}>{planned_margin_year}</td>
                       <td className={'border px-4 py-2'}>{completion_percent}</td>
-                      <td className={'border px-4 py-2'}>{margin_percent}</td>
+                      <td className={'border px-4 py-2'}>{margin_percent * margin}</td>
                     </React.Fragment>
                   )
                 })}

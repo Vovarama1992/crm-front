@@ -127,29 +127,27 @@ export const SalesListPage = () => {
     value: string
   ) => {
     try {
-      if (field === 'signingStage') {
-        if (!sale.signingStage && value) {
-          const updatedSale = { ...sale, signingStage: value as SigningStage }
+      const updatedValue = value === '' ? null : value // Преобразуем прочерк в null
 
-          setEditingSale(updatedSale)
-          setIsCreateFormOpen(true) // Открываем окно создания, если стадия подписания отсутствовала
-        } else {
-          await updateSale({ id: sale.id, sale: { ...sale, signingStage: value as SigningStage } })
-          window.location.reload()
-        }
-      } else if (field === 'deliveryStage') {
-        if (!sale.deliveryStage && value) {
-          const updatedSale = { ...sale, deliveryStage: value as DeliveryStage }
+      if (
+        (field === 'signingStage' && !sale.signingStage) ||
+        (field === 'deliveryStage' && !sale.deliveryStage)
+      ) {
+        // Если стадия отсутствовала, то открываем окно
+        const updatedSale = { ...sale, [field]: updatedValue }
 
-          setEditingSale(updatedSale)
-          setIsCreateFormOpen(true) // Открываем окно создания, если стадия доставки отсутствовала
-        } else {
-          await updateSale({
-            id: sale.id,
-            sale: { ...sale, deliveryStage: value as DeliveryStage },
-          })
-          window.location.reload()
-        }
+        setEditingSale(updatedSale)
+        setIsCreateFormOpen(true) // Открываем окно создания
+      } else {
+        // Если стадия уже была, обновляем её
+        await updateSale({
+          id: sale.id,
+          sale: {
+            ...sale,
+            [field]: updatedValue, // Обновляем стадию или обнуляем её, если выбран прочерк
+          },
+        })
+        window.location.reload()
       }
     } catch (error) {
       console.error('Ошибка при обновлении продажи:', error)
@@ -318,7 +316,7 @@ export const SalesListPage = () => {
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец'
-                    ? sale.margin
+                    ? sale.totalSaleAmount - sale.logisticsCost - sale.purchaseCost
                     : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>

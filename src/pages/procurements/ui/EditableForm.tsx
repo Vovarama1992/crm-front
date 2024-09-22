@@ -395,8 +395,17 @@ const EditableForm: React.FC<EditableFormProps> = ({
 
           <h3 className={'text-lg font-medium'}>Строки счета</h3>
           <div className={'space-y-2'}>
-            {invoiceLines.map(line => (
+            {invoiceLines.map((line, index) => (
               <div className={'grid grid-cols-6 gap-4'} key={line.id}>
+                <div>
+                  <label className={'block text-sm font-medium'}>Номер строки</label>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={index + 1}
+                    name={`invoiceLine_articleNumber_${index}`}
+                    type={'text'}
+                  />
+                </div>
                 <div>
                   <label className={'block text-sm font-medium'}>Артикул</label>
                   <input
@@ -497,7 +506,7 @@ const EditableForm: React.FC<EditableFormProps> = ({
                         className={'border p-1 w-full text-xs'}
                         readOnly
                         type={'text'}
-                        value={line.id}
+                        value={index + 1}
                       />
                     </div>
                     <div>
@@ -566,6 +575,16 @@ const EditableForm: React.FC<EditableFormProps> = ({
                         defaultValue={line.shipmentDate.substring(0, 10)}
                         name={`supplierLine_shipmentDate_${line.id}`}
                         type={'date'}
+                      />
+                    </div>
+                    {/* Новое поле для отображения количества */}
+                    <div>
+                      <label className={'block text-xs font-medium'}>Количество</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        readOnly
+                        type={'number'}
+                        value={line.quantity}
                       />
                     </div>
                     <div className={'col-span-8 grid grid-cols-3 gap-2'}>
