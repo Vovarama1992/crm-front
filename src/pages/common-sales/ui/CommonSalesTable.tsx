@@ -3,10 +3,10 @@ import React from 'react'
 import { formatCurrency } from '@/pages/kopeechnik'
 
 type Report = {
-  margin: number // маржа
+  margin: number
   month: string
-  planned_margin: number // план маржа
-  revenue: number // оборот
+  planned_margin: number
+  revenue: number
 }
 
 type Employee = {
@@ -26,53 +26,73 @@ type CommonSalesTableProps = {
   onDataChange: (newData: DepartmentData[]) => void
 }
 
+// Функция для вычисления процентной маржи
 const calculateMarginPercentage = (margin: number, revenue: number): string => {
-  if (revenue === 0) {
-    return '0.00'
+  if (!revenue || isNaN(revenue) || isNaN(margin)) {
+    return '0.00' // Возвращаем "0.00%", если данные недействительны
   }
   const percentage = (margin / revenue) * 100
 
-  return formatCurrency(Number(percentage.toFixed(2)))
+  return percentage.toFixed(2) // Возвращаем процент без форматирования
 }
 
-const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): any => {
-  return formatCurrency(
-    data.reduce((total, department) => {
-      return (
-        total +
-        department.employees.reduce((empTotal, employee) => {
-          return (
-            empTotal +
-            employee.reports.reduce((repTotal, report) => {
-              return repTotal + Number(report[field])
-            }, 0)
-          )
-        }, 0)
-      )
-    }, 0)
-  )
+// Функция для вычисления суммы за год (возвращает число)
+const calculateYearlyTotalValue = (data: DepartmentData[], field: keyof Report): number => {
+  return data.reduce((total, department) => {
+    return (
+      total +
+      department.employees.reduce((empTotal, employee) => {
+        return (
+          empTotal +
+          employee.reports.reduce((repTotal, report) => {
+            const value = report[field]
+
+            return repTotal + (isNaN(Number(value)) ? 0 : Number(value))
+          }, 0)
+        )
+      }, 0)
+    )
+  }, 0)
 }
 
-const calculateMonthlyTotal = (data: DepartmentData[], field: keyof Report, month: string): any => {
-  return formatCurrency(
-    data.reduce((total, department) => {
-      return (
-        total +
-        department.employees.reduce((empTotal, employee) => {
-          const report = employee.reports.find(r => r.month === month)
+// Функция для форматирования суммы за год
+const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): string => {
+  return formatCurrency(calculateYearlyTotalValue(data, field))
+}
 
-          return empTotal + (report ? Number(report[field]) : 0)
-        }, 0)
-      )
-    }, 0)
-  )
+// Функция для вычисления суммы за месяц (возвращает число)
+const calculateMonthlyTotalValue = (
+  data: DepartmentData[],
+  field: keyof Report,
+  month: string
+): number => {
+  return data.reduce((total, department) => {
+    return (
+      total +
+      department.employees.reduce((empTotal, employee) => {
+        const report = employee.reports.find(r => r.month === month)
+        const value = report ? report[field] : 0
+
+        return empTotal + (isNaN(Number(value)) ? 0 : Number(value))
+      }, 0)
+    )
+  }, 0)
+}
+
+// Функция для форматирования суммы за месяц
+const calculateMonthlyTotal = (
+  data: DepartmentData[],
+  field: keyof Report,
+  month: string
+): string => {
+  return formatCurrency(calculateMonthlyTotalValue(data, field, month))
 }
 
 const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDataChange }) => {
   const [editState, setEditState] = React.useState<{ [key: string]: boolean }>({})
 
   const toggleEdit = (key: string) => {
-    setEditState({ ...editState, [key]: !editState[key] })
+    setEditState(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
   const handleInputChange = (
@@ -90,7 +110,8 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
       const value = parseFloat(e.target.value)
 
       if (!isNaN(value)) {
-        ;(report as any)[field] = value
+        // Явно приводим тип, чтобы TypeScript понял, что поле является числом
+        ;(report[field] as number) = value
         onDataChange(newData)
       }
     }
@@ -116,7 +137,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
             <tr>
               <td
                 className={'bg-gray-200 font-bold border px-4 py-2'}
-                colSpan={months.length * 3 + 3}
+                colSpan={months.length * 3 + 2}
               >
                 {department.department}
               </td>
@@ -127,26 +148,22 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                 <React.Fragment key={month}>
                   <th className={'border px-4 py-2 bg-gray-100'}>Оборот</th>
                   <th className={'border px-4 py-2 bg-gray-100'}>Маржа</th>
-                  <th className={'border px-4 py-2 bg-gray-100'}>{'% от Маржи'}</th>
+                  <th className={'border px-4 py-2 bg-gray-100'}>% от Маржи</th>
                 </React.Fragment>
               ))}
-              <th className={'border px-4 py-2 bg-gray-100'}></th>
-              <th className={'border px-4 py-2 bg-gray-100'}></th>
             </tr>
             {department.employees.map((employee, employeeIndex) => (
               <tr key={employee.surname}>
-                <td className={'border px-4 py-2'}>{employee.name + ' ' + employee.surname}</td>
+                <td className={'border px-4 py-2'}>
+                  {employee.name} {employee.surname}
+                </td>
                 {months.map(month => {
                   const report = employee.reports.find(r => r.month === month)
                   const keyPrefix = `${departmentIndex}-${employeeIndex}-${month}`
 
                   return (
                     <React.Fragment key={month}>
-                      {[
-                        'revenue',
-                        'margin',
-                        departmentIndex === 0 ? 'planned_margin' : 'margin_percentage',
-                      ].map(field => (
+                      {['revenue', 'margin'].map(field => (
                         <td className={'border px-4 py-2'} key={`${keyPrefix}-${field}`}>
                           <div className={'w-full h-full'} style={{ minWidth: '100px' }}>
                             {editState[`${keyPrefix}-${field}`] ? (
@@ -164,11 +181,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                                 }
                                 style={{ width: '100%' }}
                                 type={'number'}
-                                value={
-                                  report
-                                    ? formatCurrency(report[field as keyof Report] as number)
-                                    : ''
-                                }
+                                value={report ? report[field as keyof Report] : ''}
                               />
                             ) : (
                               <span
@@ -176,26 +189,19 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                                 onClick={() => toggleEdit(`${keyPrefix}-${field}`)}
                                 style={{ display: 'block', width: '100%' }}
                               >
-                                {(() => {
-                                  if (!report) {
-                                    return <span>-</span>
-                                  }
-                                  if (field === 'margin_percentage') {
-                                    return (
-                                      <span>
-                                        {calculateMarginPercentage(report.margin, report.revenue) +
-                                          '%'}
-                                      </span>
-                                    )
-                                  }
-
-                                  return <span>{report[field as keyof Report]}</span>
-                                })()}
+                                {report
+                                  ? formatCurrency(report[field as keyof Report] as number)
+                                  : '-'}
                               </span>
                             )}
                           </div>
                         </td>
                       ))}
+                      <td className={'border px-4 py-2'}>
+                        {report
+                          ? calculateMarginPercentage(report.margin, report.revenue) + '%'
+                          : '-'}
+                      </td>
                     </React.Fragment>
                   )
                 })}
@@ -222,12 +228,10 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                     {calculateMonthlyTotal(data, 'margin', month)}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {departmentIndex === 0
-                      ? calculateMonthlyTotal(data, 'planned_margin', month)
-                      : calculateMarginPercentage(
-                          calculateMonthlyTotal(data, 'margin', month),
-                          calculateMonthlyTotal(data, 'revenue', month)
-                        ) + '%'}
+                    {calculateMarginPercentage(
+                      calculateMonthlyTotalValue(data, 'margin', month),
+                      calculateMonthlyTotalValue(data, 'revenue', month)
+                    ) + '%'}
                   </td>
                 </React.Fragment>
               ))}
