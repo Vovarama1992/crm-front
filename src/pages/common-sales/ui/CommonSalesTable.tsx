@@ -32,40 +32,40 @@ const calculateMarginPercentage = (margin: number, revenue: number): string => {
   }
   const percentage = (margin / revenue) * 100
 
-  return percentage.toFixed(2)
+  return formatCurrency(Number(percentage.toFixed(2)))
 }
 
-const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): number => {
-  return data.reduce((total, department) => {
-    return (
-      total +
-      department.employees.reduce((empTotal, employee) => {
-        return (
-          empTotal +
-          employee.reports.reduce((repTotal, report) => {
-            return repTotal + Number(report[field])
-          }, 0)
-        )
-      }, 0)
-    )
-  }, 0)
+const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): any => {
+  return formatCurrency(
+    data.reduce((total, department) => {
+      return (
+        total +
+        department.employees.reduce((empTotal, employee) => {
+          return (
+            empTotal +
+            employee.reports.reduce((repTotal, report) => {
+              return repTotal + Number(report[field])
+            }, 0)
+          )
+        }, 0)
+      )
+    }, 0)
+  )
 }
 
-const calculateMonthlyTotal = (
-  data: DepartmentData[],
-  field: keyof Report,
-  month: string
-): number => {
-  return data.reduce((total, department) => {
-    return (
-      total +
-      department.employees.reduce((empTotal, employee) => {
-        const report = employee.reports.find(r => r.month === month)
+const calculateMonthlyTotal = (data: DepartmentData[], field: keyof Report, month: string): any => {
+  return formatCurrency(
+    data.reduce((total, department) => {
+      return (
+        total +
+        department.employees.reduce((empTotal, employee) => {
+          const report = employee.reports.find(r => r.month === month)
 
-        return empTotal + (report ? Number(report[field]) : 0)
-      }, 0)
-    )
-  }, 0)
+          return empTotal + (report ? Number(report[field]) : 0)
+        }, 0)
+      )
+    }, 0)
+  )
 }
 
 const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDataChange }) => {
@@ -200,10 +200,14 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                   )
                 })}
                 <td className={'border px-4 py-2'}>
-                  {employee.reports.reduce((total, report) => total + report.revenue, 0)}
+                  {formatCurrency(
+                    employee.reports.reduce((total, report) => total + report.revenue, 0)
+                  )}
                 </td>
                 <td className={'border px-4 py-2'}>
-                  {employee.reports.reduce((total, report) => total + report.margin, 0)}
+                  {formatCurrency(
+                    employee.reports.reduce((total, report) => total + report.margin, 0)
+                  )}
                 </td>
               </tr>
             ))}
@@ -243,31 +247,6 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
               {calculateMonthlyTotal(data, 'margin', month)}
             </td>
           ))}
-        </tr>
-        <tr>
-          {/*<td className={'border px-4 py-2 font-bold'}>Общий остаток маржи</td>
-          {months.map(month => {
-            const totalMargin = calculateMonthlyTotal(data, 'margin', month)
-            const totalRevenue = calculateMonthlyTotal(data, 'revenue', month)
-
-            return (
-              <td className={'border px-4 py-2 font-bold'} colSpan={3} key={month}>
-                {calculateMarginPercentage(totalMargin, totalRevenue) + '%'}
-              </td>
-            )
-          })}
-        </tr>
-        <tr>
-          <td className={'border px-4 py-2 font-bold'}>Маржа минус процент менеджеров</td>
-          {months.map(month => {
-            const totalMargin = calculateMonthlyTotal(data, 'margin', month)
-
-            return (
-              <td className={'border px-4 py-2 font-bold'} colSpan={3} key={month}>
-                {(totalMargin * 0.9).toFixed(2)}
-              </td>
-            )
-          })}*/}
         </tr>
       </tbody>
     </table>

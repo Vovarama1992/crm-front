@@ -6,6 +6,7 @@ import { useOutletContext } from 'react-router-dom'
 import { useGetAllDealsQuery } from '@/entities/deal'
 import { useMeQuery } from '@/entities/session'
 import { useGetDepartmentsQuery } from '@/entities/workers'
+import { formatCurrency } from '@/pages/kopeechnik'
 import { CustomColumnDef, EditableTable } from '@/shared/ui/EditableTable'
 const formatDate = (date: Date | null | string) => {
   if (!date) {
@@ -58,7 +59,7 @@ export const SummaryTablePage = () => {
   const { data: deals = [] } = useGetAllDealsQuery()
   const { data: departments = [] } = useGetDepartmentsQuery()
 
-  const filteredData: SummaryDto[] = deals
+  const filteredData: any[] = deals
     .filter(deal => {
       if (userData?.roleName === 'РОП' && userData.department_id !== deal.user.department_id) {
         return false
@@ -88,10 +89,10 @@ export const SummaryTablePage = () => {
       counterpartyName: deal.counterparty.name,
       departmentId: deal.user.department_id,
       id: deal.id,
-      marginRub: deal.marginRub,
+      marginRub: formatCurrency(deal.marginRub),
       specialistName: deal.user.name,
       stage: stageOptions[deal.stage],
-      turnoverRub: deal.turnoverRub,
+      turnoverRub: formatCurrency(deal.turnoverRub),
       userId: deal.userId,
     }))
 
