@@ -155,11 +155,11 @@ export const CommonSalesPage: React.FC = () => {
   console.log('completed: ' + JSON.stringify(completed))
 
   const [selectedDepartment, setSelectedDepartment] = useState<string>('Все')
-  const [data, setData] = useState(completed)
+  const [data, _] = useState(completed)
 
-  const handleDataChange = (newData: DepartmentData[]) => {
-    setData(newData)
-  }
+  //const handleDataChange = (newData: DepartmentData[]) => {
+  // setData(newData)
+  //}
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(Number(event.target.value))
