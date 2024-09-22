@@ -3,10 +3,10 @@ import React from 'react'
 import { formatCurrency } from '@/pages/kopeechnik'
 
 type Report = {
-  margin: number
+  margin: number | string // маржа
   month: string
-  planned_margin: number
-  revenue: number
+  planned_margin: number | string // план маржа
+  revenue: number | string // оборот
 }
 
 type Employee = {
@@ -26,66 +26,69 @@ type CommonSalesTableProps = {
   onDataChange: (newData: DepartmentData[]) => void
 }
 
-// Функция для вычисления процентной маржи
-const calculateMarginPercentage = (margin: number, revenue: number): string => {
-  if (!revenue || isNaN(revenue) || isNaN(margin)) {
-    return '0.00' // Возвращаем "0.00%", если данные недействительны
-  }
-  const percentage = (margin / revenue) * 100
+// Преобразуем строковые значения в числа для вычислений
+const parseCurrency = (value: number | string): number => {
+  if (typeof value === 'string') {
+    // Извлекаем рубли из строки в формате "X рублей Y копеек"
+    const [rubles] = value.split(' рублей').map(part => part.trim())
 
-  return percentage.toFixed(2) // Возвращаем процент без форматирования
+    return parseFloat(rubles) || 0
+  }
+
+  return value
 }
 
-// Функция для вычисления суммы за год (возвращает число)
-const calculateYearlyTotalValue = (data: DepartmentData[], field: keyof Report): number => {
-  return data.reduce((total, department) => {
+// Функция для расчета процента маржи
+const calculateMarginPercentage = (margin: number | string, revenue: number | string): string => {
+  const parsedMargin = parseCurrency(margin)
+  const parsedRevenue = parseCurrency(revenue)
+
+  if (!parsedRevenue || parsedMargin === 0) {
+    return '0.00 рублей 0 копеек' // Возвращаем 0, если данных недостаточно
+  }
+
+  const percentage = (parsedMargin / parsedRevenue) * 100
+
+  return formatCurrency(percentage.toFixed(2))
+}
+
+// Функция для вычисления суммы за год с преобразованием результата через `formatCurrency`
+const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): string => {
+  const total = data.reduce((total, department) => {
     return (
       total +
       department.employees.reduce((empTotal, employee) => {
         return (
           empTotal +
           employee.reports.reduce((repTotal, report) => {
-            const value = report[field]
-
-            return repTotal + (isNaN(Number(value)) ? 0 : Number(value))
+            return repTotal + parseCurrency(report[field])
           }, 0)
         )
       }, 0)
     )
   }, 0)
+
+  return formatCurrency(total)
 }
 
-// Функция для форматирования суммы за год
-const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): string => {
-  return formatCurrency(calculateYearlyTotalValue(data, field))
-}
-
-// Функция для вычисления суммы за месяц (возвращает число)
-const calculateMonthlyTotalValue = (
-  data: DepartmentData[],
-  field: keyof Report,
-  month: string
-): number => {
-  return data.reduce((total, department) => {
-    return (
-      total +
-      department.employees.reduce((empTotal, employee) => {
-        const report = employee.reports.find(r => r.month === month)
-        const value = report ? report[field] : 0
-
-        return empTotal + (isNaN(Number(value)) ? 0 : Number(value))
-      }, 0)
-    )
-  }, 0)
-}
-
-// Функция для форматирования суммы за месяц
+// Функция для вычисления суммы за месяц с преобразованием через `formatCurrency`
 const calculateMonthlyTotal = (
   data: DepartmentData[],
   field: keyof Report,
   month: string
 ): string => {
-  return formatCurrency(calculateMonthlyTotalValue(data, field, month))
+  const total = data.reduce((total, department) => {
+    return (
+      total +
+      department.employees.reduce((empTotal, employee) => {
+        const report = employee.reports.find(r => r.month === month)
+
+        return empTotal + (report ? parseCurrency(report[field]) : 0)
+      }, 0)
+    )
+  }, 0)
+
+  return formatCurrency(total)
 }
 
 const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDataChange }) => {
@@ -107,13 +110,11 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
     const report = employee.reports.find(r => r.month === month)
 
     if (report) {
-      const value = parseFloat(e.target.value)
+      const value = e.target.value
 
-      if (!isNaN(value)) {
-        // Явно приводим тип, чтобы TypeScript понял, что поле является числом
-        ;(report[field] as number) = value
-        onDataChange(newData)
-      }
+      // Преобразуем значение в формат для дальнейших расчетов
+      ;(report as any)[field] = formatCurrency(value)
+      onDataChange(newData)
     }
   }
 
@@ -180,8 +181,8 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                                   )
                                 }
                                 style={{ width: '100%' }}
-                                type={'number'}
-                                value={report ? report[field as keyof Report] : ''}
+                                type={'text'}
+                                value={report ? formatCurrency(report[field as keyof Report]) : ''}
                               />
                             ) : (
                               <span
@@ -189,9 +190,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                                 onClick={() => toggleEdit(`${keyPrefix}-${field}`)}
                                 style={{ display: 'block', width: '100%' }}
                               >
-                                {report
-                                  ? formatCurrency(report[field as keyof Report] as number)
-                                  : '-'}
+                                {report ? formatCurrency(report[field as keyof Report]) : '-'}
                               </span>
                             )}
                           </div>
@@ -207,12 +206,18 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                 })}
                 <td className={'border px-4 py-2'}>
                   {formatCurrency(
-                    employee.reports.reduce((total, report) => total + report.revenue, 0)
+                    employee.reports.reduce(
+                      (total, report) => total + parseCurrency(report.revenue),
+                      0
+                    )
                   )}
                 </td>
                 <td className={'border px-4 py-2'}>
                   {formatCurrency(
-                    employee.reports.reduce((total, report) => total + report.margin, 0)
+                    employee.reports.reduce(
+                      (total, report) => total + parseCurrency(report.margin),
+                      0
+                    )
                   )}
                 </td>
               </tr>
@@ -229,8 +234,8 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
                     {calculateMarginPercentage(
-                      calculateMonthlyTotalValue(data, 'margin', month),
-                      calculateMonthlyTotalValue(data, 'revenue', month)
+                      parseCurrency(calculateMonthlyTotal(data, 'margin', month)),
+                      parseCurrency(calculateMonthlyTotal(data, 'revenue', month))
                     ) + '%'}
                   </td>
                 </React.Fragment>
