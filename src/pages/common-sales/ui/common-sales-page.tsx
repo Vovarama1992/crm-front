@@ -295,7 +295,7 @@ export const CommonSalesPage: React.FC = () => {
       <CommonSalesTable
         data={filteredData}
         months={selectedMonths}
-        onDataChange={handleDataChange}
+        //onDataChange={handleDataChange}
       />
     </div>
   )

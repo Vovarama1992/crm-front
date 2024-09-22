@@ -23,7 +23,7 @@ type DepartmentData = {
 type CommonSalesTableProps = {
   data: DepartmentData[]
   months: string[]
-  onDataChange: (newData: DepartmentData[]) => void
+  //onDataChange: (newData: DepartmentData[]) => void
 }
 
 // Функция для расчета итогов по отделу
@@ -59,24 +59,7 @@ const calculateMonthlyTotal = (
   }, 0)
 }
 
-// Функция для вычисления итогов за год по всем отделам
-const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): number => {
-  return data.reduce((total, department) => {
-    return (
-      total +
-      department.employees.reduce((empTotal, employee) => {
-        return (
-          empTotal +
-          employee.reports.reduce((repTotal, report) => {
-            return repTotal + Number(report[field])
-          }, 0)
-        )
-      }, 0)
-    )
-  }, 0)
-}
-
-const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDataChange }) => {
+const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months }) => {
   return (
     <table className={'table-auto w-full border-collapse'}>
       <thead>
@@ -92,7 +75,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
         </tr>
       </thead>
       <tbody>
-        {data.map((department, departmentIndex) => (
+        {data.map((department, _) => (
           <React.Fragment key={department.department}>
             <tr>
               <td
