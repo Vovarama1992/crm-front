@@ -39,15 +39,6 @@ const calculateDepartmentTotal = (
   }, 0)
 }
 
-// Функция для вычисления процента маржи
-const calculateMarginPercentage = (margin: number, revenue: number): number => {
-  if (!revenue || isNaN(revenue) || isNaN(margin)) {
-    return 0
-  }
-
-  return (margin / revenue) * 100
-}
-
 // Функция для вычисления итогов за месяц по всем отделам
 const calculateMonthlyTotal = (
   data: DepartmentData[],
@@ -112,9 +103,7 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months }) => 
                         {report ? formatCurrency(report.margin) : '-'}
                       </td>
                       <td className={'border px-4 py-2'}>
-                        {report
-                          ? calculateMarginPercentage(report.margin, report.revenue).toFixed(2)
-                          : '-'}
+                        {report ? formatCurrency(report.planned_margin) : '-'}
                       </td>
                     </React.Fragment>
                   )
@@ -146,10 +135,9 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months }) => 
                     )}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {calculateMarginPercentage(
-                      calculateDepartmentTotal(department.employees, 'margin', month),
-                      calculateDepartmentTotal(department.employees, 'revenue', month)
-                    ).toFixed(2)}
+                    {formatCurrency(
+                      calculateDepartmentTotal(department.employees, 'planned_margin', month)
+                    )}
                   </td>
                 </React.Fragment>
               ))}

@@ -99,7 +99,7 @@ export const CommonSalesPage: React.FC = () => {
                 .flatMap((report: ReportData) =>
                   report.monthlyData.map(monthlyReport => ({
                     margin: monthlyReport.totalMargin,
-                    month: monthlyReport.month,
+                    month: months[parseInt(monthlyReport.month) - 1], // Преобразование месяца в строку
                     planned_margin: worker.margin_percent
                       ? worker.margin_percent * monthlyReport.totalMargin
                       : 0,
