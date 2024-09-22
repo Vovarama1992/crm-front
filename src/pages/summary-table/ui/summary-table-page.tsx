@@ -7,6 +7,14 @@ import { useGetAllDealsQuery } from '@/entities/deal'
 import { useMeQuery } from '@/entities/session'
 import { useGetDepartmentsQuery } from '@/entities/workers'
 import { CustomColumnDef, EditableTable } from '@/shared/ui/EditableTable'
+const formatDate = (date: Date | null | string) => {
+  if (!date) {
+    return ''
+  }
+  const validDate = typeof date === 'string' ? new Date(date) : date
+
+  return validDate.toISOString().split('T')[0]
+}
 
 export type SummaryDto = {
   closeDate: null | string
@@ -75,7 +83,7 @@ export const SummaryTablePage = () => {
       return true
     })
     .map(deal => ({
-      closeDate: deal.closeDate,
+      closeDate: formatDate(deal.closeDate),
       comment: deal.comment,
       counterpartyName: deal.counterparty.name,
       departmentId: deal.user.department_id,

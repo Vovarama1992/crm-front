@@ -28,6 +28,15 @@ const stageToPercentageMap: { [key: string]: number } = {
   WORKING_WITH_OBJECTIONS: 60,
 }
 
+const formatDate = (date: Date | null | string) => {
+  if (!date) {
+    return ''
+  }
+  const validDate = typeof date === 'string' ? new Date(date) : date
+
+  return validDate.toISOString().split('T')[0]
+}
+
 export const ContragentsPage = () => {
   const { data: userData } = useMeQuery()
   const userId = userData?.id || 1
@@ -210,7 +219,7 @@ export const ContragentsPage = () => {
                 </select>
               </td>
               <td className={'border px-4 py-2'}>{stageToPercentageMap[deal.stage] || 0}%</td>
-              <td className={'border px-4 py-2'}>{deal.closeDate}</td>
+              <td className={'border px-4 py-2'}>{formatDate(deal.closeDate)}</td>
               <td className={'border px-4 py-2'}>
                 <select
                   onChange={e => handleFieldChange(deal.id, 'lossReason', e.target.value)}

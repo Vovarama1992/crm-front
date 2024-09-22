@@ -20,7 +20,6 @@ import { useCreateNotificationMutation } from '@/entities/notifications'
 import { useLazyDownloadSupplierPdfQuery, useUploadSupplierPdfMutation } from '@/entities/session'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
-import { formatCurrency } from '@/pages/kopeechnik'
 
 import CreateInvoiceLineModal from './CreateInvoiceLineModal'
 import CreateSupplierLineModal from './CreateSupplierLineModal'
@@ -438,7 +437,7 @@ const EditableForm: React.FC<EditableFormProps> = ({
                   <label className={'block text-sm font-medium'}>Цена за ед.</label>
                   <input
                     className={'border p-2 w-full'}
-                    defaultValue={formatCurrency(line.unitPrice)}
+                    defaultValue={line.unitPrice}
                     name={`invoiceLine_unitPrice_${line.id}`}
                     type={'number'}
                   />
@@ -555,7 +554,7 @@ const EditableForm: React.FC<EditableFormProps> = ({
                       <label className={'block text-xs font-medium'}>Сумма</label>
                       <input
                         className={'border p-1 w-full text-xs'}
-                        defaultValue={formatCurrency(line.totalPurchaseAmount)}
+                        defaultValue={line.totalPurchaseAmount}
                         name={`supplierLine_totalPurchaseAmount_${line.id}`}
                         type={'number'}
                       />
@@ -686,7 +685,7 @@ const EditableForm: React.FC<EditableFormProps> = ({
                   <label className={'block text-sm font-medium'}>Сумма</label>
                   <input
                     className={'border p-2 w-full'}
-                    defaultValue={formatCurrency(line.amount)}
+                    defaultValue={line.amount}
                     name={`logisticsLine_amount_${line.id}`}
                     type={'number'}
                   />
