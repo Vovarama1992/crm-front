@@ -38,23 +38,6 @@ const calculateMarginPercentage = (margin: number, revenue: number): string => {
 }
 
 // Функция для вычисления общей суммы за год (возвращаем число)
-const calculateYearlyTotal = (data: DepartmentData[], field: keyof Report): string => {
-  const total = data.reduce((total, department) => {
-    return (
-      total +
-      department.employees.reduce((empTotal, employee) => {
-        return (
-          empTotal +
-          employee.reports.reduce((repTotal, report) => {
-            return repTotal + Number(report[field]) // Используем как число
-          }, 0)
-        )
-      }, 0)
-    )
-  }, 0)
-
-  return formatCurrency(total) // Форматируем только для отображения
-}
 
 // Функция для вычисления суммы за месяц (числовое значение)
 const calculateMonthlyTotal = (
@@ -104,6 +87,16 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
         onDataChange(newData)
       }
     }
+  }
+
+  // Функция для вычисления итогов по отделу
+  const calculateDepartmentTotal = (department: DepartmentData, field: keyof Report): number => {
+    return department.employees.reduce((total, employee) => {
+      return (
+        total +
+        employee.reports.reduce((reportTotal, report) => reportTotal + Number(report[field]), 0)
+      )
+    }, 0)
   }
 
   return (
@@ -204,33 +197,35 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                 </td>
               </tr>
             ))}
+            {/* Итоги по отделу */}
             <tr>
-              <td className={'border px-4 py-2 font-bold'}>Итого</td>
+              <td className={'border px-4 py-2 font-bold'}>Итого по отделу</td>
               {months.map(month => (
                 <React.Fragment key={month}>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {calculateMonthlyTotal(data, 'revenue', month)}
+                    {formatCurrency(calculateDepartmentTotal(department, 'revenue'))}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
-                    {calculateMonthlyTotal(data, 'margin', month)}
+                    {formatCurrency(calculateDepartmentTotal(department, 'margin'))}
                   </td>
                   <td className={'border px-4 py-2 font-bold'}>
                     {calculateMarginPercentage(
-                      parseFloat(calculateMonthlyTotal(data, 'margin', month)),
-                      parseFloat(calculateMonthlyTotal(data, 'revenue', month))
+                      calculateDepartmentTotal(department, 'margin'),
+                      calculateDepartmentTotal(department, 'revenue')
                     ) + '%'}
                   </td>
                 </React.Fragment>
               ))}
               <td className={'border px-4 py-2 font-bold'}>
-                {calculateYearlyTotal(data, 'revenue')}
+                {formatCurrency(calculateDepartmentTotal(department, 'revenue'))}
               </td>
               <td className={'border px-4 py-2 font-bold'}>
-                {calculateYearlyTotal(data, 'margin')}
+                {formatCurrency(calculateDepartmentTotal(department, 'margin'))}
               </td>
             </tr>
           </React.Fragment>
         ))}
+        {/* Общая маржа по всем отделам */}
         <tr>
           <td className={'border px-4 py-2 font-bold'}>Общая маржа</td>
           {months.map(month => (
