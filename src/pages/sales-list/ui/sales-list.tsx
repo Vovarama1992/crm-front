@@ -7,7 +7,7 @@ import {
   useGetAllSalesQuery,
   useUpdateSaleMutation,
 } from '@/entities/deal'
-import { DeliveryStage, SaleDto, SigningStage } from '@/entities/deal/deal.types'
+import { SaleDto, SigningStage } from '@/entities/deal/deal.types'
 import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
