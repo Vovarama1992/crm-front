@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useGetAllPaymentsQuery, useGetAllSalesQuery } from '@/entities/deal'
 import { ExpenseDto } from '@/entities/deal/deal.types'
 import { useGetWorkersQuery } from '@/entities/workers'
+import { formatCurrency } from '@/pages/kopeechnik'
 
 import AddExpenseModal from './AddExpenseModal'
 import ReportDetailsModal from './ReportDetailsModal'
@@ -370,7 +371,9 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
                               onClick={() => handleReportClick(report)}
                             >
                               <td className={'border px-4 py-2 pl-16'}>{report.name}</td>
-                              <td className={'border px-4 py-2'}>{report.expense}</td>
+                              <td className={'border px-4 py-2'}>
+                                {formatCurrency(report.expense)}
+                              </td>
                             </tr>
                           )
                       )}
@@ -380,7 +383,7 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
               {category.payments && (
                 <tr>
                   <td className={'border px-4 py-2 font-bold text-right'} colSpan={2}>
-                    Выплачено: {category.payments}
+                    Выплачено: {formatCurrency(category.payments)}
                   </td>
                 </tr>
               )}

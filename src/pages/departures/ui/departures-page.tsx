@@ -7,6 +7,7 @@ import {
 } from '@/entities/departure/departure.api'
 import { WorkerDto } from '@/entities/workers'
 import { useGetWorkersQuery } from '@/entities/workers'
+import { formatCurrency } from '@/pages/kopeechnik'
 
 import { CreateDepartureForm } from './CreateDepartureForm'
 import { EditDepartureForm } from './EditDepartureForm'
@@ -229,7 +230,9 @@ export const DeparturesPage = () => {
               </td>
               <td className={'border px-4 py-2'}>{departure.transportCompany}</td>
               <td className={'border px-4 py-2'}>{departure.trackingNumber}</td>
-              <td className={'border px-4 py-2'}>{departure.finalAmount}</td>
+              <td className={'border px-4 py-2'}>
+                {departure.finalAmount ? formatCurrency(departure.finalAmount) : null}
+              </td>
               <td className={'border px-4 py-2'}>{formatDate(departure.dispatchDate)}</td>
               <td className={'border px-4 py-2'}>{formatDate(departure.arrivalDate)}</td>
               <td className={'border px-4 py-2'}>

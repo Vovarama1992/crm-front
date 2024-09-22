@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { formatCurrency } from '@/pages/kopeechnik'
+
 type Report = {
   margin: number // маржа
   month: string
@@ -162,7 +164,11 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months, onDat
                                 }
                                 style={{ width: '100%' }}
                                 type={'number'}
-                                value={report ? report[field as keyof Report] : ''}
+                                value={
+                                  report
+                                    ? formatCurrency(report[field as keyof Report] as number)
+                                    : ''
+                                }
                               />
                             ) : (
                               <span

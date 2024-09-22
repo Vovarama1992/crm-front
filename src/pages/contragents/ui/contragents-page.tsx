@@ -4,6 +4,7 @@ import { DealDto } from '@/entities/deal'
 import { useGetAllDealsQuery, useUpdateDealMutation } from '@/entities/deal/deal.api'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
+import { formatCurrency } from '@/pages/kopeechnik'
 
 import NewCounterpartyForm from './NewCounterpartyForm'
 import { stageOptions } from './NewDealForm'
@@ -194,8 +195,8 @@ export const ContragentsPage = () => {
               <td className={'border px-4 py-2'}>{deal.counterparty.name}</td>
               <td className={'border px-4 py-2'}>{deal.counterparty.inn}</td>
               <td className={'border px-4 py-2'}>{deal.requestNumber}</td>
-              <td className={'border px-4 py-2'}>{deal.turnoverRub}</td>
-              <td className={'border px-4 py-2'}>{deal.marginRub}</td>
+              <td className={'border px-4 py-2'}>{formatCurrency(deal.turnoverRub)}</td>
+              <td className={'border px-4 py-2'}>{formatCurrency(deal.marginRub)}</td>
               <td className={'border px-4 py-2'}>
                 <select
                   onChange={e => handleFieldChange(deal.id, 'stage', e.target.value)}

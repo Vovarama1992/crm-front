@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { formatCurrency } from '@/pages/kopeechnik'
+
 type FlatReport = {
   completionPercent: number
   marginAmount: number
@@ -91,11 +93,13 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ data, months }) => {
 
                   return (
                     <React.Fragment key={index}>
-                      <td className={'border px-4 py-2'}>{revenue}</td>
-                      <td className={'border px-4 py-2'}>{margin}</td>
-                      <td className={'border px-4 py-2'}>{planned_margin_year}</td>
+                      <td className={'border px-4 py-2'}>{formatCurrency(revenue)}</td>
+                      <td className={'border px-4 py-2'}>{formatCurrency(margin)}</td>
+                      <td className={'border px-4 py-2'}>{formatCurrency(planned_margin_year)}</td>
                       <td className={'border px-4 py-2'}>{completion_percent}</td>
-                      <td className={'border px-4 py-2'}>{margin_percent * margin}</td>
+                      <td className={'border px-4 py-2'}>
+                        {formatCurrency(margin_percent * margin)}
+                      </td>
                     </React.Fragment>
                   )
                 })}

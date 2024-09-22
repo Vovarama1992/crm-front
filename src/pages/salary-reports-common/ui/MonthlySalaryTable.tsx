@@ -1,6 +1,8 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react'
 
+import { formatCurrency } from '@/pages/kopeechnik'
+
 import CreatePaymentForm from './CreatePaymentForm'
 import PaymentsListForm from './PaymentsListForm'
 
@@ -128,7 +130,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
                               <span className={'block w-full h-full px-2 py-1 text-sm'}>
                                 {report
                                   ? typeof report[field as keyof Report] === 'number'
-                                    ? Math.round(report[field as keyof Report] as number)
+                                    ? formatCurrency(report[field as keyof Report] as number)
                                     : report[field as keyof Report]
                                   : '-'}
                               </span>

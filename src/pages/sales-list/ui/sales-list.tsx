@@ -10,6 +10,7 @@ import {
 import { SaleDto, SigningStage } from '@/entities/deal/deal.types'
 import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
+import { formatCurrency } from '@/pages/kopeechnik'
 
 import { SalesCreateForm } from './SalesCreateForm'
 import { SalesEditForm } from './SalesEditForm'
@@ -303,16 +304,18 @@ export const SalesListPage = () => {
                   {getCounterpartyName(sale.counterpartyId)}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.logisticsCost || '—'}
+                  {sale.logisticsCost ? formatCurrency(sale.logisticsCost) : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.purchaseCost || '—'}
+                  {sale.purchaseCost ? formatCurrency(sale.purchaseCost) : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.totalSaleAmount || '—'}
+                  {sale.totalSaleAmount ? formatCurrency(sale.totalSaleAmount) : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.paidNow + sale.prepaymentAmount || '—'}
+                  {sale.paidNow || sale.prepaymentAmount
+                    ? formatCurrency(sale.paidNow + sale.prepaymentAmount)
+                    : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец'
