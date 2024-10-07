@@ -104,6 +104,19 @@ export const SalesListPage = () => {
     }
   }, [salesData, remainingSalesData, selectedEmployee])
 
+  const filteredWorkers = workersData?.filter(employee => {
+    if (meData?.roleName === 'РОП') {
+      // Для РОП: только сотрудники с ролями "Менеджер" или "Логист"
+      return meData?.department_id && employee.department_id == meData?.department_id
+    } else if (meData?.roleName === 'Менеджер' || meData?.roleName === 'РОП') {
+      // Для Менеджера: только он сам
+      return employee.id === meData.id
+    } else {
+      // Для "Директор", "Бухгалтер", "Закупщик": показываем всех сотрудников
+      return true
+    }
+  })
+
   const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
 
@@ -222,8 +235,10 @@ export const SalesListPage = () => {
           <label className={'mr-2'}>Выберите сотрудника:</label>
           <select onChange={handleEmployeeChange} value={selectedEmployee || ''}>
             <option value={'self'}>Я сам</option>
-            <option value={9999}>Все</option>
-            {workersData?.map(employee => (
+            {(meData?.roleName === 'Директор' ||
+              meData?.roleName === 'Бухгалтер' ||
+              meData?.roleName === 'Закупщик') && <option value={9999}>Все</option>}
+            {filteredWorkers?.map(employee => (
               <option key={employee.id} value={employee.id}>
                 {employee.name}
               </option>
@@ -319,7 +334,7 @@ export const SalesListPage = () => {
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец'
-                    ? sale.totalSaleAmount - sale.logisticsCost - sale.purchaseCost
+                    ? sale.margin
                     : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
@@ -436,19 +451,23 @@ export const SalesListPage = () => {
           <p>{totalEarned}</p>
         </div>
       </div>
-      {isEditFormOpen && editingSale && (
-        <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
-          <div className={'bg-white p-4 rounded'}>
-            <SalesEditForm
-              onClose={() => {
-                setIsEditFormOpen(false)
-                setEditingSale(null)
-              }}
-              sale={editingSale}
-            />
+      {(meData?.roleName === 'Менеджер' || meData?.roleName === 'Закупщик') &&
+        editingSale?.userId === meData?.id &&
+        isEditFormOpen && (
+          <div
+            className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}
+          >
+            <div className={'bg-white p-4 rounded'}>
+              <SalesEditForm
+                onClose={() => {
+                  setIsEditFormOpen(false)
+                  setEditingSale(null)
+                }}
+                sale={editingSale}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
       {isCreateFormOpen && editingSale && (
         <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
           <div className={'bg-white p-4 rounded'}>

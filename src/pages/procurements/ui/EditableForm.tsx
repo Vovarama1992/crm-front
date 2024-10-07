@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary */
 /* eslint-disable max-lines */
 import React, { useState } from 'react'
 
@@ -277,10 +278,22 @@ const EditableForm: React.FC<EditableFormProps> = ({
             comment: (formData.get(`supplierLine_comment_${line.id}`) as string) || '',
             delivered: formData.get(`supplierLine_delivered_${line.id}`) === 'on',
             description: (formData.get(`supplierLine_description_${line.id}`) as string) || '',
-            paymentDate: line.paymentDate ? new Date(line.paymentDate).toISOString() : '',
+            paymentDate: formData.get(`supplierLine_paymentDate_${line.id}`)
+              ? new Date(
+                  formData.get(`supplierLine_paymentDate_${line.id}`) as string
+                ).toISOString()
+              : line.paymentDate
+                ? new Date(line.paymentDate).toISOString()
+                : '',
             quantity:
               Number(formData.get(`supplierLine_quantity_${line.id}`)) || line.quantity || 0,
-            shipmentDate: line.shipmentDate ? new Date(line.shipmentDate).toISOString() : '',
+            shipmentDate: formData.get(`supplierLine_shipmentDate_${line.id}`)
+              ? new Date(
+                  formData.get(`supplierLine_shipmentDate_${line.id}`) as string
+                ).toISOString()
+              : line.shipmentDate
+                ? new Date(line.shipmentDate).toISOString()
+                : '',
             supplierId:
               Number(formData.get(`supplierLine_supplierId_${line.id}`)) || line.supplierId,
             supplierInvoice:
@@ -291,10 +304,20 @@ const EditableForm: React.FC<EditableFormProps> = ({
               0,
           }
 
+          // Логирование данных перед отправкой
+          console.log('Supplier Line Data:', lineData)
+
           return updateSupplierLine({
             data: lineData,
             id: line.id,
-          }).unwrap()
+          })
+            .unwrap()
+            .then(response => {
+              console.log(`Supplier Line updated successfully for id: ${line.id}`, response)
+            })
+            .catch(error => {
+              console.error(`Error updating Supplier Line for id: ${line.id}`, error)
+            })
         })
       )
 
@@ -307,10 +330,20 @@ const EditableForm: React.FC<EditableFormProps> = ({
             description: line.description || '',
           }
 
+          // Логирование данных перед отправкой
+          console.log('Logistics Line Data:', lineData)
+
           return updateLogisticsLine({
             data: lineData,
             id: line.id,
-          }).unwrap()
+          })
+            .unwrap()
+            .then(response => {
+              console.log(`Logistics Line updated successfully for id: ${line.id}`, response)
+            })
+            .catch(error => {
+              console.error(`Error updating Logistics Line for id: ${line.id}`, error)
+            })
         })
       )
 
@@ -577,7 +610,16 @@ const EditableForm: React.FC<EditableFormProps> = ({
                         type={'date'}
                       />
                     </div>
-                    {/* Новое поле для отображения количества */}
+                    {/* Поле для отмечания, что строка доставлена */}
+                    <div>
+                      <label className={'block text-xs font-medium'}>Доставлено</label>
+                      <input
+                        className={'border p-1 w-full text-xs'}
+                        defaultChecked={line.delivered}
+                        name={`supplierLine_delivered_${line.id}`}
+                        type={'checkbox'}
+                      />
+                    </div>
                     <div>
                       <label className={'block text-xs font-medium'}>Количество</label>
                       <input

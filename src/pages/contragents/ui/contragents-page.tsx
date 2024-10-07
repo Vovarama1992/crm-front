@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, { useEffect, useState } from 'react'
 
 import { DealDto } from '@/entities/deal'
@@ -40,6 +41,7 @@ const formatDate = (date: Date | null | string) => {
 export const ContragentsPage = () => {
   const { data: userData } = useMeQuery()
   const userId = userData?.id || 1
+  const roleName = userData?.roleName // Получаем роль пользователя
 
   const { data: deals = [], refetch } = useGetAllDealsQuery()
   const { data: users = [] } = useGetWorkersQuery() // Получаем всех пользователей
@@ -60,7 +62,9 @@ export const ContragentsPage = () => {
   useEffect(() => {
     let updatedDeals = deals
 
-    if (selectedUserId !== null) {
+    if (roleName !== 'Директор') {
+      updatedDeals = updatedDeals.filter(deal => deal.userId === userId)
+    } else if (selectedUserId !== null) {
       updatedDeals = updatedDeals.filter(deal => deal.userId === selectedUserId)
     }
 
@@ -77,7 +81,7 @@ export const ContragentsPage = () => {
     }
 
     setFilteredDeals(updatedDeals)
-  }, [selectedUserId, filterInn, filterCounterparty, deals])
+  }, [selectedUserId, filterInn, filterCounterparty, deals, roleName, userId])
 
   const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const userId = e.target.value === 'all' ? null : Number(e.target.value)
@@ -155,18 +159,25 @@ export const ContragentsPage = () => {
             type={'text'}
             value={filterCounterparty}
           />
-          <select
-            className={'border rounded px-2 py-1'}
-            onChange={handleUserChange}
-            value={selectedUserId !== null ? selectedUserId : 'all'}
-          >
-            <option value={'all'}>Все сотрудники</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
+          {/* Отображаем селектор пользователей для "Директора" или для "РОП" с фильтрацией по departmentId */}
+          {(roleName === 'Директор' || roleName === 'РОП') && (
+            <select
+              className={'border rounded px-2 py-1'}
+              onChange={handleUserChange}
+              value={selectedUserId !== null ? selectedUserId : 'all'}
+            >
+              {roleName == 'Директор' && <option value={'all'}>Все сотрудники</option>}
+              {users
+                .filter(
+                  user => roleName === 'Директор' || user.department_id === userData?.department_id
+                ) // Для РОП фильтрация по departmentId
+                .map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+            </select>
+          )}
         </div>
         <div>
           <button

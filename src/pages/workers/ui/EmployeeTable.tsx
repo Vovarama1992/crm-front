@@ -185,15 +185,17 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
           Добавить сотрудника
         </button>
       )}
-      <Link to={ROUTER_PATHS.FIREDWORKERS}>
-        <button
-          className={
-            'mt-4 ml-[100px] px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
-          }
-        >
-          Перейти к таблице уволенных
-        </button>
-      </Link>
+      {roleName === 'Директор' && (
+        <Link to={ROUTER_PATHS.FIREDWORKERS}>
+          <button
+            className={
+              'mt-4 ml-[100px] px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }
+          >
+            Перейти к таблице уволенных
+          </button>
+        </Link>
+      )}
       {open && (
         <WorkerForm
           onClose={() => {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { useMeQuery } from '@/entities/session'
 import {
   useCreateDepartmentMutation,
   useDeleteDepartmentMutation,
@@ -20,7 +21,8 @@ export const StructurePage = () => {
   const [createDepartment] = useCreateDepartmentMutation()
   const [updateWorker] = useUpdateWorkerMutation()
   const [fireWorker] = useFireWorkerMutation()
-
+  const { data: userData } = useMeQuery()
+  const roleName = userData?.roleName
   const [selectedWorker, setSelectedWorker] = useState<WorkerDto | null>(null)
   const [formType, setFormType] = useState<'demote' | 'promote' | 'transfer' | null>(null)
 
@@ -84,11 +86,9 @@ export const StructurePage = () => {
   }
 
   const handleTransfer = async (worker: WorkerDto, newDepartmentId: null | number) => {
-    // Найти ropId для нового департамента
     const newDepartment = departmentsData.find(dept => dept.id === newDepartmentId)
     const managedBy = newDepartment?.ropId ?? undefined
 
-    // Обновляем сотрудника с новым department_id и managed_by
     await updateWorker({
       ...worker,
       department_id: newDepartmentId,
@@ -126,7 +126,8 @@ export const StructurePage = () => {
             {department.workers.map(worker => (
               <li className={'mb-2'} key={worker.id}>
                 {worker.name} {worker.middleName} {worker.surname} ({worker.roleName})
-                {(worker.roleName === 'Менеджер' || worker.roleName === 'Логист') && (
+                {/* Кнопки видны только пользователю с ролью "Директор" */}
+                {roleName === 'Директор' && (
                   <>
                     <button
                       className={'ml-2 text-red-500'}
@@ -148,26 +149,22 @@ export const StructurePage = () => {
                         Поднять до РОПа
                       </button>
                     )}
-                  </>
-                )}
-                {worker.roleName === 'РОП' && !worker.department_id && (
-                  <>
-                    <button
-                      className={'ml-2 text-purple-500'}
-                      onClick={() => handleCreateDepartmentForRop(worker)}
-                    >
-                      Создать отдел
-                    </button>
-                  </>
-                )}
-                {worker.roleName === 'РОП' && worker.department_id && (
-                  <>
-                    <button
-                      className={'ml-2 text-red-500'}
-                      onClick={() => handleWorkerAction(worker, 'demote')}
-                    >
-                      Понизить
-                    </button>
+                    {worker.roleName === 'РОП' && !worker.department_id && (
+                      <button
+                        className={'ml-2 text-purple-500'}
+                        onClick={() => handleCreateDepartmentForRop(worker)}
+                      >
+                        Создать отдел
+                      </button>
+                    )}
+                    {worker.roleName === 'РОП' && worker.department_id && (
+                      <button
+                        className={'ml-2 text-red-500'}
+                        onClick={() => handleWorkerAction(worker, 'demote')}
+                      >
+                        Понизить
+                      </button>
+                    )}
                   </>
                 )}
               </li>

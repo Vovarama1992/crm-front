@@ -61,19 +61,29 @@ export const SummaryTablePage = () => {
 
   const filteredData: any[] = deals
     .filter(deal => {
-      if (userData?.roleName === 'РОП' && userData.department_id !== deal.user.department_id) {
-        return false
+      // Если роль "РОП", выводим только сделки, где department_id совпадает с его собственным
+      if (userData?.roleName === 'РОП') {
+        if (userData.department_id !== deal.user.department_id) {
+          return false
+        }
       }
+
+      // Для остальных ролей, кроме "Директор" и "Закупщик", показываем только их собственные сделки
       if (
         userData?.roleName !== 'Директор' &&
         userData?.roleName !== 'Закупщик' &&
+        userData?.roleName !== 'РОП' &&
         deal.userId !== userData?.id
       ) {
         return false
       }
+
+      // Фильтруем по выбранному отделу, если выбран
       if (selectedDepartment && deal.user.department_id !== selectedDepartment) {
         return false
       }
+
+      // Фильтруем по контрагенту
       if (
         filterCounterparty &&
         !deal.counterparty.name.toLowerCase().includes(filterCounterparty.toLowerCase())

@@ -95,7 +95,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
               </td>
               <td className={'border px-4 py-2'}>{purchase.id}</td>
               <td className={'border px-4 py-2'}>{purchase.counterpartyName}</td>
-              <td className={'border px-4 py-2'}>{purchase.requestNumber}</td>
+              <td className={'border px-4 py-2'}>{purchase.invoiceToCustomer}</td>
               <td className={'border px-4 py-2'}>{purchase.managerName}</td>
               <td className={'border px-4 py-2'}>
                 {new Date(purchase.deliveryDeadline).toLocaleDateString()}

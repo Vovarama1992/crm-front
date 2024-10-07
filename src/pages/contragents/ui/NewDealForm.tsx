@@ -73,6 +73,7 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         userId,
       })
       onClose()
+      window.location.reload()
     } catch (error) {
       console.error('Error creating deal:', error)
     }

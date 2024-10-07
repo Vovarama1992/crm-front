@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, { useState } from 'react'
 
 import { DepartureDto } from '@/entities/departure'
@@ -5,6 +6,7 @@ import {
   useGetDeparturesQuery,
   useUpdateDepartureMutation,
 } from '@/entities/departure/departure.api'
+import { useMeQuery } from '@/entities/session'
 import { WorkerDto } from '@/entities/workers'
 import { useGetWorkersQuery } from '@/entities/workers'
 import { formatCurrency } from '@/pages/kopeechnik'
@@ -42,6 +44,7 @@ const formatDate = (date: Date | null | string) => {
 }
 
 export const DeparturesPage = () => {
+  const { data: userData } = useMeQuery() // Получаем данные текущего пользователя
   const [filterNumber, setFilterNumber] = useState('')
   const [filterCounterparty, setFilterCounterparty] = useState('')
   const [filterDestination, setFilterDestination] = useState('')
@@ -60,7 +63,6 @@ export const DeparturesPage = () => {
 
   function findCreator(id: number) {
     const defaultWorker = { name: '', surname: '' }
-
     const worker = workers?.find((worker: WorkerDto) => worker.id === id)
 
     return worker ? worker.name + ' ' + worker.surname : defaultWorker.name
@@ -101,6 +103,18 @@ export const DeparturesPage = () => {
     setSelectedDeparture(departure)
     setIsEditing(true)
   }
+
+  // Функция проверки роли
+  const hasEditPermission = (departure: DepartureDto) => {
+    if (!userData?.roleName) {
+      return false
+    }
+    const allowedRoles = ['Директор', 'Закупщик', 'Логист'] // роли, которые могут редактировать
+
+    return allowedRoles.includes(userData.roleName) || userData.id === departure.userId
+  }
+
+  const hasCreatePermission = ['Директор', 'Закупщик', 'Логист'].includes(userData?.roleName || '')
 
   const filteredData =
     departuresData?.filter(
@@ -177,12 +191,14 @@ export const DeparturesPage = () => {
             </option>
           ))}
         </select>
-        <button
-          className={'bg-green-500 text-white px-4 py-2 rounded'}
-          onClick={() => setIsCreating(true)}
-        >
-          Добавить отправление
-        </button>
+        {hasCreatePermission && (
+          <button
+            className={'bg-green-500 text-white px-4 py-2 rounded'}
+            onClick={() => setIsCreating(true)}
+          >
+            Добавить отправление
+          </button>
+        )}
       </div>
 
       {isCreating && <CreateDepartureForm onClose={() => setIsCreating(false)} />}
@@ -216,17 +232,21 @@ export const DeparturesPage = () => {
               <td className={'border px-4 py-2'}>{departure.dealId}</td>
               <td className={'border px-4 py-2'}>{departure?.counterparty?.name}</td>
               <td className={'border px-4 py-2'}>
-                <select
-                  className={'border rounded p-1'}
-                  onChange={e => handleSelectChange(departure.id, 'destination', e.target.value)}
-                  value={departure.destination}
-                >
-                  {Object.entries(destinationOptions).map(([key, value]) => (
-                    <option key={key} value={key}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                {hasEditPermission(departure) ? (
+                  <select
+                    className={'border rounded p-1'}
+                    onChange={e => handleSelectChange(departure.id, 'destination', e.target.value)}
+                    value={departure.destination}
+                  >
+                    {Object.entries(destinationOptions).map(([key, value]) => (
+                      <option key={key} value={key}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{destinationOptions[departure.destination]}</span> // Отображаем текущее значение
+                )}
               </td>
               <td className={'border px-4 py-2'}>{departure.transportCompany}</td>
               <td className={'border px-4 py-2'}>{departure.trackingNumber}</td>
@@ -236,19 +256,23 @@ export const DeparturesPage = () => {
               <td className={'border px-4 py-2'}>{formatDate(departure.dispatchDate)}</td>
               <td className={'border px-4 py-2'}>{formatDate(departure.arrivalDate)}</td>
               <td className={'border px-4 py-2'}>
-                <select
-                  className={'border rounded p-1'}
-                  onChange={e =>
-                    handleSelectChange(departure.id, 'specificDestination', e.target.value)
-                  }
-                  value={departure.specificDestination}
-                >
-                  {Object.entries(specificDestinationOptions).map(([key, value]) => (
-                    <option key={key} value={key}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                {hasEditPermission(departure) ? (
+                  <select
+                    className={'border rounded p-1'}
+                    onChange={e =>
+                      handleSelectChange(departure.id, 'specificDestination', e.target.value)
+                    }
+                    value={departure.specificDestination}
+                  >
+                    {Object.entries(specificDestinationOptions).map(([key, value]) => (
+                      <option key={key} value={key}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{specificDestinationOptions[departure.specificDestination]}</span> // Отображаем текущее значение
+                )}
               </td>
               <td className={'border px-4 py-2'}>
                 {departure.user.name} {departure.user.surname}
@@ -256,25 +280,31 @@ export const DeparturesPage = () => {
               <td className={'border px-4 py-2'}>{findCreator(departure.departureCreator)}</td>
               <td className={'border px-4 py-2'}>{departure.comments}</td>
               <td className={'border px-4 py-2'}>
-                <select
-                  className={'border rounded p-1'}
-                  onChange={e => handleSelectChange(departure.id, 'status', e.target.value)}
-                  value={departure.status}
-                >
-                  {Object.entries(statusOptions).map(([key, value]) => (
-                    <option key={key} value={key}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                {hasEditPermission(departure) ? (
+                  <select
+                    className={'border rounded p-1'}
+                    onChange={e => handleSelectChange(departure.id, 'status', e.target.value)}
+                    value={departure.status}
+                  >
+                    {Object.entries(statusOptions).map(([key, value]) => (
+                      <option key={key} value={key}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{statusOptions[departure.status]}</span> // Отображаем текущее значение статуса
+                )}
               </td>
               <td className={'border px-4 py-2'}>
-                <button
-                  className={'bg-blue-500 text-white px-2 py-1 rounded'}
-                  onClick={() => handleEditClick(departure)}
-                >
-                  Редактировать
-                </button>
+                {hasEditPermission(departure) && (
+                  <button
+                    className={'bg-blue-500 text-white px-2 py-1 rounded'}
+                    onClick={() => handleEditClick(departure)}
+                  >
+                    Редактировать
+                  </button>
+                )}
               </td>
             </tr>
           ))}
