@@ -45,10 +45,30 @@ type Employee = {
 }
 
 export const FinancesPage: React.FC = () => {
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
-  const [selectedQuarter, setSelectedQuarter] = useState<'' | number>('')
-  const [startMonthIndex, setStartMonthIndex] = useState<number>(0)
-  const [endMonthIndex, setEndMonthIndex] = useState<number>(11)
+  // Извлекаем значения из localStorage при загрузке
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const savedYear = localStorage.getItem('financesSelectedYear')
+
+    return savedYear ? Number(savedYear) : new Date().getFullYear()
+  })
+
+  const [selectedQuarter, setSelectedQuarter] = useState<'' | number>(() => {
+    const savedQuarter = localStorage.getItem('financesSelectedQuarter')
+
+    return savedQuarter ? Number(savedQuarter) : ''
+  })
+
+  const [startMonthIndex, setStartMonthIndex] = useState<number>(() => {
+    const savedStartMonth = localStorage.getItem('financesStartMonthIndex')
+
+    return savedStartMonth ? Number(savedStartMonth) : 0
+  })
+
+  const [endMonthIndex, setEndMonthIndex] = useState<number>(() => {
+    const savedEndMonth = localStorage.getItem('financesEndMonthIndex')
+
+    return savedEndMonth ? Number(savedEndMonth) : 11
+  })
 
   const startDate = `${selectedYear}-01-01`
   const endDate = `${selectedYear}-12-31`
@@ -88,6 +108,14 @@ export const FinancesPage: React.FC = () => {
       setIncomeData(employeeData)
     }
   }, [turnoverAndMarginData, workersData, selectedYear])
+
+  // Сохранение значений в localStorage
+  useEffect(() => {
+    localStorage.setItem('financesSelectedYear', selectedYear.toString())
+    localStorage.setItem('financesSelectedQuarter', selectedQuarter?.toString() || '')
+    localStorage.setItem('financesStartMonthIndex', startMonthIndex.toString())
+    localStorage.setItem('financesEndMonthIndex', endMonthIndex.toString())
+  }, [selectedYear, selectedQuarter, startMonthIndex, endMonthIndex])
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(Number(event.target.value))

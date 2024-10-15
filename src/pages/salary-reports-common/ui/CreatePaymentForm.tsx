@@ -59,7 +59,8 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({ onClose, usersWit
       )
 
       if (confirmation) {
-        await createMultiplePayments(payments) // Используем хук для массовой выплаты
+        await createMultiplePayments(payments)
+        window.location.reload() // Используем хук для массовой выплаты
       }
     } else {
       // Выплата конкретному пользователю
@@ -71,7 +72,7 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({ onClose, usersWit
         return
       }
     }
-    //window.location.reload()
+    window.location.reload()
     onClose()
   }
 

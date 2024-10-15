@@ -4,7 +4,7 @@ import { useCreateInvoiceLineMutation } from '@/entities/deal'
 
 interface CreateInvoiceLineModalProps {
   onCancel: () => void
-  onSuccess: () => void
+  onSuccess: (newLines: InvoiceLineInput[]) => void // Передача новых строк в родительский компонент
   purchaseId: number
 }
 
@@ -23,11 +23,9 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
   purchaseId,
 }) => {
   const [invoiceLines, setInvoiceLines] = useState<InvoiceLineInput[]>([])
-
   const [createInvoiceLine] = useCreateInvoiceLineMutation()
-
-  const [bulkInput, setBulkInput] = useState('') // Состояние для текстового ввода
-  const [linesToAdd, setLinesToAdd] = useState(1) // Состояние для количества строк
+  const [bulkInput, setBulkInput] = useState('')
+  const [linesToAdd, setLinesToAdd] = useState(1)
 
   const handleInputChange = (
     index: number,
@@ -48,31 +46,29 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
     const lines = bulkInput
       .trim()
       .split('\n')
-      .filter(line => line.trim() !== '') // Удаляем пустые строки
+      .filter(line => line.trim() !== '')
 
     const parsedLines = lines.reduce<InvoiceLineInput[]>((acc, line) => {
-      const parts = line.split('\t').map(part => part.trim()) // Разделение и тримминг
+      const parts = line.split('\t').map(part => part.trim())
 
-      // Проверяем наличие критичных полей (партномер, описание, количество, цена)
       if (parts.length >= 4) {
         const [articleNumber, description, quantity, unitPrice, comment = ''] = parts
-
         const newLine: InvoiceLineInput = {
           articleNumber,
-          comment, // Комментарий может быть пустым
+          comment,
           description,
           quantity: Number(quantity),
-          totalPrice: Number(quantity) * Number(unitPrice), // Общая сумма рассчитывается автоматически
+          totalPrice: Number(quantity) * Number(unitPrice),
           unitPrice: Number(unitPrice),
         }
 
-        acc.push(newLine) // Добавляем только валидные строки
+        acc.push(newLine)
       }
 
       return acc
     }, [])
 
-    setInvoiceLines([...invoiceLines, ...parsedLines]) // Добавляем только валидные строки к существующим
+    setInvoiceLines([...invoiceLines, ...parsedLines])
   }
 
   const handleAddMultipleLines = () => {
@@ -90,17 +86,14 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     try {
-      // Выполняем создание строк последовательно
       for (const line of invoiceLines) {
         await createInvoiceLine({
           ...line,
-          purchaseId: Number(purchaseId),
+          purchaseId,
         }).unwrap()
       }
-
-      onSuccess() // Вызываем успешный результат после завершения всех запросов
+      onSuccess(invoiceLines) // Передаем новые строки через onSuccess
     } catch (error) {
       console.error('Ошибка при создании строк счета:', error)
     }
@@ -114,7 +107,7 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
           <textarea
             className={'border p-2 w-full mb-4'}
             onChange={handleBulkInputChange}
-            placeholder={'Введите строки '}
+            placeholder={'Введите строки'}
             rows={10}
             value={bulkInput}
           />
@@ -203,14 +196,7 @@ const CreateInvoiceLineModal: React.FC<CreateInvoiceLineModalProps> = ({
             </div>
           ))}
           <div className={'mt-4 flex justify-between'}>
-            <button
-              className={'bg-blue-500 text-white px-4 py-2 rounded'}
-              onClick={e => {
-                e.preventDefault()
-                handleSubmit(e)
-              }}
-              type={'submit'}
-            >
+            <button className={'bg-blue-500 text-white px-4 py-2 rounded'} type={'submit'}>
               Создать
             </button>
             <button

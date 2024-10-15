@@ -1,6 +1,6 @@
 /* eslint-disable max-lines */
 /* eslint-disable no-nested-ternary */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { useGetAllUsersMonthlyTurnoverAndMarginQuery } from '@/entities/deal'
 import { WorkerDto } from '@/entities/workers'
@@ -56,10 +56,30 @@ type ReportData = {
 }
 
 export const CommonSalesPage: React.FC = () => {
-  const [startMonthIndex, setStartMonthIndex] = useState(0)
-  const [endMonthIndex, setEndMonthIndex] = useState(months.length - 1)
-  const [selectedYear, setSelectedYear] = useState(2024)
-  const [selectedQuarter, setSelectedQuarter] = useState<'' | string>('')
+  // Инициализация значений из localStorage
+  const [startMonthIndex, setStartMonthIndex] = useState(() => {
+    const savedStartMonth = localStorage.getItem('commonSalesStartMonthIndex')
+
+    return savedStartMonth ? Number(savedStartMonth) : 0
+  })
+
+  const [endMonthIndex, setEndMonthIndex] = useState(() => {
+    const savedEndMonth = localStorage.getItem('commonSalesEndMonthIndex')
+
+    return savedEndMonth ? Number(savedEndMonth) : months.length - 1
+  })
+
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const savedYear = localStorage.getItem('commonSalesSelectedYear')
+
+    return savedYear ? Number(savedYear) : 2024
+  })
+
+  const [selectedQuarter, setSelectedQuarter] = useState<'' | string>(() => {
+    const savedQuarter = localStorage.getItem('commonSalesSelectedQuarter')
+
+    return savedQuarter || ''
+  })
 
   const getStartDate = (year: number, monthIndex: number): string => {
     const startDate = new Date(Number(year), monthIndex, 1)
@@ -77,15 +97,11 @@ export const CommonSalesPage: React.FC = () => {
   const endDateString = getEndDate(selectedYear, endMonthIndex)
 
   const { data: departments } = useGetDepartmentsQuery()
-
   const { data: workers } = useGetWorkersQuery()
-
   const { data: reportsData } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
     endDate: endDateString,
     startDate: startDateString,
   })
-
-  console.log('reports: ' + JSON.stringify(reportsData))
 
   const completed: DepartmentData[] =
     departments?.map(dep => {
@@ -152,14 +168,17 @@ export const CommonSalesPage: React.FC = () => {
       employees: employeesWithoutDepartment,
     })
   }
-  console.log('completed: ' + JSON.stringify(completed))
 
   const [selectedDepartment, setSelectedDepartment] = useState<string>('Все')
   const [data, _] = useState(completed)
 
-  //const handleDataChange = (newData: DepartmentData[]) => {
-  // setData(newData)
-  //}
+  // Сохранение значений фильтров в localStorage при их изменении
+  useEffect(() => {
+    localStorage.setItem('commonSalesStartMonthIndex', startMonthIndex.toString())
+    localStorage.setItem('commonSalesEndMonthIndex', endMonthIndex.toString())
+    localStorage.setItem('commonSalesSelectedYear', selectedYear.toString())
+    localStorage.setItem('commonSalesSelectedQuarter', selectedQuarter)
+  }, [startMonthIndex, endMonthIndex, selectedYear, selectedQuarter])
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(Number(event.target.value))
@@ -199,6 +218,7 @@ export const CommonSalesPage: React.FC = () => {
         setStartMonthIndex(monthIndex)
       }
     }
+    setSelectedQuarter('') // Сброс выбранного квартала при изменении месяца
   }
 
   const handleDepartmentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

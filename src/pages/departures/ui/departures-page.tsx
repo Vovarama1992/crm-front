@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { DepartureDto } from '@/entities/departure'
 import {
@@ -45,12 +45,20 @@ const formatDate = (date: Date | null | string) => {
 
 export const DeparturesPage = () => {
   const { data: userData } = useMeQuery() // Получаем данные текущего пользователя
-  const [filterNumber, setFilterNumber] = useState('')
-  const [filterCounterparty, setFilterCounterparty] = useState('')
-  const [filterDestination, setFilterDestination] = useState('')
-  const [filterTransportCompany, setFilterTransportCompany] = useState('')
-  const [filterSalesManager, setFilterSalesManager] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
+  const [filterNumber, setFilterNumber] = useState(() => localStorage.getItem('filterNumber') || '')
+  const [filterCounterparty, setFilterCounterparty] = useState(
+    () => localStorage.getItem('filterCounterparty') || ''
+  )
+  const [filterDestination, setFilterDestination] = useState(
+    () => localStorage.getItem('filterDestination') || ''
+  )
+  const [filterTransportCompany, setFilterTransportCompany] = useState(
+    () => localStorage.getItem('filterTransportCompany') || ''
+  )
+  const [filterSalesManager, setFilterSalesManager] = useState(
+    () => localStorage.getItem('filterSalesManager') || ''
+  )
+  const [filterStatus, setFilterStatus] = useState(() => localStorage.getItem('filterStatus') || '')
 
   const [isCreating, setIsCreating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -60,6 +68,23 @@ export const DeparturesPage = () => {
   const [updateDeparture] = useUpdateDepartureMutation()
 
   const { data: workers } = useGetWorkersQuery()
+
+  useEffect(() => {
+    // Сохраняем фильтры в localStorage
+    localStorage.setItem('filterNumber', filterNumber)
+    localStorage.setItem('filterCounterparty', filterCounterparty)
+    localStorage.setItem('filterDestination', filterDestination)
+    localStorage.setItem('filterTransportCompany', filterTransportCompany)
+    localStorage.setItem('filterSalesManager', filterSalesManager)
+    localStorage.setItem('filterStatus', filterStatus)
+  }, [
+    filterNumber,
+    filterCounterparty,
+    filterDestination,
+    filterTransportCompany,
+    filterSalesManager,
+    filterStatus,
+  ])
 
   function findCreator(id: number) {
     const defaultWorker = { name: '', surname: '' }
@@ -245,7 +270,7 @@ export const DeparturesPage = () => {
                     ))}
                   </select>
                 ) : (
-                  <span>{destinationOptions[departure.destination]}</span> // Отображаем текущее значение
+                  <span>{destinationOptions[departure.destination]}</span>
                 )}
               </td>
               <td className={'border px-4 py-2'}>{departure.transportCompany}</td>
@@ -271,7 +296,7 @@ export const DeparturesPage = () => {
                     ))}
                   </select>
                 ) : (
-                  <span>{specificDestinationOptions[departure.specificDestination]}</span> // Отображаем текущее значение
+                  <span>{specificDestinationOptions[departure.specificDestination]}</span>
                 )}
               </td>
               <td className={'border px-4 py-2'}>
@@ -293,7 +318,7 @@ export const DeparturesPage = () => {
                     ))}
                   </select>
                 ) : (
-                  <span>{statusOptions[departure.status]}</span> // Отображаем текущее значение статуса
+                  <span>{statusOptions[departure.status]}</span>
                 )}
               </td>
               <td className={'border px-4 py-2'}>

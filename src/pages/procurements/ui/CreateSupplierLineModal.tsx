@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React, { useState } from 'react'
 
 import { useCreateSupplierLineMutation } from '@/entities/deal'
@@ -7,7 +6,7 @@ import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 interface CreateSupplierLineModalProps {
   onCancel: () => void
-  onSuccess: () => void
+  onSuccess: (newLines: SupplierLineInput[]) => void
   purchaseId: number
 }
 
@@ -28,20 +27,19 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   onSuccess,
   purchaseId,
 }) => {
-  const [supplierLines, setSupplierLines] = useState<SupplierLineInput[]>([]) // Начальные данные убраны
+  const [supplierLines, setSupplierLines] = useState<SupplierLineInput[]>([])
   const [selectedSupplierId, setSelectedSupplierId] = useState<null | number>(null)
-  const [bulkInput, setBulkInput] = useState('') // Состояние для текстового ввода
-  const [linesToAdd, setLinesToAdd] = useState(1) // Состояние для количества строк
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null) // Один файл для всех строк
-
-  const [selectedPaymentDate, setSelectedPaymentDate] = useState(new Date().toISOString()) // Глобальная дата оплаты
-  const [selectedShipmentDate, setSelectedShipmentDate] = useState(new Date().toISOString()) // Глобальная дата отгрузки
+  const [bulkInput, setBulkInput] = useState('')
+  const [linesToAdd, setLinesToAdd] = useState(1)
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
+  const [selectedPaymentDate, setSelectedPaymentDate] = useState(new Date().toISOString())
+  const [selectedShipmentDate, setSelectedShipmentDate] = useState(new Date().toISOString())
 
   const { data: suppliers, isLoading: isSuppliersLoading } = useGetSuppliersQuery()
   const [createSupplierLine] = useCreateSupplierLineMutation()
   const [uploadSupplierPdf] = useUploadSupplierPdfMutation()
 
-  // Обработка изменения полей ввода вручную
+  // Изменение значений в строках
   const handleInputChange = (
     index: number,
     field: keyof SupplierLineInput,
@@ -53,41 +51,37 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
     setSupplierLines(newSupplierLines)
   }
 
-  // Обработка изменения текстового ввода для парсера
+  // Обработка текстового ввода для парсинга
   const handleBulkInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setBulkInput(e.target.value)
   }
 
-  // Парсинг строк из текстового ввода
+  // Парсинг строк из текстового поля
   const handleParseBulkInput = () => {
     const lines = bulkInput.trim().split('\n')
-
     const parsedLines = lines.reduce<SupplierLineInput[]>((acc, line) => {
-      const parts = line.split('\t').map(part => part.trim()) // Разделение и тримминг
+      const parts = line.split('\t').map(part => part.trim())
 
-      // Проверяем наличие всех необходимых полей (партномер, описание, количество, цена)
       if (parts.length >= 4) {
         const [articleNumber, description, quantity, totalPurchaseAmount, comment = ''] = parts
 
-        const newLine: SupplierLineInput = {
+        acc.push({
           articleNumber,
-          comment, // Комментарий может быть пустым
+          comment,
           delivered: false,
           description,
-          paymentDate: selectedPaymentDate, // Используем глобальную дату оплаты
+          paymentDate: selectedPaymentDate,
           quantity: Number(quantity),
-          shipmentDate: selectedShipmentDate, // Используем глобальную дату отгрузки
-          supplierInvoice: '', // Пустое поле для файла счета
+          shipmentDate: selectedShipmentDate,
+          supplierInvoice: '',
           totalPurchaseAmount: Number(totalPurchaseAmount),
-        }
-
-        acc.push(newLine) // Добавляем только валидные строки
+        })
       }
 
       return acc
     }, [])
 
-    setSupplierLines([...supplierLines, ...parsedLines]) // Добавляем только валидные строки к существующим
+    setSupplierLines(prev => [...prev, ...parsedLines])
   }
 
   // Добавление нескольких строк вручную
@@ -97,61 +91,53 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
       comment: '',
       delivered: false,
       description: '',
-      paymentDate: selectedPaymentDate, // Глобальная дата оплаты
+      paymentDate: selectedPaymentDate,
       quantity: 1,
-      shipmentDate: selectedShipmentDate, // Глобальная дата отгрузки
-      supplierInvoice: '', // Пустое поле для файла счета
+      shipmentDate: selectedShipmentDate,
+      supplierInvoice: '',
       totalPurchaseAmount: 0,
     }))
 
-    setSupplierLines([...supplierLines, ...newLines])
+    setSupplierLines(prev => [...prev, ...newLines])
   }
 
-  // Обработка загрузки одного файла для всех строк
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  // Обработка загрузки файла PDF
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
 
-    if (file) {
-      setInvoiceFile(file)
-    }
+    setInvoiceFile(file)
   }
 
+  // Отправка данных на сервер
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!selectedSupplierId) {
-      alert('Пожалуйста, выберите поставщика.')
-
-      return
+      return alert('Пожалуйста, выберите поставщика.')
     }
-
     if (!invoiceFile) {
-      alert('Пожалуйста, загрузите счет.')
-
-      return
+      return alert('Пожалуйста, загрузите счет.')
     }
 
     try {
-      // Создаем строки поставщика и загружаем файл для каждой строки последовательно
       for (const line of supplierLines) {
         const createdLine = await createSupplierLine({
           ...line,
-          purchaseId: Number(purchaseId),
+          purchaseId,
           supplierId: selectedSupplierId,
-          supplierInvoice: '', // Пустое значение для PDF
+          supplierInvoice: '',
         }).unwrap()
 
         if (invoiceFile) {
           await uploadSupplierPdf({
             file: invoiceFile,
-            supplierLineId: String(createdLine.id), // Используем уникальный ID созданной строки
+            supplierLineId: String(createdLine.id),
           }).unwrap()
         }
       }
-
-      onSuccess() // Уведомляем об успешной операции
+      onSuccess(supplierLines)
     } catch (error) {
-      console.error('Ошибка при создании строк поставщика и загрузке файлов:', error)
+      console.error('Ошибка при создании строк поставщика и загрузке файла:', error)
     }
   }
 
@@ -160,7 +146,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
       <div className={'bg-white p-4 rounded shadow-lg w-[700px] max-h-[90vh] overflow-auto'}>
         <h2 className={'text-sm font-semibold mb-2'}>Создать строки поставщика</h2>
         {isSuppliersLoading ? (
-          <p className={'text-sm'}>Загрузка поставщиков...</p>
+          <p>Загрузка поставщиков...</p>
         ) : (
           <div className={'mb-2'}>
             <label className={'block text-xs font-medium'}>Выберите поставщика:</label>
@@ -184,129 +170,42 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
           <textarea
             className={'border p-1 w-full mb-2 text-xs'}
             onChange={handleBulkInputChange}
-            placeholder={
-              'Введите строки в формате: Артикул, Описание, Количество, Общая сумма закупки, Комментарий'
-            }
+            placeholder={'Введите строки: Артикул, Описание, Количество, Сумма, Комментарий'}
             rows={5}
             value={bulkInput}
           />
           <button
-            className={'bg-gray-300 text-black px-2 py-1 rounded mb-2 text-xs'}
+            className={'bg-gray-300 px-2 py-1 text-xs'}
             onClick={handleParseBulkInput}
             type={'button'}
           >
             Парсить строки
           </button>
-
-          <div className={'mb-4'}>
-            <label className={'block text-xs font-medium'}>Дата оплаты (для всех строк)</label>
+          <div className={'flex mt-2'}>
             <input
-              className={'border p-1 w-full text-xs'}
-              onChange={e => setSelectedPaymentDate(e.target.value)}
-              type={'date'}
-              value={selectedPaymentDate.substring(0, 10)}
-            />
-          </div>
-
-          <div className={'mb-4'}>
-            <label className={'block text-xs font-medium'}>Дата отгрузки (для всех строк)</label>
-            <input
-              className={'border p-1 w-full text-xs'}
-              onChange={e => setSelectedShipmentDate(e.target.value)}
-              type={'date'}
-              value={selectedShipmentDate.substring(0, 10)}
-            />
-          </div>
-
-          <div className={'mb-2 flex items-center'}>
-            <input
-              className={'border p-1 w-12 text-xs mr-2'}
+              className={'border p-1 text-xs w-12 mr-2'}
               min={1}
               onChange={e => setLinesToAdd(Number(e.target.value))}
               type={'number'}
               value={linesToAdd}
             />
             <button
-              className={'bg-gray-300 text-black px-2 py-1 rounded text-xs'}
+              className={'bg-gray-300 px-2 py-1 text-xs'}
               onClick={handleAddMultipleLines}
               type={'button'}
             >
               Добавить {linesToAdd} строк(и)
             </button>
           </div>
-
-          <div className={'mb-4'}>
-            <label className={'block text-xs font-medium'}>Загрузить счет для всех строк:</label>
-            <input
-              className={'border p-1 w-full text-xs'}
-              onChange={handleFileUpload}
-              type={'file'}
-            />
+          <div className={'mt-4'}>
+            <label className={'block text-xs'}>Загрузить счет:</label>
+            <input className={'text-xs'} onChange={handleFileUpload} type={'file'} />
           </div>
-
-          {supplierLines.map((line, index) => (
-            <div className={'grid grid-cols-2 gap-2 mb-2'} key={index}>
-              <div className={'space-y-1'}>
-                <div>
-                  <label className={'block text-xs font-medium'}>Артикул</label>
-                  <input
-                    className={'border p-1 w-full text-xs'}
-                    onChange={e => handleInputChange(index, 'articleNumber', e.target.value)}
-                    type={'text'}
-                    value={line.articleNumber}
-                  />
-                </div>
-                <div>
-                  <label className={'block text-xs font-medium'}>Описание</label>
-                  <input
-                    className={'border p-1 w-full text-xs'}
-                    onChange={e => handleInputChange(index, 'description', e.target.value)}
-                    type={'text'}
-                    value={line.description}
-                  />
-                </div>
-                <div>
-                  <label className={'block text-xs font-medium'}>Количество</label>
-                  <input
-                    className={'border p-1 w-full text-xs'}
-                    onChange={e => handleInputChange(index, 'quantity', Number(e.target.value))}
-                    type={'number'}
-                    value={line.quantity}
-                  />
-                </div>
-              </div>
-              <div className={'space-y-1'}>
-                <div>
-                  <label className={'block text-xs font-medium'}>Сумма закупки</label>
-                  <input
-                    className={'border p-1 w-full text-xs'}
-                    onChange={e =>
-                      handleInputChange(index, 'totalPurchaseAmount', Number(e.target.value))
-                    }
-                    type={'number'}
-                    value={line.totalPurchaseAmount}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-
           <div className={'mt-2 flex justify-between'}>
-            <button
-              className={'bg-blue-500 text-white px-2 py-1 rounded text-xs'}
-              onClick={e => {
-                e.preventDefault()
-                handleSubmit(e)
-              }}
-              type={'submit'}
-            >
+            <button className={'bg-blue-500 text-white px-2 py-1 text-xs'} type={'submit'}>
               Создать
             </button>
-            <button
-              className={'bg-gray-300 text-black px-2 py-1 rounded ml-2 text-xs'}
-              onClick={onCancel}
-              type={'button'}
-            >
+            <button className={'bg-gray-300 px-2 py-1 text-xs'} onClick={onCancel} type={'button'}>
               Отмена
             </button>
           </div>

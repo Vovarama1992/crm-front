@@ -47,14 +47,20 @@ export const ContragentsPage = () => {
   const { data: users = [] } = useGetWorkersQuery() // Получаем всех пользователей
   const [updateDeal] = useUpdateDealMutation()
 
-  const [selectedUserId, setSelectedUserId] = useState<null | number>(userId)
-  const [filterInn, setFilterInn] = useState<string>('')
-  const [filterCounterparty, setFilterCounterparty] = useState<string>('')
+  // Сохранение данных фильтров в localStorage и их восстановление
+  const [selectedUserId, setSelectedUserId] = useState<null | number>(
+    Number(localStorage.getItem('selectedUserId')) || userId
+  )
+  const [filterInn, setFilterInn] = useState<string>(localStorage.getItem('filterInn') || '')
+  const [filterCounterparty, setFilterCounterparty] = useState<string>(
+    localStorage.getItem('filterCounterparty') || ''
+  )
+
   const [filteredDeals, setFilteredDeals] = useState<DealDto[]>(deals)
   const [isEditingComment, setIsEditingComment] = useState<null | number>(null)
   const [commentValue, setCommentValue] = useState<string>('')
   const [isSaleFormOpen, setIsSaleFormOpen] = useState<boolean>(false)
-  const [currentDeal, setCurrentDeal] = useState<DealDto | null>(null) // Состояние для хранения текущей сделки
+  const [currentDeal, setCurrentDeal] = useState<DealDto | null>(null)
 
   const [isDealFormOpen, setIsDealFormOpen] = useState(false)
   const [isCounterpartyFormOpen, setIsCounterpartyFormOpen] = useState(false)
@@ -83,18 +89,22 @@ export const ContragentsPage = () => {
     setFilteredDeals(updatedDeals)
   }, [selectedUserId, filterInn, filterCounterparty, deals, roleName, userId])
 
+  // Сохранение данных в localStorage при изменении фильтров
   const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const userId = e.target.value === 'all' ? null : Number(e.target.value)
 
     setSelectedUserId(userId)
+    localStorage.setItem('selectedUserId', String(userId))
   }
 
   const handleFilterInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterInn(e.target.value)
+    localStorage.setItem('filterInn', e.target.value)
   }
 
   const handleFilterCounterpartyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterCounterparty(e.target.value)
+    localStorage.setItem('filterCounterparty', e.target.value)
   }
 
   const handleFieldChange = async (dealId: number, field: keyof DealDto, value: any) => {

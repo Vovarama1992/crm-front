@@ -8,6 +8,7 @@ import { useMeQuery } from '@/entities/session'
 import { useGetDepartmentsQuery } from '@/entities/workers'
 import { formatCurrency } from '@/pages/kopeechnik'
 import { CustomColumnDef, EditableTable } from '@/shared/ui/EditableTable'
+
 const formatDate = (date: Date | null | string) => {
   if (!date) {
     return ''
@@ -49,8 +50,13 @@ const userPermissions: { [key: string]: 'change' | 'null' | 'see' } = {
 }
 
 export const SummaryTablePage = () => {
-  const [filterCounterparty, setFilterCounterparty] = useState('')
-  const [selectedDepartment, setSelectedDepartment] = useState<null | number>(null)
+  // Используем localStorage для сохранения фильтров
+  const [filterCounterparty, setFilterCounterparty] = useState(
+    localStorage.getItem('summaryTableFilterCounterparty') || ''
+  )
+  const [selectedDepartment, setSelectedDepartment] = useState<null | number>(
+    Number(localStorage.getItem('summaryTableSelectedDepartment')) || null
+  )
 
   const context = useOutletContext<AuthContext>()
   const { permissions } = context
@@ -59,16 +65,15 @@ export const SummaryTablePage = () => {
   const { data: deals = [] } = useGetAllDealsQuery()
   const { data: departments = [] } = useGetDepartmentsQuery()
 
+  // Фильтрация данных
   const filteredData: any[] = deals
     .filter(deal => {
-      // Если роль "РОП", выводим только сделки, где department_id совпадает с его собственным
       if (userData?.roleName === 'РОП') {
         if (userData.department_id !== deal.user.department_id) {
           return false
         }
       }
 
-      // Для остальных ролей, кроме "Директор" и "Закупщик", показываем только их собственные сделки
       if (
         userData?.roleName !== 'Директор' &&
         userData?.roleName !== 'Закупщик' &&
@@ -78,12 +83,10 @@ export const SummaryTablePage = () => {
         return false
       }
 
-      // Фильтруем по выбранному отделу, если выбран
       if (selectedDepartment && deal.user.department_id !== selectedDepartment) {
         return false
       }
 
-      // Фильтруем по контрагенту
       if (
         filterCounterparty &&
         !deal.counterparty.name.toLowerCase().includes(filterCounterparty.toLowerCase())
@@ -99,21 +102,28 @@ export const SummaryTablePage = () => {
       counterpartyName: deal.counterparty.name,
       departmentId: deal.user.department_id,
       id: deal.id,
-      marginRub: formatCurrency(deal.marginRub),
+      marginRub: deal.marginRub,
       specialistName: deal.user.name,
       stage: stageOptions[deal.stage],
-      turnoverRub: formatCurrency(deal.turnoverRub),
+      turnoverRub: deal.turnoverRub,
       userId: deal.userId,
     }))
 
+  // Обновление фильтра по контрагенту с сохранением в localStorage
   const handleFilterCounterpartyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterCounterparty(e.target.value)
+    localStorage.setItem('summaryTableFilterCounterparty', e.target.value)
   }
 
+  // Обновление выбранного отдела с сохранением в localStorage
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedDepartment(Number(e.target.value))
+    const department = Number(e.target.value)
+
+    setSelectedDepartment(department)
+    localStorage.setItem('summaryTableSelectedDepartment', String(department))
   }
 
+  // Корректный подсчет оборота и прибыли по отображенным данным
   const totalDepartmentTurnover = filteredData.reduce((total, item) => total + item.turnoverRub, 0)
   const totalDepartmentProfit = filteredData.reduce((total, item) => total + item.marginRub, 0)
 
@@ -136,13 +146,13 @@ export const SummaryTablePage = () => {
     },
     {
       accessorKey: 'turnoverRub',
-      cell: info => info.getValue(),
+      cell: info => formatCurrency(info.getValue() as number), // Явное приведение к числу
       header: 'Оборот в рублях',
       meta: { type: 'input' },
     },
     {
       accessorKey: 'marginRub',
-      cell: info => info.getValue(),
+      cell: info => formatCurrency(info.getValue() as number), // Явное приведение к числу
       header: 'Маржа в рублях',
       meta: { type: 'input' },
     },
@@ -228,8 +238,8 @@ const SummaryFooterTable: React.FC<SummaryFooterData> = ({
       </thead>
       <tbody>
         <tr>
-          <td className={'border px-4 py-2'}>{totalDepartmentTurnover}</td>
-          <td className={'border px-4 py-2'}>{totalDepartmentProfit}</td>
+          <td className={'border px-4 py-2'}>{formatCurrency(totalDepartmentTurnover)}</td>
+          <td className={'border px-4 py-2'}>{formatCurrency(totalDepartmentProfit)}</td>
         </tr>
       </tbody>
     </table>

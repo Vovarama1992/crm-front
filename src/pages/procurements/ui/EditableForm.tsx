@@ -14,7 +14,7 @@ import {
   useUpdatePurchaseMutation,
   useUpdateSupplierLineMutation,
 } from '@/entities/deal'
-import { Destination } from '@/entities/deal/deal.types'
+import { Destination, InvoiceLineDto, SupplierLineDto } from '@/entities/deal/deal.types'
 import { PurchaseDto } from '@/entities/deal/deal.types'
 import { useGetSuppliersQuery } from '@/entities/departure/departure.api'
 import { useCreateNotificationMutation } from '@/entities/notifications'
@@ -51,6 +51,12 @@ const EditableForm: React.FC<EditableFormProps> = ({
   const { data: supplierLines = [] } = useGetSupplierLinesByPurchaseIdQuery(initialValue.id)
   const { data: logisticsLines = [] } = useGetLogisticsLinesByPurchaseIdQuery(initialValue.id)
   const { data: user } = useMeQuery()
+
+  const [addedInvoices, setInvoiceLines] = useState<any>([]) // Строки счета
+  const [addedSuppliers, setSupplierLines] = useState<any>([])
+  const allinvoiceLines = addedInvoices.lngth > 0 ? [...invoiceLines, addedInvoices] : invoiceLines
+  const allsuppliers =
+    addedSuppliers.length > 0 ? [...supplierLines, addedSuppliers] : supplierLines
 
   const [updatePurchase] = useUpdatePurchaseMutation()
   const [updateInvoiceLine] = useUpdateInvoiceLineMutation()
@@ -428,7 +434,7 @@ const EditableForm: React.FC<EditableFormProps> = ({
 
           <h3 className={'text-lg font-medium'}>Строки счета</h3>
           <div className={'space-y-2'}>
-            {invoiceLines.map((line, index) => (
+            {allinvoiceLines.map((line, index) => (
               <div className={'grid grid-cols-6 gap-4'} key={line.id}>
                 <div>
                   <label className={'block text-sm font-medium'}>Номер строки</label>
@@ -517,7 +523,7 @@ const EditableForm: React.FC<EditableFormProps> = ({
 
           <h3 className={'text-sm font-medium'}>Строки поставщика</h3>
           <div className={'space-y-8'}>
-            {supplierLines.map((line, index) => {
+            {allsuppliers.map((line, index) => {
               const today = new Date()
               const paymentDate = new Date(line.paymentDate)
               const shipmentDate = new Date(line.shipmentDate)
@@ -804,9 +810,9 @@ const EditableForm: React.FC<EditableFormProps> = ({
           {isAddingInvoiceLine && (
             <CreateInvoiceLineModal
               onCancel={() => setIsAddingInvoiceLine(false)}
-              onSuccess={() => {
-                setIsAddingInvoiceLine(false)
-                onSave()
+              onSuccess={newLines => {
+                //setIsAddingInvoiceLine(false)
+                setInvoiceLines((prev: any) => [...prev, ...newLines]) // Обновляем строки счета
               }}
               purchaseId={initialValue.id}
             />
@@ -815,9 +821,9 @@ const EditableForm: React.FC<EditableFormProps> = ({
           {isAddingSupplierLine && (
             <CreateSupplierLineModal
               onCancel={() => setIsAddingSupplierLine(false)}
-              onSuccess={() => {
+              onSuccess={newSuppliers => {
                 setIsAddingSupplierLine(false)
-                onSave()
+                setSupplierLines((prev: any) => [...prev, ...newSuppliers]) // Обновляем строки поставщиков
               }}
               purchaseId={initialValue.id}
             />

@@ -59,10 +59,28 @@ export const SalaryReportsPage: React.FC = () => {
   const { data: departments } = useGetDepartmentsQuery()
 
   const [data, setData] = useState<DepartmentData[]>([])
-  const [startMonthIndex, setStartMonthIndex] = useState(0)
-  const [endMonthIndex, setEndMonthIndex] = useState(2)
-  const [selectedYear, setSelectedYear] = useState<number>(2024)
-  const [selectedQuarter, setSelectedQuarter] = useState<null | number>(null)
+
+  // Инициализация фильтров из localStorage
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const storedYear = localStorage.getItem('salaryReportsSelectedYear')
+
+    return storedYear ? Number(storedYear) : 2024
+  })
+  const [selectedQuarter, setSelectedQuarter] = useState<null | number>(() => {
+    const storedQuarter = localStorage.getItem('salaryReportsSelectedQuarter')
+
+    return storedQuarter ? Number(storedQuarter) : null
+  })
+  const [startMonthIndex, setStartMonthIndex] = useState<number>(() => {
+    const storedStartMonthIndex = localStorage.getItem('salaryReportsStartMonthIndex')
+
+    return storedStartMonthIndex ? Number(storedStartMonthIndex) : 0
+  })
+  const [endMonthIndex, setEndMonthIndex] = useState<number>(() => {
+    const storedEndMonthIndex = localStorage.getItem('salaryReportsEndMonthIndex')
+
+    return storedEndMonthIndex ? Number(storedEndMonthIndex) : 2
+  })
 
   useEffect(() => {
     if (!users || !margins || !expenses || !departments || !sales) {
@@ -156,16 +174,28 @@ export const SalaryReportsPage: React.FC = () => {
   }, [users, margins, expenses, departments, sales, selectedYear])
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(Number(event.target.value))
+    const year = Number(event.target.value)
+
+    setSelectedYear(year)
+    localStorage.setItem('salaryReportsSelectedYear', String(year))
     setSelectedQuarter(null)
+    localStorage.removeItem('salaryReportsSelectedQuarter')
   }
 
   const handleQuarterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const quarter = Number(event.target.value)
 
     setSelectedQuarter(quarter)
-    setStartMonthIndex((quarter - 1) * 3)
-    setEndMonthIndex(quarter * 3 - 1)
+    localStorage.setItem('salaryReportsSelectedQuarter', String(quarter))
+
+    const newStartMonthIndex = (quarter - 1) * 3
+    const newEndMonthIndex = quarter * 3 - 1
+
+    setStartMonthIndex(newStartMonthIndex)
+    setEndMonthIndex(newEndMonthIndex)
+
+    localStorage.setItem('salaryReportsStartMonthIndex', String(newStartMonthIndex))
+    localStorage.setItem('salaryReportsEndMonthIndex', String(newEndMonthIndex))
   }
 
   const handleMonthChange = (event: React.ChangeEvent<HTMLSelectElement>, isStart: boolean) => {
@@ -173,16 +203,21 @@ export const SalaryReportsPage: React.FC = () => {
 
     if (isStart) {
       setStartMonthIndex(value)
+      localStorage.setItem('salaryReportsStartMonthIndex', String(value))
       if (value > endMonthIndex) {
         setEndMonthIndex(value)
+        localStorage.setItem('salaryReportsEndMonthIndex', String(value))
       }
     } else {
       setEndMonthIndex(value)
+      localStorage.setItem('salaryReportsEndMonthIndex', String(value))
       if (value < startMonthIndex) {
         setStartMonthIndex(value)
+        localStorage.setItem('salaryReportsStartMonthIndex', String(value))
       }
     }
     setSelectedQuarter(null)
+    localStorage.removeItem('salaryReportsSelectedQuarter')
   }
 
   const filteredData = data.map(department => ({

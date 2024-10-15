@@ -28,7 +28,8 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
   }
 
   const handleFormSave = () => {
-    //setIsFormOpen(false)
+    setIsFormOpen(false)
+    //window.location.reload()
     //setEditingOrder(null)
   }
 

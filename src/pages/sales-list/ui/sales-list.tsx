@@ -62,15 +62,43 @@ export const SalesListPage = () => {
   const isDirector = meData?.roleName === 'Директор'
   const percent = 0.1
 
-  const [selectedEmployee, setSelectedEmployee] = useState<null | number | string>(userId)
-  const [selectedStartMonth, setSelectedStartMonth] = useState<string>('8')
-  const [selectedEndMonth, setSelectedEndMonth] = useState<string>('8')
-  const [selectedYear, setSelectedYear] = useState<string>('2024')
+  // Инициализация значений фильтров из localStorage
+  const [selectedEmployee, setSelectedEmployee] = useState<null | number | string>(() => {
+    const storedEmployee = localStorage.getItem('salesSelectedEmployee')
+
+    return storedEmployee ? JSON.parse(storedEmployee) : userId
+  })
+
+  const [selectedStartMonth, setSelectedStartMonth] = useState<string>(() => {
+    const storedStartMonth = localStorage.getItem('salesSelectedStartMonth')
+
+    return storedStartMonth || '8'
+  })
+
+  const [selectedEndMonth, setSelectedEndMonth] = useState<string>(() => {
+    const storedEndMonth = localStorage.getItem('salesSelectedEndMonth')
+
+    return storedEndMonth || '8'
+  })
+
+  const [selectedYear, setSelectedYear] = useState<string>(() => {
+    const storedYear = localStorage.getItem('salesSelectedYear')
+
+    return storedYear || '2024'
+  })
+
   const [editingSale, setEditingSale] = useState<SaleDto | null>(null)
   const [isEditFormOpen, setIsEditFormOpen] = useState(false)
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
-
   const [sales, setSales] = useState<any[]>([])
+
+  // Сохраняем выбранные фильтры в localStorage при их изменении
+  useEffect(() => {
+    localStorage.setItem('salesSelectedEmployee', JSON.stringify(selectedEmployee))
+    localStorage.setItem('salesSelectedStartMonth', selectedStartMonth)
+    localStorage.setItem('salesSelectedEndMonth', selectedEndMonth)
+    localStorage.setItem('salesSelectedYear', selectedYear)
+  }, [selectedEmployee, selectedStartMonth, selectedEndMonth, selectedYear])
 
   // Добавляем ремейнинги после соответствующих продаж
   useEffect(() => {
@@ -78,10 +106,8 @@ export const SalesListPage = () => {
       const combinedSalesWithRem: any = []
 
       salesData.forEach(sale => {
-        // Добавляем продажу
         combinedSalesWithRem.push(sale)
 
-        // Добавляем ремейнинг, если он есть
         const rem = remainingSalesData.find(r => r.saleId === sale.id)
 
         if (rem) {
@@ -92,9 +118,7 @@ export const SalesListPage = () => {
       const filteredSales =
         selectedEmployee === 9999
           ? combinedSalesWithRem
-          : combinedSalesWithRem.filter((sale: any) => {
-              return selectedEmployee === sale.userId
-            })
+          : combinedSalesWithRem.filter((sale: any) => selectedEmployee === sale.userId)
 
       const sortedSales = [...filteredSales].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -106,13 +130,10 @@ export const SalesListPage = () => {
 
   const filteredWorkers = workersData?.filter(employee => {
     if (meData?.roleName === 'РОП') {
-      // Для РОП: только сотрудники с ролями "Менеджер" или "Логист"
-      return meData?.department_id && employee.department_id == meData?.department_id
+      return meData?.department_id && employee.department_id === meData?.department_id
     } else if (meData?.roleName === 'Менеджер' || meData?.roleName === 'РОП') {
-      // Для Менеджера: только он сам
       return employee.id === meData.id
     } else {
-      // Для "Директор", "Бухгалтер", "Закупщик": показываем всех сотрудников
       return true
     }
   })
@@ -135,34 +156,22 @@ export const SalesListPage = () => {
     setSelectedYear(event.target.value)
   }
 
+  // Оптимистичное обновление статусов доставки и подписания
   const handleSelectChange = async (
     sale: SaleDto,
     field: 'deliveryStage' | 'signingStage',
     value: string
   ) => {
     try {
-      const updatedValue = value === '' ? null : value // Преобразуем прочерк в null
+      const updatedValue = value === '' ? null : value
+      const updatedSale = { ...sale, [field]: updatedValue }
 
-      if (
-        (field === 'signingStage' && !sale.signingStage) ||
-        (field === 'deliveryStage' && !sale.deliveryStage)
-      ) {
-        // Если стадия отсутствовала, то открываем окно
-        const updatedSale = { ...sale, [field]: updatedValue }
+      // Оптимистичное обновление в UI
+      setSales(prevSales =>
+        prevSales.map(s => (s.id === sale.id ? { ...s, [field]: updatedValue } : s))
+      )
 
-        setEditingSale(updatedSale)
-        setIsCreateFormOpen(true) // Открываем окно создания
-      } else {
-        // Если стадия уже была, обновляем её
-        await updateSale({
-          id: sale.id,
-          sale: {
-            ...sale,
-            [field]: updatedValue, // Обновляем стадию или обнуляем её, если выбран прочерк
-          },
-        })
-        window.location.reload()
-      }
+      await updateSale({ id: sale.id, sale: updatedSale }).unwrap()
     } catch (error) {
       console.error('Ошибка при обновлении продажи:', error)
     }
