@@ -85,8 +85,8 @@ export const FinancesPage: React.FC = () => {
 
   useEffect(() => {
     if (turnoverAndMarginData && workersData) {
-      const employeeData: Employee[] = turnoverAndMarginData.map(userData => {
-        const worker = workersData.find(worker => worker.id === userData.userId)
+      const employeeData: Employee[] = turnoverAndMarginData.map((userData: any) => {
+        const worker = workersData.find((worker: any) => worker.id === userData.userId)
         const name = worker ? `${worker.name} ${worker.surname}` : `User ${userData.userId}`
 
         return {

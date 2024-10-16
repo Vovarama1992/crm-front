@@ -26,7 +26,7 @@ export const SuppliersPage: React.FC = () => {
   const [createSupplier] = useCreateSupplierMutation()
   const [updateSupplier] = useUpdateSupplierMutation()
 
-  const isDirector = meData?.roleName === 'Директор'
+  const isDirector = meData?.roleName === 'Директор' || meData?.roleName === 'Закупщик'
 
   const handleSearchChange = (
     e: React.ChangeEvent<HTMLInputElement>,

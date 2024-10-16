@@ -32,7 +32,7 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     closeDate: null,
     comment: '',
     counterpartyName: '',
-    dealType: 'TASK',
+    dealType: 'REQUEST',
     marginRub: 0,
     requestNumber: 0,
     stage: 'QUOTE_SENT',

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, { useEffect, useState } from 'react'
 
 import {
@@ -5,8 +6,10 @@ import {
   useGetAllSalesQuery,
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
 } from '@/entities/deal'
+import { useMeQuery } from '@/entities/session'
 import { useGetActiveQuery } from '@/entities/workers'
 import { useGetDepartmentsQuery } from '@/entities/workers'
+import { WorkerDto } from '@/entities/workers'
 
 import MonthlySalaryTable from './MonthlySalaryTable'
 
@@ -51,6 +54,7 @@ type DepartmentData = {
 export const SalaryReportsPage: React.FC = () => {
   const { data: users } = useGetActiveQuery()
   const { data: expenses } = useGetAllPaymentsQuery()
+  const { data: meData } = useMeQuery()
   const { data: margins } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
     endDate: '2024-12-31',
     startDate: '2024-01-01',
@@ -92,7 +96,12 @@ export const SalaryReportsPage: React.FC = () => {
       employees: [],
     }))
 
-    users.forEach(user => {
+    const filtered =
+      meData?.roleName == 'Директор' || meData?.roleName == 'Бухгалтер'
+        ? users
+        : users.filter((user: WorkerDto) => user.department_id === meData?.department_id)
+
+    filtered.forEach(user => {
       const departmentName =
         departments.find(dept => dept.id === user.department_id)?.name || 'Без отдела'
 

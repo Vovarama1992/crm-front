@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
+
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
 import { useUpdateSaleMutation } from '@/entities/deal/deal.api'
 import { useUploadPdfMutation } from '@/entities/session' // Хук для обновления продажи
@@ -22,7 +23,9 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   const [isIndependentDeal, setIsIndependentDeal] = useState(false)
   const [totalSaleAmount, setTotalSaleAmount] = useState(0)
   const [selectedFile, setSelectedFile] = useState<File | null>(null) // Хранение файла
+  
 
+  
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: worker } = useMeQuery()
   const [createSale] = useCreateSaleMutation()
@@ -85,7 +88,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           file: selectedFile,
           saleId: String(saleId),
         })
-          .then(uploadResponse => {
+          .then((uploadResponse: { data: { sale: { pdfUrl: any } } }) => {
             // Логируем ответ от бэкенда после загрузки файла
             console.log('Upload Response:', uploadResponse)
 
@@ -101,11 +104,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
               throw new Error('Ошибка: Продажа не обновлена корректно.')
             }
           })
-          .then(updateResponse => {
+          .then((updateResponse: any) => {
             console.log('Updated Sale after updating pdfUrl:', updateResponse)
             alert('Продажа и файл успешно загружены!')
           })
-          .catch(error => {
+          .catch((error: any) => {
             console.error('Ошибка при загрузке PDF или обновлении продажи:', error)
             alert('Продажа создана, но произошла ошибка при загрузке файла.')
           })

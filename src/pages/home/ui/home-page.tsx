@@ -34,7 +34,7 @@ const permissionLinks = [
   },
 
   { label: 'Доходы - расходы', path: ROUTER_PATHS.FINANCES, permission: PermissionsEnum.FINANCES },
-  { label: 'Мои продажи', path: ROUTER_PATHS.MY_SALES, permission: PermissionsEnum.MY_SALES },
+
   {
     label: 'Общие продажи',
     path: ROUTER_PATHS.COMMON_SALES,

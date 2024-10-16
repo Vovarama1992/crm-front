@@ -1,25 +1,13 @@
 import React, { useState } from 'react'
 
 import { useCreateSupplierLineMutation } from '@/entities/deal'
+import { SupplierLineDto } from '@/entities/deal/deal.types'
 import { useGetSuppliersQuery } from '@/entities/departure/departure.api'
-import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 interface CreateSupplierLineModalProps {
   onCancel: () => void
-  onSuccess: (newLines: SupplierLineInput[]) => void
+  onSuccess: (newLines: SupplierLineDto[]) => void // Изменяем на массив
   purchaseId: number
-}
-
-interface SupplierLineInput {
-  articleNumber: string
-  comment: string
-  delivered: boolean
-  description: string
-  paymentDate: string
-  quantity: number
-  shipmentDate: string
-  supplierInvoice: string
-  totalPurchaseAmount: number
 }
 
 const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
@@ -27,22 +15,17 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   onSuccess,
   purchaseId,
 }) => {
-  const [supplierLines, setSupplierLines] = useState<SupplierLineInput[]>([])
+  const [supplierLines, setSupplierLines] = useState<any>([])
   const [selectedSupplierId, setSelectedSupplierId] = useState<null | number>(null)
   const [bulkInput, setBulkInput] = useState('')
   const [linesToAdd, setLinesToAdd] = useState(1)
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null)
-  const [selectedPaymentDate, setSelectedPaymentDate] = useState(new Date().toISOString())
-  const [selectedShipmentDate, setSelectedShipmentDate] = useState(new Date().toISOString())
 
   const { data: suppliers, isLoading: isSuppliersLoading } = useGetSuppliersQuery()
   const [createSupplierLine] = useCreateSupplierLineMutation()
-  const [uploadSupplierPdf] = useUploadSupplierPdfMutation()
 
-  // Изменение значений в строках
   const handleInputChange = (
     index: number,
-    field: keyof SupplierLineInput,
+    field: keyof SupplierLineDto,
     value: boolean | number | string
   ) => {
     const newSupplierLines = [...supplierLines]
@@ -51,15 +34,9 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
     setSupplierLines(newSupplierLines)
   }
 
-  // Обработка текстового ввода для парсинга
-  const handleBulkInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setBulkInput(e.target.value)
-  }
-
-  // Парсинг строк из текстового поля
   const handleParseBulkInput = () => {
     const lines = bulkInput.trim().split('\n')
-    const parsedLines = lines.reduce<SupplierLineInput[]>((acc, line) => {
+    const parsedLines = lines.reduce<any>((acc, line) => {
       const parts = line.split('\t').map(part => part.trim())
 
       if (parts.length >= 4) {
@@ -70,9 +47,9 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
           comment,
           delivered: false,
           description,
-          paymentDate: selectedPaymentDate,
+          paymentDate: new Date().toISOString(), // Значение по умолчанию
           quantity: Number(quantity),
-          shipmentDate: selectedShipmentDate,
+          shipmentDate: new Date().toISOString(), // Значение по умолчанию
           supplierInvoice: '',
           totalPurchaseAmount: Number(totalPurchaseAmount),
         })
@@ -81,77 +58,62 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
       return acc
     }, [])
 
-    setSupplierLines(prev => [...prev, ...parsedLines])
+    setSupplierLines((prev: any) => [...prev, ...parsedLines])
   }
 
-  // Добавление нескольких строк вручную
   const handleAddMultipleLines = () => {
     const newLines = Array.from({ length: linesToAdd }, () => ({
       articleNumber: '',
       comment: '',
       delivered: false,
       description: '',
-      paymentDate: selectedPaymentDate,
+      paymentDate: new Date().toISOString(), // Значение по умолчанию
       quantity: 1,
-      shipmentDate: selectedShipmentDate,
+      shipmentDate: new Date().toISOString(), // Значение по умолчанию
       supplierInvoice: '',
       totalPurchaseAmount: 0,
     }))
 
-    setSupplierLines(prev => [...prev, ...newLines])
+    setSupplierLines((prev: any) => [...prev, ...newLines])
   }
 
-  // Обработка загрузки файла PDF
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null
-
-    setInvoiceFile(file)
-  }
-
-  // Отправка данных на сервер
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleSubmit = async () => {
     if (!selectedSupplierId) {
       return alert('Пожалуйста, выберите поставщика.')
     }
-    if (!invoiceFile) {
-      return alert('Пожалуйста, загрузите счет.')
-    }
+
+    const createdLines: SupplierLineDto[] = [] // Массив для хранения созданных строк
 
     try {
       for (const line of supplierLines) {
-        const createdLine = await createSupplierLine({
+        const newLine = await createSupplierLine({
           ...line,
           purchaseId,
-          supplierId: selectedSupplierId,
+          supplierId: selectedSupplierId, // Добавляем supplierId
           supplierInvoice: '',
         }).unwrap()
 
-        if (invoiceFile) {
-          await uploadSupplierPdf({
-            file: invoiceFile,
-            supplierLineId: String(createdLine.id),
-          }).unwrap()
-        }
+        createdLines.push(newLine) // Добавляем созданную строку в массив
       }
-      onSuccess(supplierLines)
+      onSuccess(createdLines) // Возвращаем массив созданных строк
+      onCancel() // Закрываем модалку
     } catch (error) {
-      console.error('Ошибка при создании строк поставщика и загрузке файла:', error)
+      console.error('Ошибка при создании строки поставщика:', error)
     }
   }
 
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50'}>
-      <div className={'bg-white p-4 rounded shadow-lg w-[700px] max-h-[90vh] overflow-auto'}>
-        <h2 className={'text-sm font-semibold mb-2'}>Создать строки поставщика</h2>
+      <div className={'bg-white p-6 rounded shadow-lg w-[800px] max-h-[90vh] overflow-auto'}>
+        <h2 className={'text-lg font-semibold mb-4'}>Создать строки поставщика</h2>
+
         {isSuppliersLoading ? (
           <p>Загрузка поставщиков...</p>
         ) : (
-          <div className={'mb-2'}>
-            <label className={'block text-xs font-medium'}>Выберите поставщика:</label>
+          <div className={'mb-4'}>
+            <label className={'block text-sm font-medium'}>Выберите поставщика:</label>
             <select
-              className={'border p-1 w-full text-xs'}
+              className={'border p-2 w-full'}
               onChange={e => setSelectedSupplierId(Number(e.target.value))}
               value={selectedSupplierId ?? ''}
             >
@@ -166,50 +128,100 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
             </select>
           </div>
         )}
-        <form onSubmit={handleSubmit}>
-          <textarea
-            className={'border p-1 w-full mb-2 text-xs'}
-            onChange={handleBulkInputChange}
-            placeholder={'Введите строки: Артикул, Описание, Количество, Сумма, Комментарий'}
-            rows={5}
-            value={bulkInput}
+
+        <textarea
+          className={'border p-2 w-full mb-4'}
+          onChange={e => setBulkInput(e.target.value)}
+          placeholder={'Введите строки'}
+          rows={5}
+          value={bulkInput}
+        />
+        <button
+          className={'bg-gray-300 px-4 py-2 rounded mb-4'}
+          onClick={handleParseBulkInput}
+          type={'button'}
+        >
+          Парсить строки
+        </button>
+
+        <div className={'mb-4'}>
+          <input
+            className={'border p-2 w-20 mr-2'}
+            min={1}
+            onChange={e => setLinesToAdd(Number(e.target.value))}
+            type={'number'}
+            value={linesToAdd}
           />
           <button
-            className={'bg-gray-300 px-2 py-1 text-xs'}
-            onClick={handleParseBulkInput}
+            className={'bg-gray-300 px-4 py-2 rounded'}
+            onClick={handleAddMultipleLines}
             type={'button'}
           >
-            Парсить строки
+            Добавить {linesToAdd} строк(и)
           </button>
-          <div className={'flex mt-2'}>
-            <input
-              className={'border p-1 text-xs w-12 mr-2'}
-              min={1}
-              onChange={e => setLinesToAdd(Number(e.target.value))}
-              type={'number'}
-              value={linesToAdd}
-            />
-            <button
-              className={'bg-gray-300 px-2 py-1 text-xs'}
-              onClick={handleAddMultipleLines}
-              type={'button'}
-            >
-              Добавить {linesToAdd} строк(и)
-            </button>
+        </div>
+
+        {supplierLines.map((line: any, index: any) => (
+          <div className={'grid grid-cols-2 gap-4 mb-4'} key={index}>
+            <div>
+              <label className={'block text-sm font-medium'}>Артикул</label>
+              <input
+                className={'border p-2 w-full'}
+                onChange={e => handleInputChange(index, 'articleNumber', e.target.value)}
+                value={line.articleNumber}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Описание</label>
+              <input
+                className={'border p-2 w-full'}
+                onChange={e => handleInputChange(index, 'description', e.target.value)}
+                value={line.description}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Количество</label>
+              <input
+                className={'border p-2 w-full'}
+                onChange={e => handleInputChange(index, 'quantity', Number(e.target.value))}
+                type={'number'}
+                value={line.quantity}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Сумма</label>
+              <input
+                className={'border p-2 w-full'}
+                onChange={e =>
+                  handleInputChange(index, 'totalPurchaseAmount', Number(e.target.value))
+                }
+                type={'number'}
+                value={line.totalPurchaseAmount}
+              />
+            </div>
+            <div>
+              <label className={'block text-sm font-medium'}>Комментарий</label>
+              <textarea
+                className={'border p-2 w-full'}
+                onChange={e => handleInputChange(index, 'comment', e.target.value)}
+                value={line.comment}
+              />
+            </div>
           </div>
-          <div className={'mt-4'}>
-            <label className={'block text-xs'}>Загрузить счет:</label>
-            <input className={'text-xs'} onChange={handleFileUpload} type={'file'} />
-          </div>
-          <div className={'mt-2 flex justify-between'}>
-            <button className={'bg-blue-500 text-white px-2 py-1 text-xs'} type={'submit'}>
-              Создать
-            </button>
-            <button className={'bg-gray-300 px-2 py-1 text-xs'} onClick={onCancel} type={'button'}>
-              Отмена
-            </button>
-          </div>
-        </form>
+        ))}
+
+        <div className={'mt-4 flex justify-between'}>
+          <button
+            className={'bg-blue-500 text-white px-4 py-2 rounded'}
+            onClick={handleSubmit}
+            type={'button'}
+          >
+            Создать
+          </button>
+          <button className={'bg-gray-300 px-4 py-2 rounded'} onClick={onCancel} type={'button'}>
+            Отмена
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 /* eslint-disable no-nested-ternary */
 import React, { useState } from 'react'
 
+import { useMeQuery } from '@/entities/session'
 import { formatCurrency } from '@/pages/kopeechnik'
 
 import CreatePaymentForm from './CreatePaymentForm'
@@ -35,6 +36,7 @@ type MonthlySalaryTableProps = {
 const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months }) => {
   const [showCreatePaymentForm, setShowCreatePaymentForm] = useState(false)
   const [showPaymentsListForm, setShowPaymentsListForm] = useState(false)
+  const { data: meData } = useMeQuery()
   const [usersWithRemaining, setUsersWithRemaining] = useState<
     { id: number; middleName: string; name: string; remaining: number; surname: string }[]
   >([])
@@ -147,12 +149,14 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
         </tbody>
       </table>
       <div className={'mt-4 flex justify-end'}>
-        <button
-          className={'bg-blue-500 text-white px-4 py-2 rounded mr-2'}
-          onClick={handleCreatePaymentClick}
-        >
-          Создать выплату
-        </button>
+        {(meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер') && (
+          <button
+            className={'bg-blue-500 text-white px-4 py-2 rounded mr-2'}
+            onClick={handleCreatePaymentClick}
+          >
+            Создать выплату
+          </button>
+        )}
         <button
           className={'bg-green-500 text-white px-4 py-2 rounded'}
           onClick={handleShowPaymentsListClick}

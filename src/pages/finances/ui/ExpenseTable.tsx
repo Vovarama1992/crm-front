@@ -63,28 +63,46 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
       reportMonthIndex <= endMonthIndex
     )
   }
+  const getWorkingDaysBetweenDates = (startDate: Date, endDate: Date): number => {
+    let count = 0;
+    const currentDate = new Date(startDate);
+  
+    // Включаем начальную дату в расчет
+    currentDate.setHours(0, 0, 0, 0);
+  
+    // Идем по каждой дате в интервале и считаем только будние дни
+    while (currentDate <= endDate) {
+      const dayOfWeek = currentDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Не считаем субботу и воскресенье
+        count++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1); // Переходим к следующему дню
+    }
+    console.log('count: ' + count)
+    return count;
+  };
 
   useEffect(() => {
-    const structuredCategories: Category[] = []
-    const startMonthIndex = months.indexOf(startMonth)
-    const endMonthIndex = months.indexOf(endMonth)
-    const currentYear = selectedYear
-    const currentMonth = new Date().getMonth()
-
+    const structuredCategories: Category[] = [];
+    const startMonthIndex = months.indexOf(startMonth);
+    const endMonthIndex = months.indexOf(endMonth);
+    const currentYear = selectedYear;
+    const currentMonth = new Date().getMonth();
+  
     // Формируем существующие категории на основе расходов
     expenses.forEach(expense => {
-      const expenseDate = new Date(expense.date)
-      const expenseMonthIndex = expenseDate.getMonth()
+      const expenseDate = new Date(expense.date);
+      const expenseMonthIndex = expenseDate.getMonth();
       const isInInterval =
         expenseDate.getFullYear() === currentYear &&
         expenseMonthIndex >= startMonthIndex &&
-        expenseMonthIndex <= endMonthIndex
-
+        expenseMonthIndex <= endMonthIndex;
+  
       if (isInInterval) {
         const categoryIndex = structuredCategories.findIndex(
           cat => cat.category === expense.category
-        )
-
+        );
+  
         if (categoryIndex === -1) {
           structuredCategories.push({
             category: expense.category,
@@ -94,26 +112,26 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
                 subcategory: expense.subcategory,
               },
             ],
-          })
+          });
         } else {
           const subcategoryIndex = structuredCategories[categoryIndex].subcategories.findIndex(
             subcat => subcat.subcategory === expense.subcategory
-          )
-
+          );
+  
           if (subcategoryIndex === -1) {
             structuredCategories[categoryIndex].subcategories.push({
               reports: [expense],
               subcategory: expense.subcategory,
-            })
+            });
           } else {
             structuredCategories[categoryIndex].subcategories[subcategoryIndex].reports.push(
               expense
-            )
+            );
           }
         }
       }
-    })
-
+    });
+  
     // Добавляем фиксированную сумму аренды офиса для прошедших месяцев
     if (endMonthIndex < currentMonth || selectedYear < new Date().getFullYear()) {
       structuredCategories.push({
@@ -133,76 +151,73 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
             subcategory: 'Аренда',
           },
         ],
-      })
+      });
     }
-
+  
     // Рассчитываем ФОТ и добавляем в соответствующую категорию для прошедших месяцев
     if (workersData) {
       const fotSubcategory: Subcategory = {
         reports: [],
         subcategory: 'ФОТ',
-      }
-
-      workersData.forEach(worker => {
+      };
+  
+      workersData.forEach((worker: { hireDate: string | number | Date; salary: any; id: any; name: any }) => {
         if (worker.hireDate && worker.salary) {
-          const hiredDate = new Date(worker.hireDate)
-          const workingDaysInMonth = 21 // Количество рабочих дней по календарю
-
-          if (hiredDate <= new Date(currentYear, endMonthIndex + 1, 0)) {
-            for (
-              let month = startMonthIndex;
-              month <= Math.min(endMonthIndex, currentMonth);
-              month++
-            ) {
-              const firstDayOfMonth = new Date(currentYear, month, 1)
-              const lastDayOfMonth = new Date(currentYear, month + 1, 0)
-
-              if (hiredDate <= lastDayOfMonth && firstDayOfMonth <= new Date()) {
-                const daysWorked =
-                  hiredDate > firstDayOfMonth
-                    ? lastDayOfMonth.getDate() - hiredDate.getDate() + 1
-                    : workingDaysInMonth
-
-                const proportionalSalary = Math.round(
-                  (worker.salary || 0) * (daysWorked / workingDaysInMonth)
-                )
-
-                if (proportionalSalary > 0) {
-                  fotSubcategory.reports.push({
-                    category: 'ФОТ',
-                    date: worker.hireDate,
-                    expense: proportionalSalary,
-                    id: worker.id,
-                    name: worker.name,
-                    subcategory: 'ФОТ',
-                  } as ExpenseDto)
-                }
+          const hiredDate = new Date(worker.hireDate);
+      
+          // Проходим по каждому месяцу в рассматриваемом диапазоне
+          for (let month = startMonthIndex; month <= Math.min(endMonthIndex, currentMonth); month++) {
+            const firstDayOfMonth = new Date(currentYear, month, 1);
+            const lastDayOfMonth = new Date(currentYear, month + 1, 0);
+      
+            if (hiredDate <= lastDayOfMonth && firstDayOfMonth <= new Date()) {
+              // Считаем количество рабочих дней в текущем обрабатываемом месяце
+              const workingDaysInMonth = getWorkingDaysBetweenDates(firstDayOfMonth, lastDayOfMonth);
+      
+              // Если дата найма внутри текущего месяца, считаем рабочие дни с даты найма до конца месяца
+              const daysWorked = hiredDate.getMonth() === month
+                ? getWorkingDaysBetweenDates(hiredDate, lastDayOfMonth)
+                : workingDaysInMonth;
+      
+              const proportionalSalary = Math.round(
+                (worker.salary || 0) * (daysWorked / workingDaysInMonth)
+              );
+      
+              if (proportionalSalary > 0) {
+                fotSubcategory.reports.push({
+                  category: 'ФОТ',
+                  date: worker.hireDate,
+                  expense: proportionalSalary,
+                  id: worker.id,
+                  name: worker.name,
+                  subcategory: 'ФОТ',
+                } as ExpenseDto);
               }
             }
           }
         }
-      })
-
+      });
+  
       // Добавляем выплаты с типом "Селери"
       const salaryPayments =
         paymentsData
           ?.filter(
-            payment =>
+            (payment: { type: string; date: string | number | Date }) =>
               payment.type === 'SALARY' &&
               new Date(payment.date).getMonth() >= startMonthIndex &&
               new Date(payment.date).getMonth() <= Math.min(endMonthIndex, currentMonth)
           )
-          .reduce((sum, payment) => sum + payment.amount, 0) || 0
-
+          .reduce((sum: any, payment: { amount: any }) => sum + payment.amount, 0) || 0;
+  
       structuredCategories.push({
         category: 'ФОТ',
         payments: salaryPayments,
         subcategories: [fotSubcategory],
-      })
+      });
     }
-
-    setCategories(structuredCategories)
-  }, [expenses, workersData, salesData, paymentsData, startMonth, endMonth, selectedYear])
+  
+    setCategories(structuredCategories);
+  }, [expenses, workersData, salesData, paymentsData, startMonth, endMonth, selectedYear]);
 
   const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newStartMonth = event.target.value

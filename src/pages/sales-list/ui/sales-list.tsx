@@ -100,25 +100,32 @@ export const SalesListPage = () => {
     localStorage.setItem('salesSelectedYear', selectedYear)
   }, [selectedEmployee, selectedStartMonth, selectedEndMonth, selectedYear])
 
-  // Добавляем ремейнинги после соответствующих продаж
   useEffect(() => {
     if (salesData && remainingSalesData) {
       const combinedSalesWithRem: any = []
 
-      salesData.forEach(sale => {
+      salesData.forEach((sale: any) => {
         combinedSalesWithRem.push(sale)
 
-        const rem = remainingSalesData.find(r => r.saleId === sale.id)
+        const rem = remainingSalesData.find((r: any) => r.saleId === sale.id)
 
         if (rem) {
           combinedSalesWithRem.push({ ...rem, isRemaining: true }) // Метка, что это ремейнинг
         }
       })
 
-      const filteredSales =
-        selectedEmployee === 9999
-          ? combinedSalesWithRem
-          : combinedSalesWithRem.filter((sale: any) => selectedEmployee === sale.userId)
+      const filteredSales = combinedSalesWithRem.filter((sale: any) => {
+        const saleDate = new Date(sale.date)
+        const saleMonth = saleDate.getMonth() + 1 // Месяцы в JavaScript начинаются с 0
+        const saleYear = saleDate.getFullYear()
+
+        return (
+          saleYear === Number(selectedYear) &&
+          saleMonth >= Number(selectedStartMonth) &&
+          saleMonth <= Number(selectedEndMonth) &&
+          (selectedEmployee === 9999 || selectedEmployee === sale.userId)
+        )
+      })
 
       const sortedSales = [...filteredSales].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -126,9 +133,16 @@ export const SalesListPage = () => {
 
       setSales(sortedSales)
     }
-  }, [salesData, remainingSalesData, selectedEmployee])
+  }, [
+    salesData,
+    remainingSalesData,
+    selectedEmployee,
+    selectedStartMonth,
+    selectedEndMonth,
+    selectedYear,
+  ])
 
-  const filteredWorkers = workersData?.filter(employee => {
+  const filteredWorkers = workersData?.filter((employee: { department_id: any; id: any }) => {
     if (meData?.roleName === 'РОП') {
       return meData?.department_id && employee.department_id === meData?.department_id
     } else if (meData?.roleName === 'Менеджер' || meData?.roleName === 'РОП') {
@@ -144,13 +158,28 @@ export const SalesListPage = () => {
     setSelectedEmployee(value === 'self' ? userId : Number(value))
   }
 
-  const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedStartMonth(event.target.value)
-  }
-
   const handleEndMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedEndMonth(event.target.value)
-  }
+    const selectedValue = event.target.value;
+    
+    // Проверяем, чтобы конечный месяц не был меньше начального
+    if (Number(selectedValue) < Number(selectedStartMonth)) {
+      alert('Конечный месяц не может быть меньше начального!');
+      return;
+    }
+  
+    setSelectedEndMonth(selectedValue);
+  };
+  
+  const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = event.target.value;
+  
+    // Если начальный месяц больше конечного, сбрасываем конечный месяц
+    if (Number(selectedValue) > Number(selectedEndMonth)) {
+      setSelectedEndMonth(selectedValue); // Автоматически подстраиваем конечный месяц под начальный
+    }
+  
+    setSelectedStartMonth(selectedValue);
+  };
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(event.target.value)
@@ -178,7 +207,7 @@ export const SalesListPage = () => {
   }
 
   const getCounterpartyName = (id: number) => {
-    const counterparty = counterpartiesData?.find(cp => cp.id === id)
+    const counterparty = counterpartiesData?.find((cp: { id: number }) => cp.id === id)
 
     return counterparty ? counterparty.name : '—'
   }
@@ -240,20 +269,31 @@ export const SalesListPage = () => {
             ))}
           </select>
         </div>
-        <div>
-          <label className={'mr-2'}>Выберите сотрудника:</label>
-          <select onChange={handleEmployeeChange} value={selectedEmployee || ''}>
-            <option value={'self'}>Я сам</option>
-            {(meData?.roleName === 'Директор' ||
-              meData?.roleName === 'Бухгалтер' ||
-              meData?.roleName === 'Закупщик') && <option value={9999}>Все</option>}
-            {filteredWorkers?.map(employee => (
-              <option key={employee.id} value={employee.id}>
-                {employee.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {(meData?.roleName === 'Директор' ||
+          meData?.roleName === 'Бухгалтер' ||
+          meData?.roleName === 'РОП' ||
+          meData?.roleName === 'Закупщик') && (
+          <div>
+            <label className={'mr-2'}>Выберите сотрудника:</label>
+            <select onChange={handleEmployeeChange} value={selectedEmployee || ''}>
+              {(meData?.roleName === 'Директор' ||
+                meData?.roleName === 'Бухгалтер' ||
+                meData?.roleName === 'Закупщик') && (
+                <>
+                  <option value={9999}>Все</option>
+                  <></>
+                </>
+              )}
+
+              <option value={'self'}>Я сам</option>
+              {filteredWorkers?.map((employee: { id: React.Key | readonly string[] | null | undefined; name: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | null | undefined }) => (
+                <option key={employee.id as number} value={employee.id as number}>
+                  {employee.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
       <table className={'min-w-full divide-y divide-gray-200 table-auto'}>
         <thead className={'bg-gray-50'}>
@@ -460,8 +500,14 @@ export const SalesListPage = () => {
           <p>{totalEarned}</p>
         </div>
       </div>
-      {(meData?.roleName === 'Менеджер' || meData?.roleName === 'Закупщик') &&
-        editingSale?.userId === meData?.id &&
+      {(meData?.roleName === 'Бухгалтер' ||
+        meData?.roleName === 'Директор' ||
+        ((meData?.roleName === 'Менеджер' ||
+          meData?.roleName === 'Закупщик' ||
+          meData?.roleName === 'РОП' ||
+          meData?.roleName === 'Логист') &&
+          editingSale?.userId === meData?.id)) &&
+        editingSale &&
         isEditFormOpen && (
           <div
             className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}
