@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
-
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
 import { useUpdateSaleMutation } from '@/entities/deal/deal.api'
 import { useUploadPdfMutation } from '@/entities/session' // Хук для обновления продажи
@@ -23,9 +22,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   const [isIndependentDeal, setIsIndependentDeal] = useState(false)
   const [totalSaleAmount, setTotalSaleAmount] = useState(0)
   const [selectedFile, setSelectedFile] = useState<File | null>(null) // Хранение файла
-  
 
-  
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: worker } = useMeQuery()
   const [createSale] = useCreateSaleMutation()
@@ -88,7 +85,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           file: selectedFile,
           saleId: String(saleId),
         })
-          .then((uploadResponse: { data: { sale: { pdfUrl: any } } }) => {
+          .then((uploadResponse: any) => {
             // Логируем ответ от бэкенда после загрузки файла
             console.log('Upload Response:', uploadResponse)
 
