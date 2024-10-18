@@ -62,9 +62,17 @@ export const SalesListPage = () => {
   const isDirector = meData?.roleName === 'Директор'
   const percent = 0.1
 
-  // Инициализация значений фильтров из localStorage
   const [selectedEmployee, setSelectedEmployee] = useState<null | number | string>(() => {
     const storedEmployee = localStorage.getItem('salesSelectedEmployee')
+
+    // Проверяем роль пользователя, если роль — "Менеджер", "Логист" или "РОП", устанавливаем фильтр по userId
+    if (
+      meData?.roleName === 'Менеджер' ||
+      meData?.roleName === 'Логист' ||
+      meData?.roleName === 'РОП'
+    ) {
+      return userId // Возвращаем userId для этих ролей
+    }
 
     return storedEmployee ? JSON.parse(storedEmployee) : userId
   })
@@ -159,33 +167,33 @@ export const SalesListPage = () => {
   }
 
   const handleEndMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = event.target.value;
-    
+    const selectedValue = event.target.value
+
     // Проверяем, чтобы конечный месяц не был меньше начального
     if (Number(selectedValue) < Number(selectedStartMonth)) {
-      alert('Конечный месяц не может быть меньше начального!');
-      return;
+      alert('Конечный месяц не может быть меньше начального!')
+
+      return
     }
-  
-    setSelectedEndMonth(selectedValue);
-  };
-  
+
+    setSelectedEndMonth(selectedValue)
+  }
+
   const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = event.target.value;
-  
+    const selectedValue = event.target.value
+
     // Если начальный месяц больше конечного, сбрасываем конечный месяц
     if (Number(selectedValue) > Number(selectedEndMonth)) {
-      setSelectedEndMonth(selectedValue); // Автоматически подстраиваем конечный месяц под начальный
+      setSelectedEndMonth(selectedValue) // Автоматически подстраиваем конечный месяц под начальный
     }
-  
-    setSelectedStartMonth(selectedValue);
-  };
+
+    setSelectedStartMonth(selectedValue)
+  }
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedYear(event.target.value)
   }
 
-  // Оптимистичное обновление статусов доставки и подписания
   const handleSelectChange = async (
     sale: SaleDto,
     field: 'deliveryStage' | 'signingStage',
@@ -199,6 +207,16 @@ export const SalesListPage = () => {
       setSales(prevSales =>
         prevSales.map(s => (s.id === sale.id ? { ...s, [field]: updatedValue } : s))
       )
+
+      // Проверка на отсутствие стадии до этого и отсутствие ремейнинга
+      const hasRemainingSale = remainingSalesData?.some((rem: any) => rem.saleId === sale.id)
+      const wasStageUnset = sale[field] === null || sale[field] === undefined
+
+      if (!hasRemainingSale && wasStageUnset && updatedValue) {
+        // Открываем форму создания
+        setEditingSale({ ...sale, [field]: updatedValue })
+        setIsCreateFormOpen(true)
+      }
 
       await updateSale({ id: sale.id, sale: updatedSale }).unwrap()
     } catch (error) {
@@ -286,11 +304,24 @@ export const SalesListPage = () => {
               )}
 
               <option value={'self'}>Я сам</option>
-              {filteredWorkers?.map((employee: { id: React.Key | readonly string[] | null | undefined; name: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | null | undefined }) => (
-                <option key={employee.id as number} value={employee.id as number}>
-                  {employee.name}
-                </option>
-              ))}
+              {filteredWorkers?.map(
+                (employee: {
+                  id: React.Key | null | readonly string[] | undefined
+                  name:
+                    | Iterable<React.ReactNode>
+                    | React.ReactElement<any, React.JSXElementConstructor<any> | string>
+                    | React.ReactPortal
+                    | boolean
+                    | null
+                    | number
+                    | string
+                    | undefined
+                }) => (
+                  <option key={employee.id as number} value={employee.id as number}>
+                    {employee.name}
+                  </option>
+                )
+              )}
             </select>
           </div>
         )}
@@ -383,7 +414,7 @@ export const SalesListPage = () => {
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                   {sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец'
-                    ? sale.margin
+                    ? sale.totalSaleAmount - sale.logisticsCost - sale.purchaseCost
                     : '—'}
                 </td>
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
@@ -517,6 +548,7 @@ export const SalesListPage = () => {
                 onClose={() => {
                   setIsEditFormOpen(false)
                   setEditingSale(null)
+                  window.location.reload()
                 }}
                 sale={editingSale}
               />
@@ -530,6 +562,7 @@ export const SalesListPage = () => {
               onClose={() => {
                 setIsCreateFormOpen(false)
                 setEditingSale(null)
+                window.location.reload()
               }}
               sale={editingSale}
             />

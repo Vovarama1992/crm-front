@@ -96,10 +96,18 @@ export const SalaryReportsPage: React.FC = () => {
       employees: [],
     }))
 
-    const filtered =
-      meData?.roleName == 'Директор' || meData?.roleName == 'Бухгалтер'
-        ? users
-        : users.filter((user: WorkerDto) => user.department_id === meData?.department_id)
+    const filtered = (() => {
+      if (meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер') {
+        // Директор и бухгалтер видят всех
+        return users
+      } else if (meData?.roleName === 'РОП') {
+        // РОП видит только сотрудников своего отдела
+        return users.filter((user: WorkerDto) => user.department_id === meData?.department_id)
+      } else {
+        // Остальные видят только себя
+        return users.filter((user: WorkerDto) => user.id === meData?.id)
+      }
+    })()
 
     filtered.forEach(user => {
       const departmentName =

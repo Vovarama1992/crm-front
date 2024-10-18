@@ -1,3 +1,5 @@
+import type { SaleDto } from '@/entities/deal/deal.types'
+
 import React from 'react'
 
 import { useUpdateSaleWithRemainingMutation } from '@/entities/deal'
@@ -6,7 +8,7 @@ import { useMeQuery } from '@/entities/session'
 
 interface SalesCreateFormProps {
   onClose: () => void
-  sale: any
+  sale: SaleDto
 }
 
 export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale }) => {

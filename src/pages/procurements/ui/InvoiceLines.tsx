@@ -6,10 +6,11 @@ import { InvoiceLineDto } from '@/entities/deal/deal.types'
 import CreateInvoiceLineModal from './CreateInvoiceLineModal'
 
 interface InvoiceLinesProps {
+  onTotalChange: (total: number) => void // Добавляем функцию обратного вызова
   purchaseId: number
 }
 
-const InvoiceLines: React.FC<InvoiceLinesProps> = ({ purchaseId }) => {
+const InvoiceLines: React.FC<InvoiceLinesProps> = ({ onTotalChange, purchaseId }) => {
   const { data: fetchedLines = [] } = useGetInvoiceLinesByPurchaseIdQuery(purchaseId)
   const [invoiceLines, setInvoiceLines] = useState<InvoiceLineDto[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -21,12 +22,22 @@ const InvoiceLines: React.FC<InvoiceLinesProps> = ({ purchaseId }) => {
 
         return mergedLines
       })
+
+      // Вычисляем общую сумму и поднимаем её в родительский компонент
+      const total = fetchedLines.reduce((sum, line) => sum + (line.totalPrice || 0), 0)
+
+      onTotalChange(total) // Передаем сумму в родительский компонент
     }
-  }, [fetchedLines])
+  }, [fetchedLines, onTotalChange])
 
   const handleAddLine = (newLine: any) => {
     setInvoiceLines(prev => [...prev, newLine])
-    console.log('addedLine: ' + newLine)
+
+    // Обновляем общую сумму при добавлении новой строки
+    const newTotal =
+      newLine.totalPrice + invoiceLines.reduce((sum, line) => sum + (line.totalPrice || 0), 0)
+
+    onTotalChange(newTotal)
   }
 
   return (

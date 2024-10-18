@@ -59,13 +59,24 @@ export const HomePage = () => {
     <div className={'h-screen flex flex-col items-center justify-center'} translate={'no'}>
       <div className={'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6'}>
         {permissionLinks.map(link => {
-          // Скрываем "Поставщики" и "Сводная таблица" для "Бухгалтера"
-          if (
-            roleName === 'Бухгалтер' &&
-            (link.permission === PermissionsEnum.SUPPLIERS ||
-              link.permission === PermissionsEnum.SUMMARY_TABLE)
-          ) {
-            return null
+          // Сделать видимым "Отчеты по зарплате" для всех
+          if (link.permission === PermissionsEnum.SALARY_REPORTS) {
+            return (
+              <Link
+                className={
+                  'p-4 lg:p-6 border rounded-lg hover:bg-gray-100 transition transform lg:translate-y-[-10%] lg:translate-x-[-10%]'
+                }
+                key={link.permission}
+                to={link.path}
+              >
+                <Typography
+                  className={'lg:text-[26px] text-[18px] decoration-skip-ink-none'}
+                  variant={'link1'}
+                >
+                  {link.label}
+                </Typography>
+              </Link>
+            )
           }
 
           // Для "Бухгалтера" показываем все остальные отчеты, даже если прав нет

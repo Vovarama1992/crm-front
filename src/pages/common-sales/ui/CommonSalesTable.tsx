@@ -23,7 +23,6 @@ type DepartmentData = {
 type CommonSalesTableProps = {
   data: DepartmentData[]
   months: string[]
-  //onDataChange: (newData: DepartmentData[]) => void
 }
 
 // Функция для расчета итогов по отделу
@@ -164,6 +163,14 @@ const CommonSalesTable: React.FC<CommonSalesTableProps> = ({ data, months }) => 
             </tr>
           </React.Fragment>
         ))}
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>Общий оборот</td>
+          {months.map(month => (
+            <td className={'border px-4 py-2 font-bold'} colSpan={3} key={month}>
+              {formatCurrency(calculateMonthlyTotal(data, 'revenue', month))}
+            </td>
+          ))}
+        </tr>
         <tr>
           <td className={'border px-4 py-2 font-bold'}>Общая маржа</td>
           {months.map(month => (

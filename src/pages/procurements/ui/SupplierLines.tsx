@@ -6,10 +6,11 @@ import { SupplierLineDto } from '@/entities/deal/deal.types'
 import CreateSupplierLineModal from './CreateSupplierLineModal'
 
 interface SupplierLinesProps {
+  onTotalChange: (total: number) => void // Добавляем функцию обратного вызова
   purchaseId: number
 }
 
-const SupplierLines: React.FC<SupplierLinesProps> = ({ purchaseId }) => {
+const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId }) => {
   const { data: fetchedLines = [] } = useGetSupplierLinesByPurchaseIdQuery(purchaseId)
   const [supplierLines, setSupplierLines] = useState<SupplierLineDto[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -17,11 +18,26 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ purchaseId }) => {
   // Объединение загруженных строк с текущими строками
   useEffect(() => {
     setSupplierLines(fetchedLines)
-  }, [fetchedLines])
+
+    // Вычисляем общую сумму закупки
+    const total = fetchedLines.reduce((sum, line) => {
+      return sum + line.totalPurchaseAmount * (line.quantity || 0) // Учитываем, что значение может быть undefined
+    }, 0)
+
+    onTotalChange(total) // Передаем общую сумму вверх через onTotalChange
+  }, [fetchedLines, onTotalChange])
 
   const handleAddLines = (newLines: SupplierLineDto[]) => {
     setSupplierLines(prev => [...prev, ...newLines])
-    console.log('Added lines:', newLines)
+
+    // Обновляем общую сумму при добавлении новых строк
+    const newTotal =
+      newLines.reduce((sum, line) => {
+        return sum + line.totalPurchaseAmount * (line.quantity || 0)
+      }, 0) +
+      supplierLines.reduce((sum, line) => sum + line.totalPurchaseAmount * (line.quantity || 0), 0)
+
+    onTotalChange(newTotal) // Передаем обновленную сумму вверх
   }
 
   return (
@@ -61,7 +77,7 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ purchaseId }) => {
       {isModalOpen && (
         <CreateSupplierLineModal
           onCancel={() => setIsModalOpen(false)}
-          onSuccess={handleAddLines} // Изменяем здесь
+          onSuccess={handleAddLines} // Обработка добавления новых строк
           purchaseId={purchaseId}
         />
       )}

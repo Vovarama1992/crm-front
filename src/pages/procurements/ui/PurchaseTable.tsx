@@ -14,30 +14,35 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
   const [editingOrder, setEditingOrder] = useState<PurchaseDto | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [pdfPaths, setPdfPaths] = useState<{ [key: number]: null | string }>({})
-  const {data: deals} = useGetAllDealsQuery()
-  const { data: sales } = useGetAllSalesQuery();
+  const { data: deals } = useGetAllDealsQuery()
+  const { data: sales } = useGetAllSalesQuery()
   const getRequestNumber = (dealId: number) => {
-    console.log(`Поиск продажи для dealId: ${dealId}`);
-  
+    console.log(`Поиск продажи для dealId: ${dealId}`)
+
     // Находим продажу по dealId
-    const sale = sales?.find((sale: any) => sale.id === dealId);
+    const sale = sales?.find((sale: any) => sale.id === dealId)
+
     if (!sale) {
-      console.log(`Продажа для dealId: ${dealId} не найдена`);
-      return 'Продажа не найдена';
+      console.log(`Продажа для dealId: ${dealId} не найдена`)
+
+      return 'Продажа не найдена'
     }
-  
-    console.log(`Найдена продажа: ${JSON.stringify(sale)}`);
-  
+
+    console.log(`Найдена продажа: ${JSON.stringify(sale)}`)
+
     // Находим сделку по dealId из найденной продажи
-    const deal = deals?.find((deal: any) => deal.id === sale.dealId);
+    const deal = deals?.find((deal: any) => deal.id === sale.dealId)
+
     if (!deal) {
-      console.log(`Сделка для dealId: ${sale.dealId} не найдена`);
-      return 'Сделка не найдена';
+      console.log(`Сделка для dealId: ${sale.dealId} не найдена`)
+
+      return 'Сделка не найдена'
     }
-  
-    console.log(`Найдена сделка: ${JSON.stringify(deal)}`);
-    return deal.requestNumber;
-  };
+
+    console.log(`Найдена сделка: ${JSON.stringify(deal)}`)
+
+    return deal.requestNumber
+  }
 
   console.log('isFormOpen: ' + isFormOpen)
   const { data: salesData } = useGetAllSalesQuery()
@@ -121,9 +126,9 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
                 {purchase.dealId}
               </td>
               <td className={'border px-4 py-2'}>
-            {/* Извлекаем requestNumber по dealId и отображаем */}
-            {getRequestNumber(purchase.dealId)}
-          </td>
+                {/* Извлекаем requestNumber по dealId и отображаем */}
+                {getRequestNumber(purchase.dealId)}
+              </td>
               <td className={'border px-4 py-2'}>{purchase.counterpartyName}</td>
               <td className={'border px-4 py-2'}>{purchase.requestNumber}</td>
               <td className={'border px-4 py-2'}>{purchase.managerName}</td>

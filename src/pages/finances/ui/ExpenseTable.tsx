@@ -47,9 +47,29 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
   const [selectedReport, setSelectedReport] = useState<ExpenseDto | null>(null)
   const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
-  const [startMonth, setStartMonth] = useState<string>(months[0]) // По умолчанию первый месяц
-  const [endMonth, setEndMonth] = useState<string>(months[0]) // По умолчанию первый месяц
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // Выбор года
+  const [startMonth, setStartMonth] = useState<string>(() => {
+    const savedStartMonth = localStorage.getItem('expensesStartMonth')
+
+    return savedStartMonth || months[0]
+  })
+
+  const [endMonth, setEndMonth] = useState<string>(() => {
+    const savedEndMonth = localStorage.getItem('expensesEndMonth')
+
+    return savedEndMonth || months[0]
+  })
+
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const savedYear = localStorage.getItem('expensesSelectedYear')
+
+    return savedYear ? Number(savedYear) : new Date().getFullYear()
+  })
+
+  useEffect(() => {
+    localStorage.setItem('expensesSelectedYear', selectedYear.toString())
+    localStorage.setItem('expensesStartMonth', startMonth)
+    localStorage.setItem('expensesEndMonth', endMonth)
+  }, [selectedYear, startMonth, endMonth])
 
   const isReportInSelectedRange = (report: ExpenseDto): boolean => {
     const reportDate = new Date(report.date)
