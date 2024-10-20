@@ -38,12 +38,22 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const margin = formData.margin_percent / 100 // Извлекаем id отдельно, а все остальное — в updateData
+      const margin = formData.margin_percent / 100 // Преобразуем margin_percent
 
-      formData.margin_percent = margin
+      // Извлекаем dobNumber и преобразуем в число
+      const dobNumber = Number(formData.dobNumber)
+
+      if (isNaN(dobNumber)) {
+        throw new Error('Invalid value for dobNumber: Expected a valid number.')
+      }
+
+      // Обновляем поля для отправки
       const { id, ...updateData } = formData
 
-      await updateWorker({ id, ...updateData }).unwrap() // Передаем id и набор данных для обновления
+      updateData.margin_percent = margin
+      updateData.dobNumber = dobNumber // Обновляем dobNumber в updateData
+
+      await updateWorker({ id, ...updateData }).unwrap() // Передаем id и обновленные данные
       onClose()
     } catch (error) {
       console.error('Failed to update the worker:', error)
