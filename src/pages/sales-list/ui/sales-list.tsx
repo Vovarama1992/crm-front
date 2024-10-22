@@ -254,8 +254,20 @@ export const SalesListPage = () => {
     link.click()
   }
 
-  const totalMargin = sales.reduce((acc, sale) => acc + (sale.margin || 0), 0)
-  const totalTurnover = sales.reduce((acc, sale) => acc + (sale.paidNow || 0), 0)
+  const totalMargin = sales.reduce((acc, sale) => {
+    if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
+      const margin =
+        (sale.totalSaleAmount || 0) - (sale.logisticsCost || 0) - (sale.purchaseCost || 0)
+
+      return acc + margin
+    }
+
+    return acc
+  }, 0)
+  const totalTurnover = sales.reduce(
+    (acc, sale) => acc + (sale.paidNow + sale.prepaymentAmount || 0),
+    0
+  )
   const totalEarned = (totalMargin * percent).toFixed(2)
 
   return (
