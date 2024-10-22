@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
+import { useGetAllDealsQuery } from '@/entities/deal/deal.api'
 import { useCreateSaleMutation } from '@/entities/deal/deal.api'
 import { useUpdateSaleMutation } from '@/entities/deal/deal.api'
 import { useUploadPdfMutation } from '@/entities/session' // Хук для обновления продажи
@@ -22,6 +23,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   const [isIndependentDeal, setIsIndependentDeal] = useState(false)
   const [totalSaleAmount, setTotalSaleAmount] = useState(0)
   const [selectedFile, setSelectedFile] = useState<File | null>(null) // Хранение файла
+  const { data: deals } = useGetAllDealsQuery()
+
+  const deal = deals?.find(deal => deal.id === dealId) // Найти сделку по dealId
+
+  const requestNumber = deal ? deal.requestNumber : null
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: worker } = useMeQuery()
@@ -70,6 +76,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
       pdfPath: '', // Изначально оставляем пустым
       prepaymentAmount,
       purchaseCost: 0,
+      requestNumber: String(requestNumber),
       ropId,
       totalSaleAmount,
       userId,
