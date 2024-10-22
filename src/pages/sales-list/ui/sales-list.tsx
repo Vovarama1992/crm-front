@@ -60,7 +60,6 @@ export const SalesListPage = () => {
 
   const userId = meData?.id || null
   const isDirector = meData?.roleName === 'Директор'
-  const percent = 0.1
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number | string>(() => {
     const storedEmployee = localStorage.getItem('salesSelectedEmployee')
@@ -254,6 +253,30 @@ export const SalesListPage = () => {
     link.click()
   }
 
+  function calculateTotalEarned(sales: any, workersData: any): string {
+    if (!workersData || !sales) {
+      return '0'
+    }
+
+    const userMarginMap = Object.fromEntries(
+      workersData.map((worker: any) => [worker.id, worker.marginPercent || 0])
+    )
+
+    return sales
+      .reduce((acc: any, sale: any) => {
+        if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
+          const margin =
+            (sale.totalSaleAmount || 0) - (sale.logisticsCost || 0) - (sale.purchaseCost || 0)
+          const userMarginPercent = userMarginMap[sale.userId] || 0
+
+          return acc + margin * userMarginPercent
+        }
+
+        return acc
+      }, 0)
+      .toFixed(2)
+  }
+
   const totalMargin = sales.reduce((acc, sale) => {
     if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
       const margin =
@@ -268,7 +291,7 @@ export const SalesListPage = () => {
     (acc, sale) => acc + (sale.paidNow + sale.prepaymentAmount || 0),
     0
   )
-  const totalEarned = (totalMargin * percent).toFixed(2)
+  const totalEarned = calculateTotalEarned(salesData, workersData)
 
   return (
     <div className={'absolute top-[15%] left-[15%] w-[70%] h-[70%] overflow-auto'}>
