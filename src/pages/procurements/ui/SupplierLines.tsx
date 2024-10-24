@@ -14,6 +14,8 @@ import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 import CreateSupplierLineModal from './CreateSupplierLineModal'
 
+const apiUrl = 'https://oldkns.webtm.ru/api'
+
 interface SupplierLinesProps {
   onTotalChange: (total: number) => void
   purchaseId: number
@@ -111,7 +113,7 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
       try {
         await uploadSupplierPdf({ file, supplierLineId: String(lineId) }).unwrap()
 
-        const pdfUrl = `${process.env.VITE_APP_API_URL}/api/files/download/supplier-pdf/supplier_${lineId}.pdf`
+        const pdfUrl = `${apiUrl}/files/download/supplier-pdf/supplier_${lineId}.pdf`
 
         await handleFieldChange(lineId, 'pdfUrl', pdfUrl)
       } catch (error) {
