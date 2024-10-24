@@ -182,6 +182,7 @@ export type LogisticsLineDto = {
   description: string
   destination: Destination
   id: number
+  pdfUrl?: string
   purchaseId: number
 }
 
