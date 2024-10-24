@@ -3,6 +3,8 @@ import React, { useState } from 'react'
 import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import { useGetAllSalesQuery } from '@/entities/deal'
 import { PurchaseDto } from '@/entities/deal/deal.types'
+import { useCreateNotificationMutation } from '@/entities/notifications'
+import { useMeQuery } from '@/entities/session'
 
 import InvoiceLines from './InvoiceLines'
 import LogisticsLines from './LogisticsLines'
@@ -16,14 +18,15 @@ interface EditableFormProps {
 }
 
 const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onSave, pdfUrl }) => {
-  const [totalInvoice, setTotalInvoice] = useState<number>(0) // Сумма из InvoiceLines
-  const [totalSupplier, setTotalSupplier] = useState<number>(0) // Сумма из SupplierLines
-  const [totalLogistics, setTotalLogistics] = useState<number>(0) // Сумма из LogisticsLines
+  const [totalInvoice, setTotalInvoice] = useState<number>(0)
+  const [totalSupplier, setTotalSupplier] = useState<number>(0)
+  const [totalLogistics, setTotalLogistics] = useState<number>(0)
   const { data: counters } = useGetAllCounterpartiesQuery()
+  const { data: salesData } = useGetAllSalesQuery()
+  const { data: meData } = useMeQuery()
+  const [createNotification] = useCreateNotificationMutation()
 
   console.log(totalInvoice)
-  const { data: salesData } = useGetAllSalesQuery()
-
   function findTotalAmount(id: number) {
     const sale = salesData?.find((sale: any) => sale.id === id)
 
@@ -36,8 +39,24 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
     return counter ? counter.name : undefined
   }
 
-  // Рассчитываем прибыль/маржу/итого
   const totalProfit = findTotalAmount(initialValue.id) - totalSupplier - totalLogistics
+
+  const handleAllArrived = async () => {
+    try {
+      const notificationContent = `Дата: ${new Date().toLocaleDateString()}, Номер сделки: ${initialValue.requestNumber}, Заказчик: ${findName(initialValue.counterpartyId)}, Всё поступило на склад.`
+
+      await createNotification({
+        content: notificationContent,
+        createdBy: meData?.id || 1,
+        seenBy: [],
+        title: 'Все поступило на склад',
+      }).unwrap()
+
+      alert('Уведомление создано')
+    } catch (error) {
+      alert('Не удалось создать уведомление')
+    }
+  }
 
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50'}>
@@ -73,7 +92,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
             </div>
 
             <div>
-              <label className={'block text-sm font-medium'}>Контрагент</label>
+              <label className={'block text-sm font-medium'}>Заказчик</label>
               <input
                 className={'border p-2 w-full'}
                 defaultValue={findName(initialValue.counterpartyId)}
@@ -90,36 +109,65 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
                 type={'number'}
               />
             </div>
+
+            <div>
+              <label className={'block text-sm font-medium'}>Менеджер</label>
+              <input
+                className={'border p-2 w-full'}
+                defaultValue={findName(initialValue.userId)}
+                readOnly
+              />
+            </div>
+
+            <div>
+              <label className={'block text-sm font-medium'}>Крайняя дата поставки</label>
+              <input
+                className={'border p-2 w-full'}
+                defaultValue={
+                  initialValue.deliveryDeadline
+                    ? new Date(initialValue.deliveryDeadline).toISOString().substring(0, 10)
+                    : ''
+                }
+                name={'deliveryDeadline'}
+                type={'date'}
+              />
+            </div>
           </div>
 
-          {/* Подключаем дочерние компоненты и передаём функции для подъёма значений */}
           <InvoiceLines onTotalChange={setTotalInvoice} purchaseId={initialValue.id} />
           <SupplierLines onTotalChange={setTotalSupplier} purchaseId={initialValue.id} />
           <LogisticsLines onTotalChange={setTotalLogistics} purchaseId={initialValue.id} />
 
-          {/* Отображаем итоговые суммы */}
-          <div className={'mt-4'}>
-            <strong>Закупка общая: {totalSupplier}</strong>
-          </div>
-          <div className={'mt-4'}>
-            <strong>Логистика общая: {totalLogistics}</strong>
-          </div>
-          <div className={'mt-4'}>
-            <strong>ПРИБЫЛЬ/МАРЖА/ИТОГО: {totalProfit}</strong>
+          <div className={'flex justify-between items-center mt-4'}>
+            <div>
+              <div className={'mt-4'}>
+                <strong>Закупка общая: {totalSupplier}</strong>
+              </div>
+              <div className={'mt-4'}>
+                <strong>Логистика общая: {totalLogistics}</strong>
+              </div>
+              <div className={'mt-4'}>
+                <strong>ПРИБЫЛЬ/МАРЖА/ИТОГО: {totalProfit}</strong>
+              </div>
+            </div>
+
+            <button
+              className={'bg-green-500 text-white px-4 py-2 rounded'}
+              onClick={handleAllArrived}
+              type={'button'}
+            >
+              Все пришло
+            </button>
           </div>
 
           <div className={'flex justify-end space-x-4 mt-4'}>
-            <button
-              className={'bg-gray-300 px-4 py-2 rounded'}
-              onClick={onCancel}
-              type={'button'} // Указываем, что это не сабмитовая кнопка
-            >
+            <button className={'bg-gray-300 px-4 py-2 rounded'} onClick={onCancel} type={'button'}>
               Отмена
             </button>
             <button
               className={'bg-blue-500 text-white px-4 py-2 rounded'}
-              onClick={onSave} // Вызываем onSave напрямую
-              type={'button'} // Указываем, что это не сабмитовая кнопка
+              onClick={onSave}
+              type={'button'}
             >
               Сохранить
             </button>
