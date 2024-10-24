@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+/* eslint-disable no-constant-condition */
 import React, { useEffect, useState } from 'react'
 
 import {
@@ -8,6 +10,7 @@ import {
 } from '@/entities/deal'
 import { SupplierLineDto } from '@/entities/deal/deal.types'
 import { useGetSuppliersQuery } from '@/entities/departure/departure.api'
+import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 import CreateSupplierLineModal from './CreateSupplierLineModal'
 
@@ -24,6 +27,9 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [localSupplierLines, setLocalSupplierLines] = useState<SupplierLineDto[]>([])
   const [deleteSupplierLine] = useDeleteSupplierLineMutation()
+
+  // Хуки для загрузки и скачивания PDF
+  const [uploadSupplierPdf] = useUploadSupplierPdfMutation()
 
   const handleDeleteLine = async (lineId: number) => {
     try {
@@ -98,6 +104,31 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
     }
   }
 
+  const handleFileUpload = async (lineId: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (file) {
+      try {
+        await uploadSupplierPdf({ file, supplierLineId: String(lineId) }).unwrap()
+
+        const pdfUrl = `${process.env.VITE_APP_API_URL}/api/files/download/supplier-pdf/supplier_${lineId}.pdf`
+
+        await handleFieldChange(lineId, 'pdfUrl', pdfUrl)
+      } catch (error) {
+        console.error('Ошибка при загрузке PDF:', error)
+      }
+    }
+  }
+
+  const handleFileDownload = (pdfUrl: string) => {
+    try {
+      // Открытие PDF напрямую по URL в новой вкладке
+      window.open(pdfUrl, '_blank')
+    } catch (error) {
+      console.error('Ошибка при открытии PDF:', error)
+    }
+  }
+
   return (
     <div className={'mb-4'}>
       <h3 className={'font-medium'}>Строки поставщиков</h3>
@@ -138,7 +169,7 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
                 <td className={'border px-4 py-2'}>{line.description}</td>
                 <td className={'border px-4 py-2'}>
                   <input
-                    className={'border p-2 w-full'}
+                    className={'border p-2 w-[45px]'}
                     onChange={e => handleFieldChange(line.id, 'quantity', Number(e.target.value))}
                     type={'number'}
                     value={line.quantity}
@@ -146,10 +177,7 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
                 </td>
                 <td className={'border px-4 py-2'}>{line.totalPurchaseAmount}</td>
 
-                <td className={'border px-4 py-2'}>
-                  {/* Отображаем имя поставщика */}
-                  {findSupplierName(line.supplierId)}
-                </td>
+                <td className={'border px-4 py-2'}>{findSupplierName(line.supplierId)}</td>
 
                 <td className={'border px-4 py-2'}>
                   <input
@@ -180,18 +208,13 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
                   {line.pdfUrl ? (
                     <button
                       className={'text-blue-500 underline'}
-                      onClick={() => window.open(line.pdfUrl, '_blank')}
+                      onClick={() => handleFileDownload(line.pdfUrl as string)}
                       type={'button'}
                     >
                       Открыть PDF
                     </button>
                   ) : (
-                    <input
-                      onChange={e =>
-                        handleFieldChange(line.id, 'pdfUrl', e.target.files?.[0]?.name)
-                      }
-                      type={'file'}
-                    />
+                    <input onChange={e => handleFileUpload(line.id, e)} type={'file'} />
                   )}
                 </td>
 

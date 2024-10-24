@@ -21,6 +21,7 @@ const destinationOptions: { [key: string]: string } = {
 const LogisticsLines: React.FC<LogisticsLinesProps> = ({ onTotalChange, purchaseId }) => {
   const { data: logisticsLines = [] } = useGetLogisticsLinesByPurchaseIdQuery(purchaseId)
   const [updateLogisticsLine] = useUpdateLogisticsLineMutation()
+
   const [localLogisticsLines, setLocalLogisticsLines] = useState<LogisticsLineDto[]>([])
 
   const totalLogisticsAmount = logisticsLines.reduce((total, line) => total + (line.amount || 0), 0)
@@ -66,7 +67,6 @@ const LogisticsLines: React.FC<LogisticsLinesProps> = ({ onTotalChange, purchase
             <th className={'border px-4 py-2'}>Дата</th>
             <th className={'border px-4 py-2'}>Сумма</th>
             <th className={'border px-4 py-2'}>Описание</th>
-            <th className={'border px-4 py-2'}>Документ</th>
           </tr>
         </thead>
         <tbody>
@@ -118,22 +118,6 @@ const LogisticsLines: React.FC<LogisticsLinesProps> = ({ onTotalChange, purchase
                   onChange={e => handleFieldChange(line.id, 'description', e.target.value)}
                   type={'text'}
                 />
-              </td>
-              <td className={'border px-4 py-2'}>
-                {line.pdfUrl ? (
-                  <button
-                    className={'text-blue-500 underline'}
-                    onClick={() => window.open(line.pdfUrl, '_blank')}
-                    type={'button'}
-                  >
-                    Открыть PDF
-                  </button>
-                ) : (
-                  <input
-                    onChange={e => handleFieldChange(line.id, 'pdfUrl', e.target.files?.[0]?.name)}
-                    type={'file'}
-                  />
-                )}
               </td>
             </tr>
           ))}
