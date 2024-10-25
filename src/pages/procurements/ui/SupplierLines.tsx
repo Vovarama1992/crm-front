@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 
 import {
-  useCreateSupplierLineMutation,
   useDeleteSupplierLineMutation,
   useGetSupplierLinesByPurchaseIdQuery,
   useUpdateSupplierLineMutation,
@@ -14,7 +13,7 @@ import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 import CreateSupplierLineModal from './CreateSupplierLineModal'
 
-const apiUrl = 'https://oldkns.webtm.ru/api'
+const apiUrl = import.meta.env.VITE_APP_API_URL || 'https://oldkns.webtm.ru/api'
 
 interface SupplierLinesProps {
   onTotalChange: (total: number) => void
@@ -25,7 +24,7 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
   const { data: supplierLines = [] } = useGetSupplierLinesByPurchaseIdQuery(purchaseId)
   const { data: suppliers = [] } = useGetSuppliersQuery() // Получаем список поставщиков
   const [updateSupplierLine] = useUpdateSupplierLineMutation()
-  const [createSupplierLine] = useCreateSupplierLineMutation()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [localSupplierLines, setLocalSupplierLines] = useState<SupplierLineDto[]>([])
   const [deleteSupplierLine] = useDeleteSupplierLineMutation()
@@ -76,14 +75,6 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
     }, 0)
 
     onTotalChange(newTotal)
-
-    sanitizedLines.forEach(async line => {
-      try {
-        await createSupplierLine({ ...line, purchaseId })
-      } catch (error) {
-        console.error('Ошибка при создании строки поставщика:', error)
-      }
-    })
   }
 
   const handleFieldChange = async (lineId: number, field: keyof SupplierLineDto, value: any) => {
@@ -131,6 +122,20 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
     }
   }
 
+  const uniqueLines = (lines: any) => {
+    const uniqueMap = new Map()
+
+    lines.forEach((line: any) => {
+      const key = `${line.articleNumber}-${line.description}` // Создаем уникальный ключ
+
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, line) // Сохраняем только уникальные строки
+      }
+    })
+
+    return Array.from(uniqueMap.values()) // Возвращаем уникальные строки в виде массива
+  }
+
   return (
     <div className={'mb-4'}>
       <h3 className={'font-medium'}>Строки поставщиков</h3>
@@ -153,7 +158,7 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
           </tr>
         </thead>
         <tbody>
-          {localSupplierLines.map((line: SupplierLineDto) => {
+          {uniqueLines(localSupplierLines).map((line: SupplierLineDto) => {
             const today = new Date()
             const paymentDate = new Date(line.paymentDate)
             const shipmentDate = new Date(line.shipmentDate)

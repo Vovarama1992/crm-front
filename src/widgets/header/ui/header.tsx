@@ -77,7 +77,7 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
   return (
     <header
       className={cn(
-        'fixed top-0 z-50 bg-background h-[var(--header-height)] w-full lg:text-[16px] text-[12px] border-b border-border/40',
+        'fixed top-0 z-50 bg-black text-white h-[var(--header-height)] w-full lg:text-[16px] text-[12px] border-b border-border/40',
         className
       )}
       {...rest}

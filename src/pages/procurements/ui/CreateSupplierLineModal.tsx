@@ -1,14 +1,17 @@
 import React, { useState } from 'react'
 
-import { useCreateSupplierLineMutation } from '@/entities/deal'
+import { useCreateSupplierLineMutation, useUpdateSupplierLineMutation } from '@/entities/deal'
 import { SupplierLineDto } from '@/entities/deal/deal.types'
 import { useGetSuppliersQuery } from '@/entities/departure/departure.api'
+import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 interface CreateSupplierLineModalProps {
   onCancel: () => void
   onSuccess: (newLines: SupplierLineDto[]) => void // Изменяем на массив
   purchaseId: number
 }
+
+const apiUrl = import.meta.env.VITE_APP_API_URL || 'https://oldkns.webtm.ru/api'
 
 const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   onCancel,
@@ -19,6 +22,13 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   const [selectedSupplierId, setSelectedSupplierId] = useState<null | number>(null)
   const [bulkInput, setBulkInput] = useState('')
   const [linesToAdd, setLinesToAdd] = useState(1)
+  const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [shipmentDate, setShipmentDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [updateSupplierLine] = useUpdateSupplierLineMutation()
+  const [uploadPdf] = useUploadSupplierPdfMutation()
+
+  console.log('apiurk: ' + apiUrl)
 
   const { data: suppliers, isLoading: isSuppliersLoading } = useGetSuppliersQuery()
   const [createSupplierLine] = useCreateSupplierLineMutation()
@@ -88,12 +98,33 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
       for (const line of supplierLines) {
         const newLine = await createSupplierLine({
           ...line,
+          paymentDate: new Date(paymentDate).toISOString(), // Преобразование даты оплаты в ISO
           purchaseId,
+          shipmentDate: new Date(shipmentDate).toISOString(),
           supplierId: selectedSupplierId, // Добавляем supplierId
           supplierInvoice: '',
         }).unwrap()
 
         createdLines.push(newLine) // Добавляем созданную строку в массив
+
+        // Отправка файла на бэкенд
+        if (pdfFile) {
+          const formData = new FormData()
+
+          formData.append('file', pdfFile)
+
+          await uploadPdf({
+            file: pdfFile,
+            supplierLineId: String(newLine.id), // Используем ID созданной строки
+          }).unwrap()
+        }
+
+        await updateSupplierLine({
+          data: {
+            pdfUrl: `${apiUrl}/files/download/supplier-pdf/supplier_${newLine.id}.pdf`,
+          },
+          id: newLine.id,
+        }).unwrap()
       }
       onSuccess(createdLines) // Возвращаем массив созданных строк
       onCancel() // Закрываем модалку
@@ -110,23 +141,55 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
         {isSuppliersLoading ? (
           <p>Загрузка поставщиков...</p>
         ) : (
-          <div className={'mb-4'}>
-            <label className={'block text-sm font-medium'}>Выберите поставщика:</label>
-            <select
-              className={'border p-2 w-full'}
-              onChange={e => setSelectedSupplierId(Number(e.target.value))}
-              value={selectedSupplierId ?? ''}
-            >
-              <option disabled value={''}>
-                Выберите поставщика
-              </option>
-              {suppliers?.map(supplier => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
+          <>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-medium'}>Выберите поставщика:</label>
+              <select
+                className={'border p-2 w-full'}
+                onChange={e => setSelectedSupplierId(Number(e.target.value))}
+                value={selectedSupplierId ?? ''}
+              >
+                <option disabled value={''}>
+                  Выберите поставщика
                 </option>
-              ))}
-            </select>
-          </div>
+                {suppliers?.map(supplier => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-medium'}>Дата оплаты:</label>
+              <input
+                className={'border p-2 w-full'}
+                onChange={e => setPaymentDate(e.target.value)}
+                type={'date'}
+                value={paymentDate}
+              />
+            </div>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-medium'}>Дата доставки:</label>
+              <input
+                className={'border p-2 w-full'}
+                onChange={e => setShipmentDate(e.target.value)}
+                type={'date'}
+                value={shipmentDate}
+              />
+            </div>
+            <div className={'mb-4'}>
+              <label className={'block text-sm font-medium'}>Загрузите файл:</label>
+              <input
+                className={'border p-2 w-full'}
+                onChange={e => {
+                  if (e.target.files && e.target.files[0]) {
+                    setPdfFile(e.target.files[0])
+                  }
+                }}
+                type={'file'}
+              />
+            </div>
+          </>
         )}
 
         <textarea
