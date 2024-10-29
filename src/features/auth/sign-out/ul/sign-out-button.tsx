@@ -8,6 +8,7 @@ export const SignOutButton = () => {
   const handleSignOut = () => {
     try {
       localStorage.removeItem('token')
+      localStorage.clear()
       console.log('Token removed from localStorage')
       window.location.reload()
     } catch (error) {

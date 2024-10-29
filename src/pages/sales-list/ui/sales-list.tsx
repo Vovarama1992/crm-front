@@ -79,13 +79,13 @@ export const SalesListPage = () => {
   const [selectedStartMonth, setSelectedStartMonth] = useState<string>(() => {
     const storedStartMonth = localStorage.getItem('salesSelectedStartMonth')
 
-    return storedStartMonth || '8'
+    return storedStartMonth || '9'
   })
 
   const [selectedEndMonth, setSelectedEndMonth] = useState<string>(() => {
     const storedEndMonth = localStorage.getItem('salesSelectedEndMonth')
 
-    return storedEndMonth || '8'
+    return storedEndMonth || '11'
   })
 
   const [selectedYear, setSelectedYear] = useState<string>(() => {
@@ -114,23 +114,25 @@ export const SalesListPage = () => {
       salesData.forEach((sale: any) => {
         combinedSalesWithRem.push(sale)
 
-        const rem = remainingSalesData.find((r: any) => r.saleId === sale.id)
+        const remSales = remainingSalesData.filter((r: any) => r.saleId === sale.id)
 
-        if (rem) {
-          combinedSalesWithRem.push({ ...rem, isRemaining: true }) // Метка, что это ремейнинг
-        }
+        remSales.forEach(rem => {
+          if (!combinedSalesWithRem.some((s: any) => s.id === rem.id)) {
+            combinedSalesWithRem.push({ ...rem, isRemaining: true })
+          }
+        })
       })
 
       const filteredSales = combinedSalesWithRem.filter((sale: any) => {
         const saleDate = new Date(sale.date)
-        const saleMonth = saleDate.getMonth() + 1 // Месяцы в JavaScript начинаются с 0
+        const saleMonth = saleDate.getMonth() + 1
         const saleYear = saleDate.getFullYear()
 
         return (
           saleYear === Number(selectedYear) &&
           saleMonth >= Number(selectedStartMonth) &&
           saleMonth <= Number(selectedEndMonth) &&
-          (selectedEmployee === 9999 || selectedEmployee === sale.userId)
+          (selectedEmployee === 9999 || sale.userId === Number(selectedEmployee))
         )
       })
 
@@ -571,6 +573,7 @@ export const SalesListPage = () => {
         ((meData?.roleName === 'Менеджер' ||
           meData?.roleName === 'Закупщик' ||
           meData?.roleName === 'РОП' ||
+          meData?.roleName === '' ||
           meData?.roleName === 'Логист') &&
           editingSale?.userId === meData?.id)) &&
         editingSale &&
