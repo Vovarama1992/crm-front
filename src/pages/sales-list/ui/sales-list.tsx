@@ -261,7 +261,7 @@ export const SalesListPage = () => {
     }
 
     const userMarginMap = Object.fromEntries(
-      workersData.map((worker: any) => [worker.id, worker.marginPercent || 0.1])
+      workersData.map((worker: any) => [worker.id, worker.margin_percent || 0.1])
     )
 
     return sales
