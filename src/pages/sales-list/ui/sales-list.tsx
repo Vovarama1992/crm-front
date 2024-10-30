@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import {
   useGetAllRemainingSalesQuery,
   useGetAllSalesQuery,
-  useUpdateSaleMutation,
+  useUpdateSaleWithRemainingMutation,
 } from '@/entities/deal'
 import { SaleDto, SigningStage } from '@/entities/deal/deal.types'
 import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
@@ -52,7 +52,7 @@ export const SalesListPage: React.FC = () => {
   const { data: salesData } = useGetAllSalesQuery()
   const { data: remainingSalesData } = useGetAllRemainingSalesQuery()
   const { data: workersData } = useGetWorkersQuery()
-  const [updateSale] = useUpdateSaleMutation()
+  const [updateSale] = useUpdateSaleWithRemainingMutation()
   const [uploadPdf] = useUploadPdfMutation()
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(9999)
