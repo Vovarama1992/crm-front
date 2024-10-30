@@ -119,12 +119,14 @@ const TableRow: React.FC<TableRowProps> = ({
         : '—'}
     </td>
     <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-      <button
-        className={'bg-blue-500 text-white px-4 py-2 rounded'}
-        onClick={() => openEditModal(sale)}
-      >
-        Редактировать
-      </button>
+      {!rowStyle && (
+        <button
+          className={'bg-blue-500 text-white px-4 py-2 rounded'}
+          onClick={() => openEditModal(sale)}
+        >
+          Редактировать
+        </button>
+      )}
     </td>
   </tr>
 )
