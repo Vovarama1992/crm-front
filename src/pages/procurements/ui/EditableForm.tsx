@@ -5,6 +5,7 @@ import { useGetAllSalesQuery } from '@/entities/deal'
 import { PurchaseDto } from '@/entities/deal/deal.types'
 import { useCreateNotificationMutation } from '@/entities/notifications'
 import { useMeQuery } from '@/entities/session'
+import { useGetWorkersQuery } from '@/entities/workers'
 
 import InvoiceLines from './InvoiceLines'
 import LogisticsLines from './LogisticsLines'
@@ -22,6 +23,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   const [totalSupplier, setTotalSupplier] = useState<number>(0)
   const [totalLogistics, setTotalLogistics] = useState<number>(0)
   const { data: counters } = useGetAllCounterpartiesQuery()
+  const { data: workers } = useGetWorkersQuery()
   const { data: salesData } = useGetAllSalesQuery()
   const { data: meData } = useMeQuery()
   const [createNotification] = useCreateNotificationMutation()
@@ -34,6 +36,12 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   }
 
   function findName(id: number) {
+    const worker = workers?.find(worker => worker.id === id)
+
+    return worker ? worker.name + ' ' + worker.surname : undefined
+  }
+
+  function findCounter(id: number) {
     const counter = counters?.find(counter => counter.id === id)
 
     return counter ? counter.name : undefined
@@ -95,7 +103,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               <label className={'block text-sm font-medium'}>Заказчик</label>
               <input
                 className={'border p-2 w-full'}
-                defaultValue={findName(initialValue.counterpartyId)}
+                defaultValue={findCounter(initialValue.counterpartyId)}
                 readOnly
               />
             </div>

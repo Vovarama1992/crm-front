@@ -1,7 +1,6 @@
 /* eslint-disable max-lines */
 import React, { useEffect, useState } from 'react'
 
-import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import {
   useGetAllRemainingSalesQuery,
   useGetAllSalesQuery,
@@ -10,10 +9,10 @@ import {
 import { SaleDto, SigningStage } from '@/entities/deal/deal.types'
 import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
-import { formatCurrency } from '@/pages/kopeechnik'
 
-import { SalesCreateForm } from './SalesCreateForm'
 import { SalesEditForm } from './SalesEditForm'
+import TableHeaders from './TableHeaders'
+import TableRow from './TableRow'
 
 const months = [
   { label: 'Январь', value: 1 },
@@ -30,6 +29,11 @@ const months = [
   { label: 'Декабрь', value: 12 },
 ]
 
+const translatedSigningStage = {
+  SIGNED_IN_EDO: 'Подписано в ЭДО',
+  SIGNED_ON_PAPER: 'Подписано на бумаге',
+}
+
 const translatedDeliveryStage = {
   IN_STOCK: 'На складе',
   ITEM_DELIVERED_FULL: 'Доставлен товар весь',
@@ -39,197 +43,82 @@ const translatedDeliveryStage = {
   RETURN: 'Возврат',
 }
 
-const translatedSigningStage = {
-  SIGNED_IN_EDO: 'Подписано в ЭДО',
-  SIGNED_ON_PAPER: 'Подписано на бумаге',
-}
-
 const getSaleStage = (signingStage: SigningStage | undefined): string => {
   return signingStage ? 'Конец' : 'Начало'
 }
 
-export const SalesListPage = () => {
+export const SalesListPage: React.FC = () => {
   const { data: meData } = useMeQuery()
   const { data: salesData } = useGetAllSalesQuery()
-  const { data: remainingSalesData } = useGetAllRemainingSalesQuery() // Получаем данные о ремейнингах
+  const { data: remainingSalesData } = useGetAllRemainingSalesQuery()
   const { data: workersData } = useGetWorkersQuery()
-  const { data: counterpartiesData } = useGetAllCounterpartiesQuery()
-
   const [updateSale] = useUpdateSaleMutation()
   const [uploadPdf] = useUploadPdfMutation()
 
-  const userId = meData?.id || null
-  const isDirector = meData?.roleName === 'Директор'
-
-  const [selectedEmployee, setSelectedEmployee] = useState<null | number | string>(() => {
-    const storedEmployee = localStorage.getItem('salesSelectedEmployee')
-
-    // Проверяем роль пользователя, если роль — "Менеджер", "Логист" или "РОП", устанавливаем фильтр по userId
-    if (
-      meData?.roleName === 'Менеджер' ||
-      meData?.roleName === 'Логист' ||
-      meData?.roleName === 'РОП'
-    ) {
-      return userId // Возвращаем userId для этих ролей
-    }
-
-    return storedEmployee ? JSON.parse(storedEmployee) : userId
-  })
-
-  const [selectedStartMonth, setSelectedStartMonth] = useState<string>(() => {
-    const storedStartMonth = localStorage.getItem('salesSelectedStartMonth')
-
-    return storedStartMonth || '9'
-  })
-
-  const [selectedEndMonth, setSelectedEndMonth] = useState<string>(() => {
-    const storedEndMonth = localStorage.getItem('salesSelectedEndMonth')
-
-    return storedEndMonth || '11'
-  })
-
-  const [selectedYear, setSelectedYear] = useState<string>(() => {
-    const storedYear = localStorage.getItem('salesSelectedYear')
-
-    return storedYear || '2024'
-  })
-
+  const [selectedEmployee, setSelectedEmployee] = useState<null | number>(9999)
+  const [selectedStartMonth, setSelectedStartMonth] = useState<string>('9')
+  const [selectedEndMonth, setSelectedEndMonth] = useState<string>('11')
+  const [selectedYear, setSelectedYear] = useState<string>('2024')
   const [editingSale, setEditingSale] = useState<SaleDto | null>(null)
   const [isEditFormOpen, setIsEditFormOpen] = useState(false)
-  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
-  const [sales, setSales] = useState<any[]>([])
+  const [sales, setSales] = useState<SaleDto[]>([])
 
-  // Сохраняем выбранные фильтры в localStorage при их изменении
+  const userId = meData?.id || null
+  const roleName = meData?.roleName
+
+  const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value === '9999' ? 9999 : Number(event.target.value)
+
+    setSelectedEmployee(value)
+  }
+
   useEffect(() => {
-    localStorage.setItem('salesSelectedEmployee', JSON.stringify(selectedEmployee))
-    localStorage.setItem('salesSelectedStartMonth', selectedStartMonth)
-    localStorage.setItem('salesSelectedEndMonth', selectedEndMonth)
-    localStorage.setItem('salesSelectedYear', selectedYear)
-  }, [selectedEmployee, selectedStartMonth, selectedEndMonth, selectedYear])
+    if (salesData) {
+      const roleFilteredSales = salesData.filter(sale => {
+        const isVisibleToUser =
+          roleName === 'Директор' ||
+          roleName === 'Бухгалтер' ||
+          roleName === 'Закупщик' ||
+          (roleName === 'РОП' &&
+            workersData?.some(
+              worker => worker.department_id === meData?.department_id && worker.id === sale.userId
+            )) ||
+          ((roleName === 'Менеджер' || roleName === 'Логист') && sale.userId === userId)
 
-  useEffect(() => {
-    if (salesData && remainingSalesData) {
-      const combinedSalesWithRem: any = []
+        return isVisibleToUser
+      })
 
-      salesData.forEach((sale: any) => {
-        combinedSalesWithRem.push(sale)
+      const finalFilteredSales = roleFilteredSales
+        .filter(sale => {
+          const saleDate = new Date(sale.date)
+          const saleMonth = saleDate.getMonth() + 1
+          const saleYear = saleDate.getFullYear()
 
-        const remSales = remainingSalesData.filter((r: any) => r.saleId === sale.id)
+          const isSaleForSelectedEmployee =
+            selectedEmployee === 9999 || sale.userId === selectedEmployee
 
-        remSales.forEach(rem => {
-          if (!combinedSalesWithRem.some((s: any) => s.id === rem.id)) {
-            combinedSalesWithRem.push({ ...rem, isRemaining: true })
-          }
+          return (
+            saleYear === Number(selectedYear) &&
+            saleMonth >= Number(selectedStartMonth) &&
+            saleMonth <= Number(selectedEndMonth) &&
+            isSaleForSelectedEmployee
+          )
         })
-      })
+        .sort((a, b) => b.id - a.id)
 
-      const filteredSales = combinedSalesWithRem.filter((sale: any) => {
-        const saleDate = new Date(sale.date)
-        const saleMonth = saleDate.getMonth() + 1
-        const saleYear = saleDate.getFullYear()
-
-        return (
-          saleYear === Number(selectedYear) &&
-          saleMonth >= Number(selectedStartMonth) &&
-          saleMonth <= Number(selectedEndMonth) &&
-          (selectedEmployee === 9999 || sale.userId === Number(selectedEmployee))
-        )
-      })
-
-      const sortedSales = [...filteredSales].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      )
-
-      setSales(sortedSales)
+      setSales(finalFilteredSales)
     }
   }, [
     salesData,
-    remainingSalesData,
     selectedEmployee,
     selectedStartMonth,
     selectedEndMonth,
     selectedYear,
+    workersData,
+    roleName,
+    userId,
+    meData?.department_id,
   ])
-
-  const filteredWorkers = workersData?.filter((employee: { department_id: any; id: any }) => {
-    if (meData?.roleName === 'РОП') {
-      return meData?.department_id && employee.department_id === meData?.department_id
-    } else if (meData?.roleName === 'Менеджер' || meData?.roleName === 'РОП') {
-      return employee.id === meData.id
-    } else {
-      return true
-    }
-  })
-
-  const handleEmployeeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value
-
-    setSelectedEmployee(value === 'self' ? userId : Number(value))
-  }
-
-  const handleEndMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = event.target.value
-
-    // Проверяем, чтобы конечный месяц не был меньше начального
-    if (Number(selectedValue) < Number(selectedStartMonth)) {
-      alert('Конечный месяц не может быть меньше начального!')
-
-      return
-    }
-
-    setSelectedEndMonth(selectedValue)
-  }
-
-  const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = event.target.value
-
-    // Если начальный месяц больше конечного, сбрасываем конечный месяц
-    if (Number(selectedValue) > Number(selectedEndMonth)) {
-      setSelectedEndMonth(selectedValue) // Автоматически подстраиваем конечный месяц под начальный
-    }
-
-    setSelectedStartMonth(selectedValue)
-  }
-
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(event.target.value)
-  }
-
-  const handleSelectChange = async (
-    sale: SaleDto,
-    field: 'deliveryStage' | 'signingStage',
-    value: string
-  ) => {
-    try {
-      const updatedValue = value === '' ? null : value
-      const updatedSale = { ...sale, [field]: updatedValue }
-
-      // Оптимистичное обновление в UI
-      setSales(prevSales =>
-        prevSales.map(s => (s.id === sale.id ? { ...s, [field]: updatedValue } : s))
-      )
-
-      // Проверка на отсутствие стадии до этого и отсутствие ремейнинга
-      const hasRemainingSale = remainingSalesData?.some((rem: any) => rem.saleId === sale.id)
-      const wasStageUnset = sale[field] === null || sale[field] === undefined
-
-      if (!hasRemainingSale && wasStageUnset && updatedValue) {
-        // Открываем форму создания
-        setEditingSale({ ...sale, [field]: updatedValue })
-        setIsCreateFormOpen(true)
-      }
-
-      await updateSale({ id: sale.id, sale: updatedSale }).unwrap()
-    } catch (error) {
-      console.error('Ошибка при обновлении продажи:', error)
-    }
-  }
-
-  const getCounterpartyName = (id: number) => {
-    const counterparty = counterpartiesData?.find((cp: { id: number }) => cp.id === id)
-
-    return counterparty ? counterparty.name : '—'
-  }
 
   const handleFileUpload = async (saleId: number, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -240,14 +129,14 @@ export const SalesListPage = () => {
         const pdfUrl = uploadResponse.sale.pdfUrl
 
         await updateSale({ id: saleId, sale: { pdfUrl } }).unwrap()
-        window.location.reload()
+        setSales(prevSales => prevSales.map(s => (s.id === saleId ? { ...s, pdfUrl } : s)))
       } catch (error) {
         console.error('Ошибка при загрузке файла:', error)
       }
     }
   }
 
-  const handleFileOpen = (pdfUrl: string) => {
+  const handleFileOpen = (pdfUrl: string): void => {
     const link = document.createElement('a')
 
     link.href = pdfUrl
@@ -255,17 +144,61 @@ export const SalesListPage = () => {
     link.click()
   }
 
-  function calculateTotalEarned(sales: any, workersData: any): string {
+  const handleSelectChange = async (
+    sale: SaleDto,
+    field: 'deliveryStage' | 'signingStage',
+    value: string
+  ) => {
+    try {
+      const updatedValue = value === '' ? null : value
+      const updatedSale = {
+        ...sale,
+        [field]: updatedValue,
+        statusSetDate: sale.statusSetDate || new Date().toISOString(),
+      }
+
+      setSales(prevSales => prevSales.map(s => (s.id === sale.id ? { ...s, ...updatedSale } : s)))
+      await updateSale({ id: sale.id, sale: updatedSale }).unwrap()
+    } catch (error) {
+      console.error('Ошибка при обновлении продажи:', error)
+    }
+  }
+
+  const openEditModal = (sale: SaleDto) => {
+    setEditingSale(sale)
+    setIsEditFormOpen(true)
+  }
+
+  const closeEditModal = () => {
+    setEditingSale(null)
+    setIsEditFormOpen(false)
+    window.location.reload()
+  }
+
+  // Вычисление общей маржи, оборота и заработка
+  const totalMargin = sales.reduce((acc, sale) => {
+    if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
+      return acc + ((sale.totalSaleAmount as number) - sale.logisticsCost - sale.purchaseCost)
+    }
+
+    return acc
+  }, 0)
+
+  const totalTurnover = sales.reduce(
+    (acc, sale) => acc + (sale.paidNow + sale.prepaymentAmount || 0),
+    0
+  )
+
+  const calculateTotalEarned = (sales: SaleDto[], workersData: any): string => {
     if (!workersData || !sales) {
       return '0'
     }
-
     const userMarginMap = Object.fromEntries(
       workersData.map((worker: any) => [worker.id, worker.margin_percent || 0.1])
     )
 
     return sales
-      .reduce((acc: any, sale: any) => {
+      .reduce((acc, sale) => {
         if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
           const margin =
             (sale.totalSaleAmount || 0) - (sale.logisticsCost || 0) - (sale.purchaseCost || 0)
@@ -279,28 +212,17 @@ export const SalesListPage = () => {
       .toFixed(2)
   }
 
-  const totalMargin = sales.reduce((acc, sale) => {
-    if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
-      const margin =
-        (sale.totalSaleAmount || 0) - (sale.logisticsCost || 0) - (sale.purchaseCost || 0)
-
-      return acc + margin
-    }
-
-    return acc
-  }, 0)
-  const totalTurnover = sales.reduce(
-    (acc, sale) => acc + (sale.paidNow + sale.prepaymentAmount || 0),
-    0
-  )
-  const totalEarned = calculateTotalEarned(salesData, workersData)
+  // Функция для получения соответствующего remaining sale по id продажи
+  const getRemainingSale = (saleId: number): SaleDto | undefined => {
+    return remainingSalesData?.find(remainingSale => remainingSale.saleId === saleId)
+  }
 
   return (
     <div className={'absolute top-[15%] left-[15%] w-[70%] h-[70%] overflow-auto'}>
       <div className={'mb-4 flex justify-between'}>
         <div>
           <label className={'mr-2'}>Выберите начальный месяц:</label>
-          <select onChange={handleStartMonthChange} value={selectedStartMonth}>
+          <select onChange={e => setSelectedStartMonth(e.target.value)} value={selectedStartMonth}>
             {months.map(month => (
               <option key={month.value} value={month.value}>
                 {month.label}
@@ -308,7 +230,7 @@ export const SalesListPage = () => {
             ))}
           </select>
           <label className={'mr-2 ml-4'}>Выберите конечный месяц:</label>
-          <select onChange={handleEndMonthChange} value={selectedEndMonth}>
+          <select onChange={e => setSelectedEndMonth(e.target.value)} value={selectedEndMonth}>
             {months.map(month => (
               <option key={month.value} value={month.value}>
                 {month.label}
@@ -316,7 +238,7 @@ export const SalesListPage = () => {
             ))}
           </select>
           <label className={'mr-2 ml-4'}>Выберите год:</label>
-          <select onChange={handleYearChange} value={selectedYear}>
+          <select onChange={e => setSelectedYear(e.target.value)} value={selectedYear}>
             {[...Array(5)].map((_, i) => (
               <option key={2020 + i} value={2020 + i}>
                 {2020 + i}
@@ -324,236 +246,63 @@ export const SalesListPage = () => {
             ))}
           </select>
         </div>
-        {(meData?.roleName === 'Директор' ||
-          meData?.roleName === 'Бухгалтер' ||
-          meData?.roleName === 'РОП' ||
-          meData?.roleName === 'Закупщик') && (
+
+        {(roleName === 'Директор' ||
+          roleName === 'Бухгалтер' ||
+          roleName === 'РОП' ||
+          roleName === 'Закупщик') && (
           <div>
             <label className={'mr-2'}>Выберите сотрудника:</label>
-            <select onChange={handleEmployeeChange} value={selectedEmployee || ''}>
-              {(meData?.roleName === 'Директор' ||
-                meData?.roleName === 'Бухгалтер' ||
-                meData?.roleName === 'Закупщик') && (
-                <>
-                  <option value={9999}>Все</option>
-                  <></>
-                </>
-              )}
-
-              <option value={'self'}>Я сам</option>
-              {filteredWorkers?.map(
-                (employee: {
-                  id: React.Key | null | readonly string[] | undefined
-                  name:
-                    | Iterable<React.ReactNode>
-                    | React.ReactElement<any, React.JSXElementConstructor<any> | string>
-                    | React.ReactPortal
-                    | boolean
-                    | null
-                    | number
-                    | string
-                    | undefined
-                }) => (
-                  <option key={employee.id as number} value={employee.id as number}>
-                    {employee.name}
-                  </option>
-                )
-              )}
+            <select onChange={handleEmployeeChange} value={selectedEmployee || 9999}>
+              {roleName === 'Директор' && <option value={9999}>Все</option>}
+              <option value={meData?.id}>Я сам</option>
+              {workersData?.map(employee => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.name}
+                </option>
+              ))}
             </select>
           </div>
         )}
       </div>
-      <table className={'min-w-full divide-y divide-gray-200 table-auto'}>
-        <thead className={'bg-gray-50'}>
-          <tr>
-            {[
-              'Номер продажи',
-              'Дата',
-              'Что',
-              'От кого',
-              'Логистика',
-              'Закупка',
-              'Продажа',
-              'Зашло',
-              'Маржа',
-              'Стадия доставки',
-              'Стадия подписания',
-              'Стадия сделки',
-              'Дата проставления статуса',
-              'Действия',
-            ].map(header => (
-              <th
-                className={
-                  'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-                }
-                key={header}
-              >
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
 
+      <table className={'min-w-full divide-y divide-gray-200 table-auto'}>
+        <TableHeaders />
         <tbody className={'bg-white divide-y divide-gray-200'}>
           {sales.map(sale => (
             <React.Fragment key={sale.id}>
-              {/* Отображение продажи */}
-              <tr>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{sale.id}</td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.date.split('T')[0]}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.pdfUrl ? (
-                    <button
-                      className={'text-blue-500'}
-                      onClick={() => handleFileOpen(sale.pdfUrl as string)}
-                    >
-                      {sale.pdfUrl ? sale.pdfUrl.split('/').pop() : 'Нет файла'}
-                    </button>
-                  ) : (
-                    'Нет PDF'
+              <TableRow
+                getSaleStage={getSaleStage}
+                handleFileOpen={handleFileOpen}
+                handleFileUpload={handleFileUpload}
+                handleSelectChange={handleSelectChange}
+                openEditModal={openEditModal}
+                sale={sale}
+                translatedDeliveryStage={translatedDeliveryStage}
+                translatedSigningStage={translatedSigningStage}
+              />
+              {getSaleStage(sale.signingStage) === 'Конец' && (
+                <>
+                  {getRemainingSale(sale.id) && (
+                    <TableRow
+                      getSaleStage={() => 'Начало'}
+                      handleFileOpen={() => {}}
+                      handleFileUpload={() => Promise.resolve()}
+                      handleSelectChange={() => Promise.resolve()}
+                      openEditModal={() => {}}
+                      rowStyle={'bg-gray-100'}
+                      sale={getRemainingSale(sale.id) as SaleDto}
+                      translatedDeliveryStage={translatedDeliveryStage}
+                      translatedSigningStage={translatedSigningStage}
+                    />
                   )}
-                  {isDirector && (
-                    <div className={'mt-2'}>
-                      <input
-                        className={'mb-2'}
-                        id={`file-upload-${sale.id}`}
-                        onChange={e => handleFileUpload(sale.id, e)}
-                        style={{ display: 'none' }}
-                        type={'file'}
-                      />
-                      <label
-                        className={'bg-blue-500 text-white px-4 py-2 rounded cursor-pointer'}
-                        htmlFor={`file-upload-${sale.id}`}
-                      >
-                        Загрузить другой PDF
-                      </label>
-                    </div>
-                  )}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {getCounterpartyName(sale.counterpartyId)}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.logisticsCost ? formatCurrency(sale.logisticsCost) : '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.purchaseCost ? formatCurrency(sale.purchaseCost) : '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.totalSaleAmount ? formatCurrency(sale.totalSaleAmount) : '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.paidNow || sale.prepaymentAmount
-                    ? formatCurrency(sale.paidNow + sale.prepaymentAmount)
-                    : '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец'
-                    ? sale.totalSaleAmount - sale.logisticsCost - sale.purchaseCost
-                    : '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
-                  <select
-                    className={'border border-gray-300 rounded p-1 w-full'}
-                    onChange={e => handleSelectChange(sale, 'deliveryStage', e.target.value)}
-                    value={sale.deliveryStage || ''}
-                  >
-                    <option value={''}>—</option>
-                    {Object.entries(translatedDeliveryStage).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer'}>
-                  <select
-                    className={'border border-gray-300 rounded p-1 w-full'}
-                    onChange={e => handleSelectChange(sale, 'signingStage', e.target.value)}
-                    value={sale.signingStage || ''}
-                  >
-                    <option value={''}>—</option>
-                    {Object.entries(translatedSigningStage).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {getSaleStage(sale.signingStage)}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  {getSaleStage(sale.signingStage) === 'Конец' && sale.statusSetDate
-                    ? sale.statusSetDate.split('T')[0]
-                    : '—'}
-                </td>
-                <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                  <button
-                    className={'bg-blue-500 text-white px-4 py-2 rounded'}
-                    onClick={() => {
-                      setEditingSale(sale)
-                      setIsEditFormOpen(true)
-                    }}
-                  >
-                    Редактировать
-                  </button>
-                </td>
-              </tr>
-
-              {/* Отображение ремейнинга после продажи с наследованием полей */}
-              {remainingSalesData
-                ?.filter((rem: any) => rem.saleId === sale.id) // Находим все ремейнинги для данной продажи
-                .map((rem: any) => (
-                  <tr className={'bg-gray-100'} key={`remaining-${rem.id}`}>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {rem.saleId} {/* Здесь показываем saleId */}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {rem.date.split('T')[0]}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {sale.pdfUrl ? (
-                        <button
-                          className={'text-blue-500'}
-                          onClick={() => handleFileOpen(sale.pdfUrl as string)}
-                        >
-                          {sale.pdfUrl.split('/').pop()}
-                        </button>
-                      ) : (
-                        'Нет PDF'
-                      )}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {getCounterpartyName(sale.counterpartyId)}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {rem.logisticsCost || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {rem.purchaseCost || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {rem.totalSaleAmount || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {rem.paidNow + rem.prepaymentAmount || '—'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'—'}</td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'—'}</td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'-'}</td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                      {'Начало'}
-                    </td>
-                    <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{'—'}</td>
-                  </tr>
-                ))}
+                </>
+              )}
             </React.Fragment>
           ))}
         </tbody>
       </table>
+
       <div className={'mt-4 flex space-x-4 bg-gray-100 p-4 rounded'}>
         <div className={'flex-1 text-center'}>
           <p className={'font-semibold'}>Общая маржа</p>
@@ -565,48 +314,19 @@ export const SalesListPage = () => {
         </div>
         <div className={'flex-1 text-center'}>
           <p className={'font-semibold'}>Общий заработок</p>
-          <p>{totalEarned}</p>
+          <p>{calculateTotalEarned(sales, workersData)}</p>
         </div>
       </div>
-      {(meData?.roleName === 'Бухгалтер' ||
-        meData?.roleName === 'Директор' ||
-        ((meData?.roleName === 'Менеджер' ||
-          meData?.roleName === 'Закупщик' ||
-          meData?.roleName === 'РОП' ||
-          meData?.roleName === '' ||
-          meData?.roleName === 'Логист') &&
-          editingSale?.userId === meData?.id)) &&
-        editingSale &&
-        isEditFormOpen && (
-          <div
-            className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}
-          >
-            <div className={'bg-white p-4 rounded'}>
-              <SalesEditForm
-                onClose={() => {
-                  setIsEditFormOpen(false)
-                  setEditingSale(null)
-                  window.location.reload()
-                }}
-                sale={editingSale}
-              />
-            </div>
-          </div>
-        )}
-      {isCreateFormOpen && editingSale && (
+
+      {isEditFormOpen && editingSale && (
         <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
           <div className={'bg-white p-4 rounded'}>
-            <SalesCreateForm
-              onClose={() => {
-                setIsCreateFormOpen(false)
-                setEditingSale(null)
-                window.location.reload()
-              }}
-              sale={editingSale}
-            />
+            <SalesEditForm onClose={closeEditModal} sale={editingSale} />
           </div>
         </div>
       )}
     </div>
   )
 }
+
+export default SalesListPage

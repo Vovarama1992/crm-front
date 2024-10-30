@@ -182,8 +182,15 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
               <input
                 className={'border p-2 w-full'}
                 onChange={e => {
-                  if (e.target.files && e.target.files[0]) {
-                    setPdfFile(e.target.files[0])
+                  const file = e.target.files?.[0]
+
+                  if (file) {
+                    if (file.type !== 'application/pdf') {
+                      alert('Пожалуйста, загрузите файл в формате PDF.')
+
+                      return
+                    }
+                    setPdfFile(file)
                   }
                 }}
                 type={'file'}

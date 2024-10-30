@@ -126,14 +126,20 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
     const uniqueMap = new Map()
 
     lines.forEach((line: any) => {
-      const key = `${line.articleNumber}-${line.description}` // Создаем уникальный ключ
+      const key = `${line.articleNumber}-${line.description}-${line.quantity}-${line.totalPurchaseAmount}-${line.paymentDate}-${line.shipmentDate}-${line.supplierInvoice}-${line.comment}`
 
-      if (!uniqueMap.has(key)) {
-        uniqueMap.set(key, line) // Сохраняем только уникальные строки
+      if (uniqueMap.has(key)) {
+        const existingLine = uniqueMap.get(key)
+
+        if (existingLine.id && line.id) {
+          uniqueMap.set(`${key}-${line.id}`, line)
+        }
+      } else {
+        uniqueMap.set(key, line)
       }
     })
 
-    return Array.from(uniqueMap.values()) // Возвращаем уникальные строки в виде массива
+    return Array.from(uniqueMap.values())
   }
 
   return (

@@ -88,6 +88,7 @@ export type SaleDto = {
   purchaseCost: number
   ropId?: number
   saleAmount?: number
+  saleId?: number
   signingStage?: SigningStage
   // Новые поля:
   statusSetDate?: string // DateTime в формате ISO
