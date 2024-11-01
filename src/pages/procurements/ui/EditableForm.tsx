@@ -77,9 +77,9 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               <label className={'block text-sm font-medium'}>Номер запроса</label>
               <input
                 className={'border p-2 w-full'}
-                defaultValue={initialValue.requestNumber}
-                name={'requestNumber'}
-                type={'text'}
+                defaultValue={initialValue.invoiceToCustomer}
+                name={'invoiceToCustomer'}
+                type={'number'}
               />
             </div>
 
@@ -112,9 +112,9 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               <label className={'block text-sm font-medium'}>Счет заказчику</label>
               <input
                 className={'border p-2 w-full'}
-                defaultValue={initialValue.invoiceToCustomer}
-                name={'invoiceToCustomer'}
-                type={'number'}
+                defaultValue={initialValue.requestNumber}
+                name={'requestNumber'}
+                type={'text'}
               />
             </div>
 

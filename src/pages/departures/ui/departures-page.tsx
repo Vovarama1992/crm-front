@@ -134,9 +134,9 @@ export const DeparturesPage = () => {
     if (!userData?.roleName) {
       return false
     }
-    const allowedRoles = ['Директор', 'Закупщик', 'Логист'] // роли, которые могут редактировать
+    const allowedRoles = ['Директор'] // роли, которые могут редактировать
 
-    return allowedRoles.includes(userData.roleName) || userData.id === departure.userId
+    return allowedRoles.includes(userData.roleName) || userData.id === departure.departureCreator
   }
 
   const hasCreatePermission = ['Директор', 'Закупщик', 'Логист'].includes(userData?.roleName || '')

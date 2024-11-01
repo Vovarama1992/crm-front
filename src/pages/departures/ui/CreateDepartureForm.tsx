@@ -180,7 +180,12 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
 
       <div className={'mb-4'}>
         <label className={'block text-sm font-bold mb-1'}>Финальная сумма</label>
-        <input className={'border rounded p-2 w-full'} name={'finalAmount'} type={'number'} />
+        <input
+          className={'border rounded p-2 w-full'}
+          name={'finalAmount'}
+          step={'0.01'}
+          type={'number'}
+        />
       </div>
 
       <div className={'mb-4'}>
