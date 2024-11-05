@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-import { useGetAllCounterpartiesQuery } from '@/entities/deal'
+import { useGetAllCounterpartiesQuery, useUpdatePurchaseMutation } from '@/entities/deal'
 import { useGetAllSalesQuery } from '@/entities/deal'
 import { PurchaseDto } from '@/entities/deal/deal.types'
 import { useCreateNotificationMutation } from '@/entities/notifications'
@@ -25,8 +25,10 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   const { data: counters } = useGetAllCounterpartiesQuery()
   const { data: workers } = useGetWorkersQuery()
   const { data: salesData } = useGetAllSalesQuery()
-  const { data: meData } = useMeQuery()
+
   const [createNotification] = useCreateNotificationMutation()
+  const { data: meData } = useMeQuery()
+  const [updatePurchase] = useUpdatePurchaseMutation()
 
   console.log(totalInvoice)
   function findTotalAmount(id: number) {
@@ -51,18 +53,21 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
 
   const handleAllArrived = async () => {
     try {
-      const notificationContent = `Дата: ${new Date().toLocaleDateString()}, Номер сделки: ${initialValue.requestNumber}, Заказчик: ${findName(initialValue.counterpartyId)}, Всё поступило на склад.`
+      await updatePurchase({
+        data: { id: initialValue.id, isSentAll: true }, // Добавляем id, чтобы соответствовать типу UpdatePurchaseDto
+        id: initialValue.id,
+      }).unwrap()
 
       await createNotification({
-        content: notificationContent,
+        content: `По продаже №${initialValue.dealId} для ${findCounter(initialValue.counterpartyId)} счет № ${initialValue.requestNumber} весь товар поступил на склад.`,
         createdBy: meData?.id || 1,
-        seenBy: [],
+        intendedFor: [initialValue.userId],
         title: 'Все поступило на склад',
       }).unwrap()
 
-      alert('Уведомление создано')
+      alert('Статус "Все пришло" успешно обновлен')
     } catch (error) {
-      alert('Не удалось создать уведомление')
+      alert('Не удалось обновить статус')
     }
   }
 

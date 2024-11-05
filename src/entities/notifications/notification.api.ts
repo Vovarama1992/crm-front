@@ -8,14 +8,18 @@ const notificationApi = baseApi.injectEndpoints({
       query: body => ({
         body: {
           ...body,
-          seenBy: body.seenBy ?? [], // Инициализация пустым массивом, если не указано
+          intendedFor: body.intendedFor,
+          seenBy: body.seenBy ?? [],
         },
         method: 'POST',
         url: 'notifications',
       }),
     }),
-    getNotifications: builder.query<NotificationDto[], number>({
-      query: userId => `notifications/${userId}`,
+    getNotifications: builder.query<NotificationDto[], { page?: number; userId: number }>({
+      query: ({ page = 1, userId }) => ({
+        params: { page },
+        url: `notifications/${userId}`,
+      }),
     }),
     markNotificationAsSeen: builder.mutation<NotificationDto, { id: number; userId: number }>({
       query: ({ id, userId }) => ({
