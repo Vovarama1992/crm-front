@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 
 import { useGetAllSalesQuery } from '@/entities/deal'
 import { useGetAllDealsQuery } from '@/entities/deal'
+import { useGetSupplierLinesByPurchaseIdQuery } from '@/entities/deal'
 import { PurchaseDto, SaleDto } from '@/entities/deal/deal.types'
 
 import EditableForm from './EditableForm'
@@ -15,39 +16,21 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [pdfPaths, setPdfPaths] = useState<{ [key: number]: null | string }>({})
   const { data: deals } = useGetAllDealsQuery()
-  const { data: sales } = useGetAllSalesQuery()
-  const getRequestNumber = (dealId: number) => {
-    console.log(`Поиск продажи для dealId: ${dealId}`)
+  const { data: salesData } = useGetAllSalesQuery()
 
-    // Находим продажу по dealId
-    const sale = sales?.find((sale: any) => sale.id === dealId)
+  const getRequestNumber = (dealId: number) => {
+    const sale = salesData?.find((sale: SaleDto) => sale.id === dealId)
 
     if (!sale) {
-      console.log(`Продажа для dealId: ${dealId} не найдена`)
-
       return 'Продажа не найдена'
     }
 
-    console.log(`Найдена продажа: ${JSON.stringify(sale)}`)
+    const deal = deals?.find(deal => deal.id === sale.dealId)
 
-    // Находим сделку по dealId из найденной продажи
-    const deal = deals?.find((deal: any) => deal.id === sale.dealId)
-
-    if (!deal) {
-      console.log(`Сделка для dealId: ${sale.dealId} не найдена`)
-
-      return 'Сделка не найдена'
-    }
-
-    console.log(`Найдена сделка: ${JSON.stringify(deal)}`)
-
-    return deal.requestNumber
+    return deal ? deal.requestNumber : 'Сделка не найдена'
   }
 
-  console.log('isFormOpen: ' + isFormOpen)
-  const { data: salesData } = useGetAllSalesQuery()
-
-  function findTotalAmount(id: number) {
+  const findTotalAmount = (id: number) => {
     const sale = salesData?.find((sale: SaleDto) => sale.id === id)
 
     return sale?.totalSaleAmount || 0
@@ -60,8 +43,6 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
 
   const handleFormSave = () => {
     setIsFormOpen(false)
-    //window.location.reload()
-    //setEditingOrder(null)
   }
 
   const handleFileOpen = (pdfUrl: string) => {
@@ -81,15 +62,10 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
       const paths: { [key: number]: null | string } = {}
 
       data.forEach(purchase => {
-        const matchingSale = salesData?.find((sale: SaleDto) => sale.id === purchase.dealId)
+        const matchingSale = salesData?.find(sale => sale.id === purchase.dealId)
 
-        if (matchingSale && matchingSale.pdfUrl) {
-          paths[purchase.id] = matchingSale.pdfUrl
-        } else {
-          paths[purchase.id] = null
-        }
+        paths[purchase.id] = matchingSale?.pdfUrl || null
       })
-
       setPdfPaths(paths)
     }
 
@@ -112,6 +88,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
             <th className={'border px-4 py-2 bg-gray-100'}>Крайняя дата поставки</th>
             <th className={'border px-4 py-2 bg-gray-100'}>PDF</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Общая сумма продажи</th>
+            <th className={'border px-4 py-2 bg-gray-100'}>Сумма закупки</th>
             <th className={'border px-4 py-2 bg-gray-100'}>Действия</th>
           </tr>
         </thead>
@@ -125,10 +102,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
               >
                 {purchase.dealId}
               </td>
-              <td className={'border px-4 py-2'}>
-                {/* Извлекаем requestNumber по dealId и отображаем */}
-                {getRequestNumber(purchase.dealId)}
-              </td>
+              <td className={'border px-4 py-2'}>{getRequestNumber(purchase.dealId)}</td>
               <td className={'border px-4 py-2'}>{purchase.counterpartyName}</td>
               <td className={'border px-4 py-2'}>{purchase.requestNumber}</td>
               <td className={'border px-4 py-2'}>{purchase.managerName}</td>
@@ -149,6 +123,9 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
               </td>
               <td className={'border px-4 py-2'}>{findTotalAmount(purchase.dealId)}</td>
               <td className={'border px-4 py-2'}>
+                <PurchaseAmount purchaseId={purchase.id} />
+              </td>
+              <td className={'border px-4 py-2'}>
                 <button
                   className={'bg-blue-500 text-white px-2 py-1 rounded'}
                   onClick={() => handleEditClick(purchase)}
@@ -166,11 +143,24 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
           initialValue={editingOrder}
           onCancel={() => setIsFormOpen(false)}
           onSave={handleFormSave}
-          pdfUrl={pdfPaths[editingOrder.id] || null} // Передаем путь к PDF-файлу
+          pdfUrl={pdfPaths[editingOrder.id] || null}
         />
       )}
     </div>
   )
+}
+
+const PurchaseAmount: React.FC<{ purchaseId: number }> = ({ purchaseId }) => {
+  const { data: supplierLines } = useGetSupplierLinesByPurchaseIdQuery(purchaseId)
+
+  const totalAmount = supplierLines
+    ? supplierLines.reduce(
+        (sum, line) => sum + (line.totalPurchaseAmount || 0) * (line.quantity || 0),
+        0
+      )
+    : 0
+
+  return <>{totalAmount}</>
 }
 
 export default PurchaseTable

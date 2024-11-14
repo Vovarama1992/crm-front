@@ -20,7 +20,7 @@ enum PermissionsEnum {
 }
 
 const permissionLinks = [
-  { label: 'Контрагент', path: ROUTER_PATHS.CONTRAGENTS, permission: PermissionsEnum.CONTRAGENTS },
+  { label: 'Пайплайн', path: ROUTER_PATHS.CONTRAGENTS, permission: PermissionsEnum.CONTRAGENTS },
   {
     label: 'Сводная таблица',
     path: ROUTER_PATHS.SUMMARY_TABLE,
@@ -77,6 +77,10 @@ export const HomePage = () => {
                 </Typography>
               </Link>
             )
+          }
+
+          if (roleName === 'Закупщик' && link.permission === PermissionsEnum.CONTRAGENTS) {
+            return null
           }
 
           // Для "Бухгалтера" показываем все остальные отчеты, даже если прав нет

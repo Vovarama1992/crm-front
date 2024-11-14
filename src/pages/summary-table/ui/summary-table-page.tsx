@@ -170,15 +170,17 @@ export const SummaryTablePage = () => {
     },
     {
       accessorKey: 'comment',
-      cell: info => info.getValue(),
+      cell: info => (
+        <div className={'break-words whitespace-pre-wrap'}>{String(info.getValue())}</div>
+      ),
       header: 'Комментарий',
       meta: { type: 'input' },
     },
   ]
 
   return (
-    <div className={'absolute w-[94vw] left-[1%] top-[15%]'}>
-      <div className={'mb-4 ml-[10%]'}>
+    <div className={'max-w-[95%] mx-auto'}>
+      <div className={'mb-4 flex flex-wrap items-center'}>
         <input
           className={'border rounded px-2 py-1'}
           onChange={handleFilterCounterpartyChange}

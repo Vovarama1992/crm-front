@@ -35,21 +35,26 @@ const formatDate = (date: Date | null | string) => {
   }
   const validDate = typeof date === 'string' ? new Date(date) : date
 
-  return validDate.toISOString().split('T')[0]
+  return validDate.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 export const ContragentsPage = () => {
   const { data: userData } = useMeQuery()
   const userId = userData?.id || 1
-  const roleName = userData?.roleName // Получаем роль пользователя
+  const roleName = userData?.roleName
 
   const { data: deals = [], refetch } = useGetAllDealsQuery()
-  const { data: users = [] } = useGetWorkersQuery() // Получаем всех пользователей
+  const { data: users = [] } = useGetWorkersQuery()
   const [updateDeal] = useUpdateDealMutation()
 
-  // Сохранение данных фильтров в localStorage и их восстановление
   const [selectedUserId, setSelectedUserId] = useState<null | number>(
-    Number(localStorage.getItem('selectedUserId')) || userId
+    !localStorage.getItem('selectedUserId')
+      ? null
+      : Number(localStorage.getItem('selectedUserId')) || userId
   )
   const [filterInn, setFilterInn] = useState<string>(localStorage.getItem('filterInn') || '')
   const [filterCounterparty, setFilterCounterparty] = useState<string>(
@@ -66,7 +71,7 @@ export const ContragentsPage = () => {
   const [isCounterpartyFormOpen, setIsCounterpartyFormOpen] = useState(false)
 
   useEffect(() => {
-    let updatedDeals = deals
+    let updatedDeals = [...deals]
 
     if (roleName !== 'Директор') {
       updatedDeals = updatedDeals.filter(deal => deal.userId === userId)
@@ -86,15 +91,26 @@ export const ContragentsPage = () => {
       )
     }
 
+    updatedDeals = updatedDeals.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime()
+      const dateB = new Date(b.createdAt || 0).getTime()
+
+      return dateA - dateB
+    })
+
     setFilteredDeals(updatedDeals)
   }, [selectedUserId, filterInn, filterCounterparty, deals, roleName, userId])
 
-  // Сохранение данных в localStorage при изменении фильтров
   const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const userId = e.target.value === 'all' ? null : Number(e.target.value)
 
     setSelectedUserId(userId)
-    localStorage.setItem('selectedUserId', String(userId))
+
+    if (userId !== null) {
+      localStorage.setItem('selectedUserId', String(userId))
+    } else {
+      localStorage.removeItem('selectedUserId')
+    }
   }
 
   const handleFilterInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,9 +127,7 @@ export const ContragentsPage = () => {
     const deal = deals.find(deal => deal.id === dealId)
 
     if (deal) {
-      const updatedDeal: Partial<DealDto> = {
-        [field]: value,
-      }
+      const updatedDeal: Partial<DealDto> = { [field]: value }
 
       try {
         if (field === 'stage' && value === 'INVOICE_PAID') {
@@ -121,13 +135,10 @@ export const ContragentsPage = () => {
           setIsSaleFormOpen(true)
         }
 
-        await updateDeal({
-          deal: updatedDeal,
-          id: dealId,
-        }).unwrap()
+        await updateDeal({ deal: updatedDeal, id: dealId }).unwrap()
         refetch()
       } catch (error) {
-        console.error('Error updating deal:', error)
+        console.error('Ошибка при обновлении сделки:', error)
       }
     }
   }
@@ -137,7 +148,7 @@ export const ContragentsPage = () => {
     setCommentValue(currentComment)
   }
 
-  const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setCommentValue(e.target.value)
   }
 
@@ -169,7 +180,6 @@ export const ContragentsPage = () => {
             type={'text'}
             value={filterCounterparty}
           />
-          {/* Отображаем селектор пользователей для "Директора" или для "РОП" с фильтрацией по departmentId */}
           {(roleName === 'Директор' || roleName === 'РОП') && (
             <select
               className={'border rounded px-2 py-1'}
@@ -179,11 +189,15 @@ export const ContragentsPage = () => {
               {roleName == 'Директор' && <option value={'all'}>Все сотрудники</option>}
               {users
                 .filter(
-                  user => roleName === 'Директор' || user.department_id === userData?.department_id
-                ) // Для РОП фильтрация по departmentId
+                  user =>
+                    (roleName === 'Директор' &&
+                      (['Логист', 'Менеджер', 'РОП'].includes(user.roleName) ||
+                        user.id === userData?.id)) ||
+                    (roleName === 'РОП' && user.department_id === userData?.department_id)
+                )
                 .map(user => (
                   <option key={user.id} value={user.id}>
-                    {user.name}
+                    {user.surname}
                   </option>
                 ))}
             </select>
@@ -204,7 +218,10 @@ export const ContragentsPage = () => {
           </button>
         </div>
       </div>
-      <table className={'table-auto w-full'}>
+      <table
+        className={'table-auto w-full text-sm border-collapse'}
+        style={{ fontSize: '0.875rem' }}
+      >
         <thead>
           <tr>
             <th className={'px-4 py-2'}>Контрагент</th>
@@ -225,8 +242,36 @@ export const ContragentsPage = () => {
               <td className={'border px-4 py-2'}>{deal.counterparty.name}</td>
               <td className={'border px-4 py-2'}>{deal.counterparty.inn}</td>
               <td className={'border px-4 py-2'}>{deal.requestNumber}</td>
-              <td className={'border px-4 py-2'}>{formatCurrency(deal.turnoverRub)}</td>
-              <td className={'border px-4 py-2'}>{formatCurrency(deal.marginRub)}</td>
+              <td className={'border px-4 py-2'}>
+                {roleName === 'Директор' ? (
+                  <input
+                    className={
+                      'p-0.5 text-center w-full h-full bg-transparent outline-none focus:border'
+                    }
+                    defaultValue={deal.turnoverRub?.toString() || ''}
+                    onBlur={e =>
+                      handleFieldChange(deal.id, 'turnoverRub', parseFloat(e.target.value) || 0)
+                    }
+                  />
+                ) : (
+                  formatCurrency(deal.turnoverRub)
+                )}
+              </td>
+              <td className={'border px-4 py-2'}>
+                {roleName === 'Директор' ? (
+                  <input
+                    className={
+                      'p-0.5 text-center w-full h-full bg-transparent outline-none focus:border'
+                    }
+                    defaultValue={deal.marginRub?.toString() || ''}
+                    onBlur={e =>
+                      handleFieldChange(deal.id, 'marginRub', parseFloat(e.target.value) || 0)
+                    }
+                  />
+                ) : (
+                  formatCurrency(deal.marginRub)
+                )}
+              </td>
               <td className={'border px-4 py-2'}>
                 <select
                   onChange={e => handleFieldChange(deal.id, 'stage', e.target.value)}
@@ -257,35 +302,32 @@ export const ContragentsPage = () => {
               <td className={'border px-4 py-2'} style={{ width: '200px' }}>
                 {isEditingComment === deal.id ? (
                   <div>
-                    <input
+                    <textarea
                       autoFocus
-                      className={'border rounded px-2 py-1'}
+                      className={'border rounded px-2 py-1 w-full resize-none'}
                       onBlur={() => handleCommentSubmit(deal.id)}
                       onChange={handleCommentChange}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && !e.shiftKey) {
                           handleCommentSubmit(deal.id)
+                          e.preventDefault()
                         }
                       }}
-                      style={{ boxSizing: 'border-box', width: '80%' }}
-                      type={'text'}
+                      rows={2}
                       value={commentValue}
                     />
                   </div>
                 ) : (
                   <span
-                    className={'block overflow-hidden overflow-ellipsis'}
+                    className={'block cursor-pointer p-1'}
                     onClick={() => handleCommentClick(deal.id, deal.comment || '')}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f9f9f9')}
                     style={{
                       backgroundColor: '#f9f9f9',
                       borderRadius: '4px',
-                      cursor: 'pointer',
-                      maxWidth: '80%',
-                      padding: '2px 4px',
                       transition: 'background-color 0.2s',
-                      whiteSpace: 'nowrap',
+                      whiteSpace: 'pre-wrap',
                     }}
                   >
                     {deal.comment || 'Добавить комментарий'}

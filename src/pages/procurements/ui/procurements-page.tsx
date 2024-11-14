@@ -105,7 +105,7 @@ export const ProcurementsPage: React.FC = () => {
   })
 
   return (
-    <div className={'absolute left-[15%] top-[15%]'}>
+    <div className={'absolute left-[2%] top-[5%]'}>
       <h2 className={'text-xl font-bold mt-4'}>Таблица закупок</h2>
 
       <div className={'ml-[100px] filters mb-4'}>

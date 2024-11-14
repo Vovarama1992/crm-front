@@ -154,13 +154,13 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
             <th className={'border px-4 py-2'}>Кол-во</th>
             <th className={'border px-4 py-2'}>Сумма</th>
             <th className={'border px-4 py-2'}>Поставщик</th>
-            <th className={'border px-4 py-2'}>Дата отгрузки</th>
             <th className={'border px-4 py-2'}>Дата оплаты</th>
+            <th className={'border px-4 py-2'}>Дата отгрузки</th>
             <th className={'border px-4 py-2'}>Доставлено</th>
             <th className={'border px-4 py-2'}>Счёт поставщика</th>
             <th className={'border px-4 py-2'}>Комментарий</th>
-            <th className={'border px-4 py-2'}>Дней до отгрузки</th>
             <th className={'border px-4 py-2'}>Дней до оплаты</th>
+            <th className={'border px-4 py-2'}>Дней до отгрузки</th>
           </tr>
         </thead>
         <tbody>
@@ -191,20 +191,20 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
                 <td className={'border px-4 py-2'}>{line.totalPurchaseAmount}</td>
 
                 <td className={'border px-4 py-2'}>{findSupplierName(line.supplierId)}</td>
+                <td className={'border px-4 py-2'}>
+                  <input
+                    className={'border p-2 w-full'}
+                    defaultValue={line.paymentDate?.substring(0, 10)}
+                    onChange={e => handleFieldChange(line.id, 'paymentDate', e.target.value)}
+                    type={'date'}
+                  />
+                </td>
 
                 <td className={'border px-4 py-2'}>
                   <input
                     className={'border p-2 w-full'}
                     defaultValue={line.shipmentDate?.substring(0, 10)}
                     onChange={e => handleFieldChange(line.id, 'shipmentDate', e.target.value)}
-                    type={'date'}
-                  />
-                </td>
-                <td className={'border px-4 py-2'}>
-                  <input
-                    className={'border p-2 w-full'}
-                    defaultValue={line.paymentDate?.substring(0, 10)}
-                    onChange={e => handleFieldChange(line.id, 'paymentDate', e.target.value)}
                     type={'date'}
                   />
                 </td>
@@ -239,18 +239,6 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
                     value={line.comment}
                   />
                 </td>
-                {/* Дни до отгрузки */}
-                <td
-                  className={'border px-4 py-2'}
-                  title={
-                    daysToShipment >= 0
-                      ? `${daysToShipment} дней осталось до отгрузки`
-                      : 'Срок отгрузки истек'
-                  }
-                >
-                  {daysToShipment >= 0 ? `${daysToShipment} дней` : 'Срок истек'}
-                </td>
-
                 {/* Дни до оплаты */}
                 <td
                   className={'border px-4 py-2'}
@@ -261,6 +249,17 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
                   }
                 >
                   {daysToPayment >= 0 ? `${daysToPayment} дней` : 'Срок истек'}
+                </td>
+                {/* Дни до отгрузки */}
+                <td
+                  className={'border px-4 py-2'}
+                  title={
+                    daysToShipment >= 0
+                      ? `${daysToShipment} дней осталось до отгрузки`
+                      : 'Срок отгрузки истек'
+                  }
+                >
+                  {daysToShipment >= 0 ? `${daysToShipment} дней` : 'Срок истек'}
                 </td>
 
                 <td className={'border px-4 py-2'}>

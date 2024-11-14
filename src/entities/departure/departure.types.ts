@@ -12,7 +12,7 @@ export type DepartureDto = {
   destination: 'RETURN_FROM_CLIENT' | 'RETURN_TO_SUPPLIER' | 'TO_CLIENT' | 'TO_US'
   dispatchDate: Date
   expectedArrivalDate: Date | null
-  finalAmount: null | number
+  finalAmount: null | number | string
   id: number
   specificDestination: 'TO_DOOR' | 'TO_TERMINAL'
   status: 'DELIVERED_ALL' | 'DELIVERED_PARTIALLY' | 'PROBLEM' | 'SENT_ALL' | 'SENT_PARTIALLY'

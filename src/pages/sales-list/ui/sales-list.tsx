@@ -218,7 +218,7 @@ export const SalesListPage: React.FC = () => {
   }
 
   return (
-    <div className={'absolute top-[15%] left-[15%] w-[70%] h-[70%] overflow-auto'}>
+    <div className={'absolute top-[15%] left-[1%] w-[99%] h-[70%] overflow-auto'}>
       <div className={'mb-4 flex justify-between'}>
         <div>
           <label className={'mr-2'}>Выберите начальный месяц:</label>
@@ -266,7 +266,7 @@ export const SalesListPage: React.FC = () => {
         )}
       </div>
 
-      <table className={'min-w-full divide-y divide-gray-200 table-auto'}>
+      <table className={'min-w-full table-fixed border-collapse divide-y divide-gray-200'}>
         <TableHeaders />
         <tbody className={'bg-white divide-y divide-gray-200'}>
           {sales.map(sale => (

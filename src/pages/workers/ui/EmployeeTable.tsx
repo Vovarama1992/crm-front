@@ -14,6 +14,20 @@ type EmployeeTableProps = {
   workers: WorkerDto[]
 }
 
+function formatDate(date: Date | null | string | undefined): string {
+  if (!date) {
+    return ''
+  }
+
+  const validDate = typeof date === 'string' ? new Date(date) : date
+
+  return validDate.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
   const [deleteWorker] = useFireWorkerMutation()
 
@@ -151,7 +165,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                 {worker.mobile}
               </td>
               <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {worker.birthday}
+                {formatDate(worker.birthday)}
               </td>
               {roleName === 'Директор' && (
                 <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>

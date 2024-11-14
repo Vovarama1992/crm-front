@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
+import { useGetWorkersQuery } from '@/entities/workers'
+
 type ExpenseReport = {
   category: string
   date: string
@@ -7,7 +9,7 @@ type ExpenseReport = {
   id: number
   name: string
   subcategory: string
-  userId?: number // Добавлено поле userId
+  userId?: number
 }
 
 type ReportDetailsModalProps = {
@@ -24,27 +26,39 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
   report,
 }) => {
   const [editableReport, setEditableReport] = useState<ExpenseReport | null>(report)
+  const { data: workers = [] } = useGetWorkersQuery()
+  const [workerName, setWorkerName] = useState<string>('')
 
   useEffect(() => {
     setEditableReport(report)
-  }, [report])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (editableReport) {
-      const { name, value } = e.target
+    if (report && report.userId) {
+      const worker = workers.find((w: any) => w.id === report.userId)
 
-      setEditableReport({
-        ...editableReport,
-        [name]: name === 'expense' ? parseFloat(value) : value,
-      })
+      if (worker) {
+        setWorkerName(`${worker.name} ${worker.surname}`)
+      } else {
+        setWorkerName('Неизвестный сотрудник')
+      }
     }
-  }
+  }, [report, workers])
 
   const handleSave = () => {
     if (editableReport) {
       onSave(editableReport)
       onClose()
     }
+  }
+
+  // Форматирование даты в нужный вид (например, "ДД.ММ.ГГГГ")
+  const formatDate = (date: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }
+
+    return new Date(date).toLocaleDateString('ru-RU', options)
   }
 
   if (!isOpen || !editableReport) {
@@ -57,41 +71,37 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
         <h2 className={'text-xl mb-4'}>Детали расхода</h2>
         <div className={'flex flex-col space-y-4'}>
           <div>
-            <label className={'block'}>userId</label>
+            <label className={'block'}>Сотрудник</label>
             <input
               className={'border p-2 w-full'}
-              name={'userId'}
-              onChange={handleChange}
+              readOnly // Поле только для чтения
               type={'text'}
-              value={editableReport.userId}
+              value={workerName}
             />
           </div>
           <div>
             <label className={'block'}>Дата</label>
             <input
               className={'border p-2 w-full'}
-              name={'date'}
-              onChange={handleChange}
+              readOnly // Поле только для чтения
               type={'text'}
-              value={editableReport.date}
+              value={formatDate(editableReport.date)} // Форматированная дата
             />
           </div>
           <div>
             <label className={'block'}>Сумма</label>
             <input
               className={'border p-2 w-full'}
-              name={'expense'}
-              onChange={handleChange}
-              type={'number'}
-              value={editableReport.expense}
+              readOnly // Поле только для чтения
+              type={'text'}
+              value={editableReport.expense.toFixed(2).replace('.', ',')} // Преобразование суммы
             />
           </div>
           <div>
             <label className={'block'}>Название</label>
             <input
               className={'border p-2 w-full'}
-              name={'name'}
-              onChange={handleChange}
+              readOnly // Поле только для чтения
               type={'text'}
               value={editableReport.name}
             />
@@ -101,7 +111,7 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
           <button className={'bg-gray-500 text-white px-4 py-2 rounded'} onClick={onClose}>
             Закрыть
           </button>
-          <button className={'bg-blue-500 text-white px-4 py-2 rounded'} onClick={handleSave}>
+          <button className={'bg-gray-500 text-white px-4 py-2 rounded'} onClick={handleSave}>
             Сохранить
           </button>
         </div>

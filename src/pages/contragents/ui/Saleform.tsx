@@ -18,10 +18,10 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [inn, setInn] = useState('')
   const [deliveryDeadline, setDeliveryDeadline] = useState('')
-  const [prepaymentAmount, setPrepaymentAmount] = useState(0)
+  const [prepaymentAmount, setPrepaymentAmount] = useState<string>('')
   const [isFinalAmount, setIsFinalAmount] = useState(false)
   const [isIndependentDeal, setIsIndependentDeal] = useState(false)
-  const [totalSaleAmount, setTotalSaleAmount] = useState(0)
+  const [totalSaleAmount, setTotalSaleAmount] = useState<string>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null) // Хранение файла
   const { data: deals } = useGetAllDealsQuery()
 
@@ -74,11 +74,12 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
       margin: 0,
       paidNow: 0,
       pdfPath: '', // Изначально оставляем пустым
-      prepaymentAmount,
+      prepaymentAmount: parseFloat(prepaymentAmount.replace(',', '.')) || 0,
       purchaseCost: 0,
       requestNumber: String(requestNumber),
       ropId,
-      totalSaleAmount,
+      totalSaleAmount: parseFloat(totalSaleAmount.replace(',', '.')) || 0,
+
       userId,
     }
 
@@ -128,104 +129,110 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   }
 
   return (
-    <form className={'p-4 border rounded shadow'} onSubmit={handleSubmit}>
-      <h2 className={'text-lg font-bold mb-4'}>Создание продажи</h2>
+    <div className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'}>
+      <form className={'bg-white p-6 rounded shadow-lg w-[90%] max-w-3xl'} onSubmit={handleSubmit}>
+        <h2 className={'text-lg font-bold mb-4'}>Создание продажи</h2>
 
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
-        <select
-          className={'border rounded p-2 w-full'}
-          onChange={handleCounterpartyChange}
-          required
-          value={selectedCounterpartyId || ''}
-        >
-          <option disabled value={''}>
-            Выберите контрагента
-          </option>
-          {counterparties.map((counterparty: any) => (
-            <option key={counterparty.id} value={counterparty.id}>
-              {counterparty.name}
+        <div className={'mb-4'}>
+          <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
+          <select
+            className={'border rounded p-2 w-full'}
+            onChange={handleCounterpartyChange}
+            required
+            value={selectedCounterpartyId || ''}
+          >
+            <option disabled value={''}>
+              Выберите контрагента
             </option>
-          ))}
-        </select>
-      </div>
+            {counterparties.map((counterparty: any) => (
+              <option key={counterparty.id} value={counterparty.id}>
+                {counterparty.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>ИНН</label>
-        <input className={'border rounded p-2 w-full'} readOnly type={'text'} value={inn} />
-      </div>
+        <div className={'mb-4'}>
+          <label className={'block text-sm font-bold mb-1'}>ИНН</label>
+          <input className={'border rounded p-2 w-full'} readOnly type={'text'} value={inn} />
+        </div>
 
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Номер счёта</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setInvoiceNumber(e.target.value)}
-          type={'text'}
-          value={invoiceNumber}
-        />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Крайняя дата поставки</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setDeliveryDeadline(e.target.value)}
-          type={'date'}
-          value={deliveryDeadline}
-        />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Сумма предоплаты</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setPrepaymentAmount(Number(e.target.value))}
-          type={'number'}
-          value={prepaymentAmount}
-        />
-      </div>
-
-      <div className={'mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Общая сумма продажи</label>
-        <input
-          className={'border rounded p-2 w-full'}
-          onChange={e => setTotalSaleAmount(Number(e.target.value))}
-          type={'number'}
-          value={totalSaleAmount}
-        />
-      </div>
-
-      <div className={'ml-[200px] mb-4'}>
-        <label className={'inline-flex items-center'}>
+        <div className={'mb-4'}>
+          <label className={'block text-sm font-bold mb-1'}>Номер счёта</label>
           <input
-            checked={isFinalAmount}
-            onChange={() => setIsFinalAmount(!isFinalAmount)}
-            type={'checkbox'}
+            className={'border rounded p-2 w-full'}
+            onChange={e => setInvoiceNumber(e.target.value)}
+            type={'text'}
+            value={invoiceNumber}
           />
-          <span className={'ml-2'}>Финальная сумма</span>
-        </label>
-      </div>
+        </div>
 
-      <div className={'ml-[200px] mb-4'}>
-        <label className={'inline-flex items-center'}>
+        <div className={'mb-4'}>
+          <label className={'block text-sm font-bold mb-1'}>Крайняя дата поставки</label>
           <input
-            checked={isIndependentDeal}
-            onChange={() => setIsIndependentDeal(!isIndependentDeal)}
-            type={'checkbox'}
+            className={'border rounded p-2 w-full'}
+            onChange={e => setDeliveryDeadline(e.target.value)}
+            type={'date'}
+            value={deliveryDeadline}
           />
-          <span className={'ml-2'}>Самостоятельная сделка</span>
-        </label>
-      </div>
+        </div>
 
-      <div className={'ml-[200px] mb-4'}>
-        <label className={'block text-sm font-bold mb-1'}>Загрузить файл</label>
-        <input className={'border rounded p-2 w-full'} onChange={handleFileChange} type={'file'} />
-      </div>
+        <div className={'mb-4'}>
+          <label className={'block text-sm font-bold mb-1'}>Сумма предоплаты</label>
+          <input
+            className={'border rounded p-2 w-full'}
+            onChange={e => setPrepaymentAmount(e.target.value)}
+            type={'text'} // изменено на текст
+            value={prepaymentAmount}
+          />
+        </div>
 
-      <button className={'bg-blue-500 ml-[300px] text-white px-4 py-2 rounded'} type={'submit'}>
-        Создать продажу
-      </button>
-    </form>
+        <div className={'mb-4'}>
+          <label className={'block text-sm font-bold mb-1'}>Общая сумма продажи</label>
+          <input
+            className={'border rounded p-2 w-full'}
+            onChange={e => setTotalSaleAmount(e.target.value)}
+            type={'text'} // изменено на текст
+            value={totalSaleAmount}
+          />
+        </div>
+
+        <div className={'ml-[200px] mb-4'}>
+          <label className={'inline-flex items-center'}>
+            <input
+              checked={isFinalAmount}
+              onChange={() => setIsFinalAmount(!isFinalAmount)}
+              type={'checkbox'}
+            />
+            <span className={'ml-2'}>Финальная сумма</span>
+          </label>
+        </div>
+
+        <div className={'ml-[200px] mb-4'}>
+          <label className={'inline-flex items-center'}>
+            <input
+              checked={isIndependentDeal}
+              onChange={() => setIsIndependentDeal(!isIndependentDeal)}
+              type={'checkbox'}
+            />
+            <span className={'ml-2'}>Самостоятельная сделка</span>
+          </label>
+        </div>
+
+        <div className={'ml-[200px] mb-4'}>
+          <label className={'block text-sm font-bold mb-1'}>Загрузить файл</label>
+          <input
+            className={'border rounded p-2 w-full'}
+            onChange={handleFileChange}
+            type={'file'}
+          />
+        </div>
+
+        <button className={'bg-blue-500 ml-[300px] text-white px-4 py-2 rounded'} type={'submit'}>
+          Создать продажу
+        </button>
+      </form>
+    </div>
   )
 }
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 
+import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import { useCreateDealMutation } from '@/entities/deal/deal.api'
 import { CreateDealDto } from '@/entities/deal/deal.types'
 import { useMeQuery } from '@/entities/session'
@@ -13,19 +14,10 @@ export const stageOptions = [
   { label: 'проигран', value: 'LOST' },
 ]
 
-{
-  /*const lossReasonOptions = [
-  { label: 'дорого', value: 'EXPENSIVE' },
-  { label: 'пустомеля', value: 'EMPTY_TALK' },
-  { label: 'нет раппорта', value: 'NO_REPORT' },
-  { label: 'недоработал', value: 'DID_NOT_WORK' },
-  { label: 'другое', value: 'OTHER' },
-]*/
-}
-
 const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { data: userData } = useMeQuery()
   const userId = userData?.id || 1
+  const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
 
   const [createDeal] = useCreateDealMutation()
   const [formData, setFormData] = useState<CreateDealDto>({
@@ -33,10 +25,10 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     comment: '',
     counterpartyName: '',
     dealType: 'REQUEST',
-    marginRub: 0,
-    requestNumber: 0,
+    marginRub: '',
+    requestNumber: '',
     stage: 'QUOTE_SENT',
-    turnoverRub: 0,
+    turnoverRub: '',
     userId,
   })
 
@@ -45,10 +37,7 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     setFormData(prevState => ({
       ...prevState,
-      [name]:
-        name === 'marginRub' || name === 'turnoverRub' || name === 'requestNumber'
-          ? Number(value)
-          : value,
+      [name]: value,
     }))
   }
 
@@ -58,6 +47,9 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const dataToSend = {
         ...formData,
         closeDate: formData.closeDate ? new Date(formData.closeDate).toISOString() : null,
+        marginRub: formData.marginRub ? Number(formData.marginRub) : 0,
+        requestNumber: formData.requestNumber ? Number(formData.requestNumber) : 0,
+        turnoverRub: formData.turnoverRub ? Number(formData.turnoverRub) : 0,
       }
 
       await createDeal(dataToSend).unwrap()
@@ -66,10 +58,10 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         comment: '',
         counterpartyName: '',
         dealType: 'TASK',
-        marginRub: 0,
-        requestNumber: 0,
+        marginRub: '',
+        requestNumber: '',
         stage: 'QUOTE_SENT',
-        turnoverRub: 0,
+        turnoverRub: '',
         userId,
       })
       onClose()
@@ -87,23 +79,30 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className={'grid grid-cols-2 gap-4'}>
             <div className={'mb-4'}>
               <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
-              <input
+              <select
                 className={'w-full border p-2 rounded'}
                 name={'counterpartyName'}
                 onChange={handleChange}
                 required
-                type={'text'}
                 value={formData.counterpartyName}
-              />
+              >
+                <option value={''}>Выберите контрагента</option>
+                {counterparties.map(counterparty => (
+                  <option key={counterparty.id} value={counterparty.name}>
+                    {counterparty.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className={'mb-4'}>
               <label className={'block text-sm font-bold mb-1'}>Оборот в рублях</label>
               <input
                 className={'w-full border p-2 rounded'}
+                inputMode={'numeric'}
                 name={'turnoverRub'}
                 onChange={handleChange}
                 required
-                type={'number'}
+                type={'text'}
                 value={formData.turnoverRub}
               />
             </div>
@@ -111,10 +110,11 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <label className={'block text-sm font-bold mb-1'}>Маржа в рублях</label>
               <input
                 className={'w-full border p-2 rounded'}
+                inputMode={'numeric'}
                 name={'marginRub'}
                 onChange={handleChange}
                 required
-                type={'number'}
+                type={'text'}
                 value={formData.marginRub}
               />
             </div>
@@ -147,22 +147,6 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <option value={'TASK'}>Задача</option>
               </select>
             </div>
-            {/*<div className={'mb-4'}>
-              <label className={'block text-sm font-bold mb-1'}>Причина проигрыша</label>
-              <select
-                className={'w-full border p-2 rounded'}
-                name={'lossReason'}
-                onChange={handleChange}
-                value={formData.lossReason || ''}
-              >
-                <option value={''}>Выберите причину</option>
-                {lossReasonOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>*/}
             <div className={'mb-4 col-span-2'}>
               <label className={'block text-sm font-bold mb-1'}>Комментарий</label>
               <input
@@ -187,10 +171,11 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               <label className={'block text-sm font-bold mb-1'}>Номер запроса/задачи</label>
               <input
                 className={'w-full border p-2 rounded'}
+                inputMode={'numeric'}
                 name={'requestNumber'}
                 onChange={handleChange}
-                type={'number'}
-                value={formData.requestNumber || 0}
+                type={'text'}
+                value={formData.requestNumber}
               />
             </div>
           </div>

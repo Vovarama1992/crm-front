@@ -50,8 +50,15 @@ export const EditDepartureForm: React.FC<EditDepartureFormProps> = ({ departure,
   }
 
   const handleSave = () => {
-    // Удаляем вложенные объекты user и counterparty
     const { counterparty, id, user, ...dataToSubmit } = formData
+
+    const finalAmount = dataToSubmit.finalAmount
+
+    if (typeof finalAmount === 'string') {
+      dataToSubmit.finalAmount = parseFloat(finalAmount) || 0
+    } else {
+      dataToSubmit.finalAmount = finalAmount || 0
+    }
 
     updateDeparture({ data: dataToSubmit, id: departure.id }).then(() => {
       onClose()
@@ -143,7 +150,7 @@ export const EditDepartureForm: React.FC<EditDepartureFormProps> = ({ departure,
           className={'border border-gray-300 rounded p-1 w-full'}
           onChange={e => handleChange('finalAmount', parseFloat(e.target.value))}
           step={'0.01'}
-          type={'number'}
+          type={'text'}
           value={formData.finalAmount || ''}
         />
       </div>

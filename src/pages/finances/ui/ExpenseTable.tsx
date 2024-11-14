@@ -284,6 +284,7 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
   }
 
   const handleReportClick = (report: ExpenseDto) => {
+    console.log('Кликнутый отчет:', report)
     setSelectedReport(report)
     setIsDetailModalOpen(true)
   }

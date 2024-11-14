@@ -14,7 +14,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const [formData, setFormData] = useState<WorkerDto>({
     ...existingWorker,
     margin_percent: existingWorker.margin_percent || 0, // Default value for marginPercent
-    roleName: '', // Default value for role
+    roleName: existingWorker.roleName, // Default value for role
     salary: existingWorker.salary || 0, // Default value for salary
   })
 
@@ -40,18 +40,10 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
     try {
       const margin = formData.margin_percent / 100 // Преобразуем margin_percent
 
-      // Извлекаем dobNumber и преобразуем в число
-      const dobNumber = Number(formData.dobNumber)
-
-      if (isNaN(dobNumber)) {
-        throw new Error('Invalid value for dobNumber: Expected a valid number.')
-      }
-
       // Обновляем поля для отправки
       const { id, ...updateData } = formData
 
       updateData.margin_percent = margin
-      updateData.dobNumber = dobNumber // Обновляем dobNumber в updateData
 
       await updateWorker({ id, ...updateData }).unwrap() // Передаем id и обновленные данные
       onClose()
@@ -115,6 +107,19 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 required
                 type={'text'}
                 value={formData.position}
+              />
+            </div>
+            <div className={'flex flex-col'}>
+              <label className={'block text-gray-700'}>Пароль</label>
+              <input
+                className={
+                  'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
+                }
+                name={'password'}
+                onChange={handleChange}
+                required
+                type={'text'}
+                value={formData.password}
               />
             </div>
             <div className={'flex flex-col'}>

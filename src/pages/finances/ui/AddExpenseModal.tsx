@@ -24,7 +24,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, isOpen, o
   const [newCategory, setNewCategory] = useState<string>('')
   const [newSubcategory, setNewSubcategory] = useState<string>('')
   const [expenseName, setExpenseName] = useState<string>('')
-  const [expenseAmount, setExpenseAmount] = useState<number>(0)
+  const [expenseAmount, setExpenseAmount] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('')
   const [date, setDate] = useState<string>('')
@@ -48,7 +48,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, isOpen, o
     const newReport: CreateExpenseDto = {
       category,
       date: formattedDate,
-      expense: expenseAmount,
+      expense: parseFloat(expenseAmount),
       name: expenseName,
       subcategory,
       userId,
@@ -135,8 +135,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, isOpen, o
             <label className={'block'}>Сумма</label>
             <input
               className={'border p-2 w-full'}
-              onChange={e => setExpenseAmount(parseFloat(e.target.value))}
-              type={'number'}
+              onChange={e => setExpenseAmount(e.target.value)}
+              type={'text'}
               value={expenseAmount}
             />
           </div>

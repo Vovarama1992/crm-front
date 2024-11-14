@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { useGetNotificationsQuery } from '@/entities/notifications'
 import { useMeQuery } from '@/entities/session'
 import { SignOutButton } from '@/features/auth/sign-out'
-import { ModeToggle } from '@/features/change-theme'
+//import { ModeToggle } from '@/features/change-theme'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { cn } from '@/shared/lib/tailwind'
 import { Clock } from 'lucide-react'
@@ -123,7 +123,7 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
               {user.name} {user.surname}
             </span>
           )}
-          <ModeToggle />
+          {/*<ModeToggle />*/}
           <SignOutButton />
         </div>
       </div>

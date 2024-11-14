@@ -5,6 +5,20 @@ import { useGetFiredWorkersQuery } from '@/entities/workers'
 
 import RestoreWorkerForm from './RestoreWorkerForm'
 
+function formatDate(date: Date | null | string | undefined): string {
+  if (!date) {
+    return ''
+  }
+
+  const validDate = typeof date === 'string' ? new Date(date) : date
+
+  return validDate.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 export function FiredWorkersPage() {
   const { data: firedWorkers, error, isLoading } = useGetFiredWorkersQuery()
   const [workerToRestore, setWorkerToRestore] = useState<Omit<WorkerDto, 'table_id'> | null>(null)
@@ -95,7 +109,7 @@ export function FiredWorkersPage() {
                 {worker.mobile}
               </td>
               <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {worker.birthday}
+                {formatDate(worker.birthday)}
               </td>
               <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium'}>
                 <button

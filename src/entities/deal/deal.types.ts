@@ -9,12 +9,13 @@ export type DealDto = {
   comment: null | string
   counterparty: CounterpartyDto // Информация о контрагенте
   counterpartyName: string
+  createdAt: null | string
   dealType: 'REQUEST' | 'TASK'
   id: number
   lossReason?: 'DID_NOT_WORK' | 'EMPTY_TALK' | 'EXPENSIVE' | 'NO_REPORT' | 'OTHER'
-  marginRub: number
+  marginRub: number | string
   purchaseId?: number
-  requestNumber: number
+  requestNumber: number | string
   saleId?: number
   stage:
     | 'DEAL_CLOSED'
@@ -23,7 +24,7 @@ export type DealDto = {
     | 'LOST'
     | 'QUOTE_SENT'
     | 'WORKING_WITH_OBJECTIONS'
-  turnoverRub: number
+  turnoverRub: number | string
   user: UserDto // Добавлено поле для пользователя
   userId: number
 }

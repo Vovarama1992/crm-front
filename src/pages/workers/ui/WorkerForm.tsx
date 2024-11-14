@@ -17,7 +17,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
     birthday: new Date().toISOString().split('T')[0], // Текущая дата по умолчанию
     cardNumber: '',
     department_id: null,
-    dobNumber: 0,
+    dobNumber: '0',
     email: '',
     hireDate: new Date().toISOString().split('T')[0], // Текущая дата по умолчанию
     margin_percent: 10,
@@ -37,10 +37,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
     setFormState(prevState => ({
       ...prevState,
       [name]:
-        name === 'dobNumber' ||
-        name === 'department_id' ||
-        name === 'margin_percent' ||
-        name === 'salary'
+        name === 'department_id' || name === 'margin_percent' || name === 'salary'
           ? Number(value)
           : value,
     }))
@@ -182,7 +179,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             name={'dobNumber'}
             onChange={handleChange}
             required
-            type={'number'}
+            type={'text'}
             value={formState.dobNumber}
           />
         </div>
@@ -210,7 +207,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             name={'margin_percent'}
             onChange={handleChange}
             required
-            type={'number'} // Поле числовое
+            type={'text'} // Поле числовое
             value={formState.margin_percent}
           />
         </div>
@@ -312,7 +309,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             name={'salary'}
             onChange={handleChange}
             required
-            type={'number'}
+            type={'text'}
             value={formState.salary || ''}
           />
         </div>

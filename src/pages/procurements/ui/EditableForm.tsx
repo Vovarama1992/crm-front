@@ -6,6 +6,7 @@ import { PurchaseDto } from '@/entities/deal/deal.types'
 import { useCreateNotificationMutation } from '@/entities/notifications'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
+import { formatCurrency } from '@/pages/kopeechnik'
 
 import InvoiceLines from './InvoiceLines'
 import LogisticsLines from './LogisticsLines'
@@ -149,13 +150,16 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
           <div className={'flex justify-between items-center mt-4'}>
             <div>
               <div className={'mt-4'}>
-                <strong>Закупка общая: {totalSupplier}</strong>
+                <strong>Сумма продажи: {formatCurrency(findTotalAmount(initialValue.id))}</strong>
               </div>
               <div className={'mt-4'}>
-                <strong>Логистика общая: {totalLogistics}</strong>
+                <strong>Закупка общая: {formatCurrency(totalSupplier)}</strong>
               </div>
               <div className={'mt-4'}>
-                <strong>ПРИБЫЛЬ/МАРЖА/ИТОГО: {totalProfit}</strong>
+                <strong>Логистика общая: {formatCurrency(totalLogistics)}</strong>
+              </div>
+              <div className={'mt-4'}>
+                <strong>МАРЖА: {formatCurrency(totalProfit)}</strong>
               </div>
             </div>
 

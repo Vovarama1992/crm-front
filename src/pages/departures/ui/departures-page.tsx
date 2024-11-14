@@ -39,8 +39,11 @@ const formatDate = (date: Date | null | string) => {
     return ''
   }
   const validDate = typeof date === 'string' ? new Date(date) : date
+  const day = String(validDate.getDate()).padStart(2, '0')
+  const month = String(validDate.getMonth() + 1).padStart(2, '0')
+  const year = validDate.getFullYear()
 
-  return validDate.toISOString().split('T')[0]
+  return `${day}.${month}.${year}`
 }
 
 export const DeparturesPage = () => {
@@ -139,7 +142,7 @@ export const DeparturesPage = () => {
     return allowedRoles.includes(userData.roleName) || userData.id === departure.departureCreator
   }
 
-  const hasCreatePermission = ['Директор', 'Закупщик', 'Логист'].includes(userData?.roleName || '')
+  const hasCreatePermission = ['Директор', 'Логист'].includes(userData?.roleName || '')
 
   const filteredData =
     departuresData?.filter(
