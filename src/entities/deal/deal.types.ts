@@ -9,7 +9,7 @@ export type DealDto = {
   comment: null | string
   counterparty: CounterpartyDto // Информация о контрагенте
   counterpartyName: string
-  createdAt: null | string
+  createdAt?: null | string
   dealType: 'REQUEST' | 'TASK'
   id: number
   lossReason?: 'DID_NOT_WORK' | 'EMPTY_TALK' | 'EXPENSIVE' | 'NO_REPORT' | 'OTHER'
