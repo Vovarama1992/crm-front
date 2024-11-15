@@ -7,6 +7,19 @@ import { PurchaseDto, SaleDto } from '@/entities/deal/deal.types'
 
 import EditableForm from './EditableForm'
 
+const formatDate = (date: Date | null | string | undefined) => {
+  if (!date) {
+    return ''
+  }
+  const validDate = typeof date === 'string' ? new Date(date) : date
+
+  return validDate.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 interface PurchaseTableProps {
   data: ({ counterpartyName: string; managerName: string } & PurchaseDto)[]
 }
@@ -95,7 +108,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
         <tbody>
           {data.map(purchase => (
             <tr key={purchase.id}>
-              <td className={'border px-4 py-2'}>{purchase.createdAt?.toString().split('T')[0]}</td>
+              <td className={'border px-4 py-2'}>{formatDate(purchase.createdAt)}</td>
               <td
                 className={'border px-4 py-2 cursor-pointer text-blue-500'}
                 onClick={() => handleFileOpen(pdfPaths[purchase.id]!)}

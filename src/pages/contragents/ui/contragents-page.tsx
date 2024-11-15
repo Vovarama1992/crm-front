@@ -191,8 +191,7 @@ export const ContragentsPage = () => {
                 .filter(
                   user =>
                     (roleName === 'Директор' &&
-                      (['Логист', 'Менеджер', 'РОП'].includes(user.roleName) ||
-                        user.id === userData?.id)) ||
+                      ['Логист', 'Менеджер', 'РОП'].includes(user.roleName)) ||
                     (roleName === 'РОП' && user.department_id === userData?.department_id)
                 )
                 .map(user => (
@@ -299,7 +298,7 @@ export const ContragentsPage = () => {
                   ))}
                 </select>
               </td>
-              <td className={'border px-4 py-2'} style={{ width: '200px' }}>
+              <td className={'border px-4 py-2'} style={{ width: '20%' }}>
                 {isEditingComment === deal.id ? (
                   <div>
                     <textarea

@@ -218,7 +218,7 @@ export const SalesListPage: React.FC = () => {
   }
 
   return (
-    <div className={'absolute top-[15%] left-[1%] w-[99%] h-[70%] overflow-auto'}>
+    <div className={'absolute top-[15%] left-[1%] w-[98vw] h-[70vh] flex flex-col'}>
       <div className={'mb-4 flex justify-between'}>
         <div>
           <label className={'mr-2'}>Выберите начальный месяц:</label>
@@ -266,44 +266,49 @@ export const SalesListPage: React.FC = () => {
         )}
       </div>
 
-      <table className={'min-w-full table-fixed border-collapse divide-y divide-gray-200'}>
-        <TableHeaders />
-        <tbody className={'bg-white divide-y divide-gray-200'}>
-          {sales.map(sale => (
-            <React.Fragment key={sale.id}>
-              <TableRow
-                getSaleStage={getSaleStage}
-                handleFileOpen={handleFileOpen}
-                handleFileUpload={handleFileUpload}
-                handleSelectChange={handleSelectChange}
-                openEditModal={openEditModal}
-                sale={sale}
-                translatedDeliveryStage={translatedDeliveryStage}
-                translatedSigningStage={translatedSigningStage}
-              />
-              {getSaleStage(sale.signingStage) === 'Конец' && (
-                <>
-                  {getRemainingSale(sale.id) && (
-                    <TableRow
-                      getSaleStage={() => 'Начало'}
-                      handleFileOpen={() => {}}
-                      handleFileUpload={() => Promise.resolve()}
-                      handleSelectChange={() => Promise.resolve()}
-                      openEditModal={() => {}}
-                      rowStyle={'bg-gray-100'}
-                      sale={getRemainingSale(sale.id) as SaleDto}
-                      translatedDeliveryStage={translatedDeliveryStage}
-                      translatedSigningStage={translatedSigningStage}
-                    />
-                  )}
-                </>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
+      <div className={'flex-grow overflow-y-auto'}>
+        <table
+          className={'min-w-full table-fixed border-collapse divide-y divide-gray-200'}
+          style={{ width: '98vw' }}
+        >
+          <TableHeaders />
+          <tbody className={'bg-white divide-y divide-gray-200'}>
+            {sales.map(sale => (
+              <React.Fragment key={sale.id}>
+                <TableRow
+                  getSaleStage={getSaleStage}
+                  handleFileOpen={handleFileOpen}
+                  handleFileUpload={handleFileUpload}
+                  handleSelectChange={handleSelectChange}
+                  openEditModal={openEditModal}
+                  sale={sale}
+                  translatedDeliveryStage={translatedDeliveryStage}
+                  translatedSigningStage={translatedSigningStage}
+                />
+                {getSaleStage(sale.signingStage) === 'Конец' && (
+                  <>
+                    {getRemainingSale(sale.id) && (
+                      <TableRow
+                        getSaleStage={() => 'Начало'}
+                        handleFileOpen={() => {}}
+                        handleFileUpload={() => Promise.resolve()}
+                        handleSelectChange={() => Promise.resolve()}
+                        openEditModal={() => {}}
+                        rowStyle={'bg-gray-100'}
+                        sale={getRemainingSale(sale.id) as SaleDto}
+                        translatedDeliveryStage={translatedDeliveryStage}
+                        translatedSigningStage={translatedSigningStage}
+                      />
+                    )}
+                  </>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <div className={'mt-4 flex space-x-4 bg-gray-100 p-4 rounded'}>
+      <div className={'mt-4 flex space-x-4 bg-gray-100 p-4 rounded fixed bottom-0 left-0 w-[98vw]'}>
         <div className={'flex-1 text-center'}>
           <p className={'font-semibold'}>Общая маржа</p>
           <p>{totalMargin}</p>

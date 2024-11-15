@@ -21,7 +21,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   const [supplierLines, setSupplierLines] = useState<any>([])
   const [selectedSupplierId, setSelectedSupplierId] = useState<null | number>(null)
   const [bulkInput, setBulkInput] = useState('')
-  const [linesToAdd, setLinesToAdd] = useState(1)
+  const [linesToAdd, setLinesToAdd] = useState('1')
   const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [shipmentDate, setShipmentDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [pdfFile, setPdfFile] = useState<File | null>(null)
@@ -72,7 +72,7 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
   }
 
   const handleAddMultipleLines = () => {
-    const newLines = Array.from({ length: linesToAdd }, () => ({
+    const newLines = Array.from({ length: Number(linesToAdd) }, () => ({
       articleNumber: '',
       comment: '',
       delivered: false,
@@ -100,9 +100,11 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
           ...line,
           paymentDate: new Date(paymentDate).toISOString(), // Преобразование даты оплаты в ISO
           purchaseId,
+          quantity: Number(line.quantity),
           shipmentDate: new Date(shipmentDate).toISOString(),
           supplierId: selectedSupplierId, // Добавляем supplierId
           supplierInvoice: '',
+          totalPurchaseAmount: Number(line.totalPurchaseAmount),
         }).unwrap()
 
         createdLines.push(newLine) // Добавляем созданную строку в массив
@@ -218,8 +220,8 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
           <input
             className={'border p-2 w-20 mr-2'}
             min={1}
-            onChange={e => setLinesToAdd(Number(e.target.value))}
-            type={'number'}
+            onChange={e => setLinesToAdd(e.target.value)}
+            type={'text'}
             value={linesToAdd}
           />
           <button
@@ -253,8 +255,8 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
               <label className={'block text-sm font-medium'}>Количество</label>
               <input
                 className={'border p-2 w-full'}
-                onChange={e => handleInputChange(index, 'quantity', Number(e.target.value))}
-                type={'number'}
+                onChange={e => handleInputChange(index, 'quantity', e.target.value)}
+                type={'text'}
                 value={line.quantity}
               />
             </div>
@@ -262,10 +264,8 @@ const CreateSupplierLineModal: React.FC<CreateSupplierLineModalProps> = ({
               <label className={'block text-sm font-medium'}>Сумма</label>
               <input
                 className={'border p-2 w-full'}
-                onChange={e =>
-                  handleInputChange(index, 'totalPurchaseAmount', Number(e.target.value))
-                }
-                type={'number'}
+                onChange={e => handleInputChange(index, 'totalPurchaseAmount', e.target.value)}
+                type={'text'}
                 value={line.totalPurchaseAmount}
               />
             </div>

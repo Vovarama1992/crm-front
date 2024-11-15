@@ -91,6 +91,10 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
 
       setLocalSupplierLines(updatedLines)
 
+      if (field === 'quantity') {
+        updateValue = Number(value)
+      }
+
       await updateSupplierLine({ data: { [field]: updateValue }, id: lineId })
     } catch (error) {
       console.error(`Ошибка обновления поля ${field}:`, error)
@@ -139,7 +143,12 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
       }
     })
 
-    return Array.from(uniqueMap.values())
+    return Array.from(uniqueMap.values()).sort((a: any, b: any) => {
+      const dateA = new Date(a.shipmentDate).getTime()
+      const dateB = new Date(b.shipmentDate).getTime()
+
+      return dateA - dateB
+    })
   }
 
   return (
@@ -182,9 +191,9 @@ const SupplierLines: React.FC<SupplierLinesProps> = ({ onTotalChange, purchaseId
                 <td className={'border px-4 py-2'}>{line.description}</td>
                 <td className={'border px-4 py-2'}>
                   <input
-                    className={'border p-2 w-[45px]'}
-                    onChange={e => handleFieldChange(line.id, 'quantity', Number(e.target.value))}
-                    type={'number'}
+                    className={'border p-2 w-[65px]'}
+                    onChange={e => handleFieldChange(line.id, 'quantity', e.target.value)}
+                    type={'text'}
                     value={line.quantity}
                   />
                 </td>

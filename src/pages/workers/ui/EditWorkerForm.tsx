@@ -10,6 +10,8 @@ type EditWorkerFormProps = {
 
 const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose }) => {
   const [updateWorker] = useUpdateWorkerMutation()
+  const [isPasswordChanged, setIsPasswordChanged] = useState(false)
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
   const [formData, setFormData] = useState<WorkerDto>({
     ...existingWorker,
@@ -21,11 +23,14 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
 
-    // Convert salary and marginPercent to numbers
+    if (name === 'password') {
+      setIsPasswordChanged(true) // Устанавливаем флаг изменения пароля
+    }
+
     if (name === 'salary' || name === 'margin_percent') {
       setFormData(prevData => ({
         ...prevData,
-        [name]: parseFloat(value) || 0, // Convert to float
+        [name]: parseFloat(value) || 0,
       }))
     } else {
       setFormData(prevData => ({
@@ -38,12 +43,16 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const margin = formData.margin_percent / 100 // Преобразуем margin_percent
+      const margin = Number(formData.margin_percent) / 100 // Преобразуем margin_percent
 
       // Обновляем поля для отправки
       const { id, ...updateData } = formData
 
       updateData.margin_percent = margin
+
+      if (!isPasswordChanged) {
+        delete updateData.password
+      }
 
       await updateWorker({ id, ...updateData }).unwrap() // Передаем id и обновленные данные
       onClose()
@@ -109,19 +118,31 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 value={formData.position}
               />
             </div>
-            <div className={'flex flex-col'}>
-              <label className={'block text-gray-700'}>Пароль</label>
-              <input
-                className={
-                  'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
-                }
-                name={'password'}
-                onChange={handleChange}
-                required
-                type={'text'}
-                value={formData.password}
-              />
+            <div className={'col-span-2'}>
+              <button
+                className={'px-4 py-2 bg-gray-300 rounded-lg mb-2'}
+                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                type={'button'}
+              >
+                {isPasswordVisible ? 'Отменить изменение пароля' : 'Поменять пароль'}
+              </button>
             </div>
+
+            {/* Поле ввода пароля, видимое только при нажатии на кнопку */}
+            {isPasswordVisible && (
+              <div className={'flex flex-col col-span-2'}>
+                <label className={'block text-gray-700'}>Пароль</label>
+                <input
+                  className={
+                    'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
+                  }
+                  defaultValue={''}
+                  name={'password'}
+                  onChange={handleChange}
+                  type={'text'}
+                />
+              </div>
+            )}
             <div className={'flex flex-col'}>
               <label className={'block text-gray-700'}>Почта</label>
               <input
@@ -220,11 +241,10 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 className={
                   'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
                 }
+                defaultValue={formData.margin_percent * 100}
                 name={'margin_percent'}
                 onChange={handleChange}
-                step={'0.01'} // Шаг изменения установлен на 0.01
-                type={'number'}
-                value={formData.margin_percent}
+                type={'text'}
               />
             </div>
 

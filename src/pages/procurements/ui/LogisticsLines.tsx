@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary */
 import React, { useEffect, useState } from 'react'
 
 import {
@@ -38,7 +39,11 @@ const LogisticsLines: React.FC<LogisticsLinesProps> = ({ onTotalChange, purchase
   ) => {
     try {
       const updatedValue =
-        field === 'date' && typeof value === 'string' ? new Date(value).toISOString() : value
+        field === 'date' && typeof value === 'string'
+          ? new Date(value).toISOString()
+          : field === 'amount'
+            ? Number(value)
+            : value
 
       const updatedLines = localLogisticsLines.map(line =>
         line.id === logisticsLineId ? { ...line, [field]: updatedValue } : line
@@ -107,8 +112,8 @@ const LogisticsLines: React.FC<LogisticsLinesProps> = ({ onTotalChange, purchase
                 <input
                   className={'border p-2 w-full'}
                   defaultValue={line.amount}
-                  onChange={e => handleFieldChange(line.id, 'amount', Number(e.target.value))}
-                  type={'number'}
+                  onChange={e => handleFieldChange(line.id, 'amount', e.target.value)}
+                  type={'text'}
                 />
               </td>
               <td className={'border px-4 py-2'}>

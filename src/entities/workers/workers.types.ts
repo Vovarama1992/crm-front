@@ -12,7 +12,7 @@ export type WorkerDto = {
   middleName: string
   mobile?: string // Мобильный телефон
   name: string // ФИО работника
-  password: string
+  password?: string
   position?: string // Должность
   roleName: string
   salary?: number // Оклад сотрудника (необязательное поле)

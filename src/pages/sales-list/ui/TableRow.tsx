@@ -4,6 +4,19 @@ import { useGetAllCounterpartiesQuery } from '@/entities/deal'
 import { SaleDto, SigningStage } from '@/entities/deal/deal.types'
 import { formatCurrency } from '@/pages/kopeechnik'
 
+const formatDate = (date: Date | null | string | undefined) => {
+  if (!date) {
+    return ''
+  }
+  const validDate = typeof date === 'string' ? new Date(date) : date
+
+  return validDate.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 interface TableRowProps {
   getSaleStage: (signingStage: SigningStage | undefined) => string
   handleFileOpen: (pdfUrl: string) => void
@@ -130,7 +143,7 @@ const TableRow: React.FC<TableRowProps> = ({
       </td>
       <td className={'px-2 py-1 whitespace-nowrap text-sm text-gray-500 truncate'}>
         {getSaleStage(sale.signingStage) === 'Конец' && sale.statusSetDate
-          ? sale.statusSetDate.split('T')[0]
+          ? formatDate(sale.statusSetDate).split('T')[0]
           : '—'}
       </td>
       <td className={'px-2 py-1 whitespace-nowrap text-sm text-gray-500 truncate'}>
