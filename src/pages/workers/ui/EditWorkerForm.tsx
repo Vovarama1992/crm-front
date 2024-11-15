@@ -62,7 +62,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   }
 
   return (
-    <div className={'fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center'}>
+    <div className={'fixed top-[20%] left-[25%] h-[50%] w-[50%] flex items-center justify-center'}>
       <div className={'bg-white p-6 rounded-lg shadow-lg max-w-md w-full'}>
         <h2 className={'text-lg font-semibold mb-4'}>Редактировать сотрудника</h2>
         <form className={'grid grid-cols-1 gap-4'} onSubmit={handleSubmit}>
