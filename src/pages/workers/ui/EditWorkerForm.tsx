@@ -64,7 +64,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   return (
     <div
       className={
-        'fixed top-[8vh] left-[8vw] h-[auto] w-[90vw] flex items-center justify-center border-4 border-gray-400 shadow-inner overflow-y-auto'
+        'fixed top-[8vh] left-[8vw] h-[90vh] w-[90vw] flex items-center justify-center border-4 border-gray-400 shadow-inner text-sm overflow-y-auto'
       }
     >
       <div className={'bg-white p-6 rounded-lg shadow-lg w-full h-full'}>
