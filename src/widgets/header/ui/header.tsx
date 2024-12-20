@@ -34,9 +34,15 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
   const userId = meData?.id || null // Получаем id пользователя через хук
 
   // Используем хук для получения уведомлений, если юзер авторизован
-  const { data: notifications = [] } = useGetNotificationsQuery(userId || 0, {
-    skip: !userId,
-  })
+  const { data: notifications = [] } = useGetNotificationsQuery(
+    {
+      page: 1,
+      userId: userId || 0,
+    },
+    {
+      skip: !userId,
+    }
+  )
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -60,8 +66,12 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
   }, [])
 
   useEffect(() => {
-    // Проверяем, если количество уведомлений изменилось
-    const newNotificationsCount = notifications.length
+    // Фильтруем только непрочитанные уведомления
+    const unreadNotifications = notifications.filter(
+      notification => !notification.seenBy.includes(userId || 1)
+    )
+
+    const newNotificationsCount = unreadNotifications.length
 
     if (newNotificationsCount !== notificationsCount) {
       setNotificationsCount(newNotificationsCount)
@@ -70,7 +80,7 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
       // Убираем эффект мигания через 500 мс
       setTimeout(() => setShowNotificationEffect(false), 500)
     }
-  }, [notifications, notificationsCount])
+  }, [notifications, notificationsCount, userId])
 
   const formattedTime = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`
 
