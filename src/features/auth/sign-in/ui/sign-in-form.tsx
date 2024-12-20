@@ -45,7 +45,7 @@ export const SignInForm = ({ className, ...rest }: SignInFormProps) => {
         localStorage.setItem('token', response.access_token)
 
         navigate(ROUTER_PATHS.HOME, { replace: true })
-        window.location.reload() // Перезагрузка страницы после навигации
+        window.location.reload()
       })
 
       .catch(error => {

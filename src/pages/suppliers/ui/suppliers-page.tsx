@@ -67,7 +67,7 @@ export const SuppliersPage: React.FC = () => {
   )
 
   return (
-    <div className={'absolute left-[15%] top-[15%]'}>
+    <div className={'absolute left-[5%] top-[15%]'}>
       <h2 className={'text-xl font-bold mt-4'}>Список поставщиков</h2>
       <div className={'mb-4'}>
         <input
