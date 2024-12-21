@@ -51,8 +51,10 @@ const TransferForm: React.FC<TransferFormProps> = ({
         managed_by: managedBy,
       })
 
+      const { password, ...employeeData } = employee
+
       await updateWorker({
-        ...employee,
+        ...employeeData,
         department_id: selectedDepartmentId,
         managed_by: managedBy, // Устанавливаем найденный ropId или undefined
       })
