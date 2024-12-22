@@ -44,6 +44,7 @@ export function NotificationPage() {
   const filteredNotifications = notifications.filter(notification => {
     const matchesTitle = notification.title.includes(search)
     const matchesAuthor =
+      notification.createdBy === null ||
       filteredWorkers.length === 0 ||
       filteredWorkers.some(worker => worker.id === notification.createdBy)
     const notificationDate = new Date(notification.createdAt)

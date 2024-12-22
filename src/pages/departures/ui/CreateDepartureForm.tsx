@@ -85,7 +85,7 @@ export const CreateDepartureForm: React.FC<{ onClose: () => void }> = ({ onClose
       status: selectedStatus, // Теперь статус выбран из заранее определенных значений
       trackingNumber: formData.get('trackingNumber') as null | string,
       transportCompany: formData.get('transportCompany') as string,
-      userId: selectedUserId!,
+      userId: departureCreator,
     }
 
     console.log('Данные отправляемые на сервер:', departureData)
