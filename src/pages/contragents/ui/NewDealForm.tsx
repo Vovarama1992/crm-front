@@ -35,9 +35,12 @@ const NewDealForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
 
+    const processedValue =
+      name === 'turnoverRub' || name === 'marginRub' ? value.replace(',', '.') : value
+
     setFormData(prevState => ({
       ...prevState,
-      [name]: value,
+      [name]: processedValue,
     }))
   }
 
