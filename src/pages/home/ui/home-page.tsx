@@ -1,7 +1,9 @@
 import type { AuthContext } from '@/app/providers/router/types'
 
+import { useEffect } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 
+import { useGetNotificationsQuery } from '@/entities/notifications'
 import { useMeQuery } from '@/entities/session'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 import { Typography } from '@/shared/ui/typography'
@@ -51,8 +53,19 @@ const permissionLinks = [
 
 export const HomePage = () => {
   const context = useOutletContext<AuthContext>()
-  const { permissions } = context // Получаем доступные разрешения
+  const { permissions } = context
   const { data: userData } = useMeQuery()
+  const { data: notifications = [], refetch } = useGetNotificationsQuery({
+    page: 1,
+    userId: userData ? userData.id : 1,
+  })
+
+  useEffect(() => {
+    refetch() // Вызываем обновление данных каждый раз, когда компонент рендерится
+  }, [refetch])
+
+  console.log(notifications)
+
   const roleName = userData?.roleName
 
   return (

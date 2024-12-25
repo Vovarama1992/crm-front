@@ -15,7 +15,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
 
   const [formData, setFormData] = useState<WorkerDto>({
     ...existingWorker,
-    margin_percent: existingWorker.margin_percent || 0, // Default value for marginPercent
+    margin_percent: (existingWorker.margin_percent || 0) * 100, // Default value for marginPercent
     roleName: existingWorker.roleName, // Default value for role
     salary: existingWorker.salary || 0, // Default value for salary
   })
@@ -245,7 +245,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 className={
                   'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
                 }
-                defaultValue={formData.margin_percent * 100}
+                defaultValue={formData.margin_percent}
                 name={'margin_percent'}
                 onChange={handleChange}
                 type={'text'}

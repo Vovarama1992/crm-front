@@ -56,9 +56,23 @@ export const SalesListPage: React.FC = () => {
   const [uploadPdf] = useUploadPdfMutation()
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(9999)
-  const [selectedStartMonth, setSelectedStartMonth] = useState<string>('9')
-  const [selectedEndMonth, setSelectedEndMonth] = useState<string>('11')
-  const [selectedYear, setSelectedYear] = useState<string>('2024')
+  const [selectedYear, setSelectedYear] = useState<string>(() => {
+    const storedYear = localStorage.getItem('salesListSelectedYear')
+
+    return storedYear || '2024'
+  })
+
+  const [selectedStartMonth, setSelectedStartMonth] = useState<string>(() => {
+    const storedStartMonth = localStorage.getItem('salesListSelectedStartMonth')
+
+    return storedStartMonth || '1'
+  })
+
+  const [selectedEndMonth, setSelectedEndMonth] = useState<string>(() => {
+    const storedEndMonth = localStorage.getItem('salesListSelectedEndMonth')
+
+    return storedEndMonth || '12'
+  })
   const [editingSale, setEditingSale] = useState<SaleDto | null>(null)
   const [isEditFormOpen, setIsEditFormOpen] = useState(false)
   const [sales, setSales] = useState<SaleDto[]>([])
@@ -70,6 +84,39 @@ export const SalesListPage: React.FC = () => {
     const value = event.target.value === '9999' ? 9999 : Number(event.target.value)
 
     setSelectedEmployee(value)
+  }
+
+  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const year = event.target.value
+
+    setSelectedYear(year)
+    localStorage.setItem('salesListSelectedYear', year)
+  }
+
+  const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const month = event.target.value
+
+    setSelectedStartMonth(month)
+    localStorage.setItem('salesListSelectedStartMonth', month)
+
+    // Обновляем конечный месяц, если начальный месяц становится больше
+    if (Number(month) > Number(selectedEndMonth)) {
+      setSelectedEndMonth(month)
+      localStorage.setItem('salesListSelectedEndMonth', month)
+    }
+  }
+
+  const handleEndMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const month = event.target.value
+
+    setSelectedEndMonth(month)
+    localStorage.setItem('salesListSelectedEndMonth', month)
+
+    // Обновляем начальный месяц, если конечный месяц становится меньше
+    if (Number(month) < Number(selectedStartMonth)) {
+      setSelectedStartMonth(month)
+      localStorage.setItem('salesListSelectedStartMonth', month)
+    }
   }
 
   useEffect(() => {
@@ -222,7 +269,7 @@ export const SalesListPage: React.FC = () => {
       <div className={'mb-4 flex justify-between'}>
         <div>
           <label className={'mr-2'}>Выберите начальный месяц:</label>
-          <select onChange={e => setSelectedStartMonth(e.target.value)} value={selectedStartMonth}>
+          <select onChange={handleStartMonthChange} value={selectedStartMonth}>
             {months.map(month => (
               <option key={month.value} value={month.value}>
                 {month.label}
@@ -230,7 +277,7 @@ export const SalesListPage: React.FC = () => {
             ))}
           </select>
           <label className={'mr-2 ml-4'}>Выберите конечный месяц:</label>
-          <select onChange={e => setSelectedEndMonth(e.target.value)} value={selectedEndMonth}>
+          <select onChange={handleEndMonthChange} value={selectedEndMonth}>
             {months.map(month => (
               <option key={month.value} value={month.value}>
                 {month.label}
@@ -238,7 +285,7 @@ export const SalesListPage: React.FC = () => {
             ))}
           </select>
           <label className={'mr-2 ml-4'}>Выберите год:</label>
-          <select onChange={e => setSelectedYear(e.target.value)} value={selectedYear}>
+          <select onChange={handleYearChange} value={selectedYear}>
             {[...Array(5)].map((_, i) => (
               <option key={2020 + i} value={2020 + i}>
                 {2020 + i}

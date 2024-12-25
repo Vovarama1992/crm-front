@@ -8,6 +8,7 @@ import { Sidebar } from '@/widgets/sidebar'
 
 export const RootLayout = () => {
   const { data, isError, isLoading } = useMeQuery()
+
   const isAuthenticated = !isError && !isLoading
 
   if (isLoading) {

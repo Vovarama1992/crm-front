@@ -63,7 +63,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
         content: `По продаже №${initialValue.dealId} для ${findCounter(initialValue.counterpartyId)} счет № ${initialValue.requestNumber} весь товар поступил на склад.`,
         createdBy: meData?.id || 1,
         intendedFor: [initialValue.userId],
-        title: 'Все поступило на склад',
+        title: `Все поступило на склад по продаже №${initialValue.dealId}`,
       }).unwrap()
 
       alert('Статус "Все пришло" успешно обновлен')

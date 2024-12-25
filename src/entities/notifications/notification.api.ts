@@ -15,9 +15,12 @@ const notificationApi = baseApi.injectEndpoints({
         url: 'notifications',
       }),
     }),
-    getNotifications: builder.query<NotificationDto[], { page?: number; userId: number }>({
-      query: ({ page = 1, userId }) => ({
-        params: { page },
+    getNotifications: builder.query<
+      NotificationDto[],
+      { forceUpdate?: number; page?: number; userId: number }
+    >({
+      query: ({ forceUpdate, page = 1, userId }) => ({
+        params: { forceUpdate, page },
         url: `notifications/${userId}`,
       }),
     }),

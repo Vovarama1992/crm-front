@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { NotificationDto } from '@/entities/notifications'
 import {
@@ -7,6 +7,25 @@ import {
 } from '@/entities/notifications'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
+
+// Функция для форматирования даты
+function formatDate(dateString: Date | string): string {
+  const date = new Date(dateString)
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const year = date.getFullYear()
+
+  return `${day}.${month}.${year}`
+}
+
+// Функция для форматирования времени
+function formatTime(dateString: Date | string): string {
+  const date = new Date(dateString)
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+
+  return `${hours}:${minutes}`
+}
 
 export function NotificationPage() {
   const { data: meData } = useMeQuery()
@@ -22,6 +41,13 @@ export function NotificationPage() {
     { page, userId },
     { skip: !userId }
   )
+
+  useEffect(() => {
+    if (userId) {
+      refetch()
+    }
+  }, [userId, refetch])
+
   const [markAsSeen] = useMarkNotificationAsSeenMutation()
   const [selectedNotificationId, setSelectedNotificationId] = useState<null | number>(null)
 
@@ -99,8 +125,12 @@ export function NotificationPage() {
       </div>
 
       <div className={'border border-gray-300 rounded-lg overflow-hidden'}>
-        <div className={'grid grid-cols-6 gap-4 bg-gray-100 p-2 font-semibold text-gray-600'}>
-          <span>ID</span>
+        {/* Заголовок таблицы с заданием ширины столбцов */}
+        <div
+          className={'grid gap-4 bg-gray-100 p-2 font-semibold text-gray-600'}
+          style={{ gridTemplateColumns: '150px 1fr 2fr 1fr 1fr 1fr' }}
+        >
+          <span>Номер уведомления</span>
           <span>№ Продажи</span>
           <span>Заголовок</span>
           <span>Автор</span>
@@ -115,28 +145,29 @@ export function NotificationPage() {
         ) : (
           <div className={'flex flex-col space-y-2'}>
             {filteredNotifications.map(notification => {
-              const notificationDate = new Date(notification.createdAt)
               const author =
                 workers.find(worker => worker.id === notification.createdBy)?.surname || 'Система'
-              const saleNumber = extractSaleNumber(notification.title)
 
               return (
                 <div
-                  className={`p-4 border-t border-gray-300 grid grid-cols-6 gap-4 items-center ${
-                    notification.seenBy?.includes(userId) ? 'bg-gray-100' : 'bg-white'
+                  className={`p-4 border-t border-gray-300 grid gap-4 items-center ${
+                    notification.seenBy?.includes(userId) ? 'bg-gray-300' : 'bg-white'
                   } cursor-pointer`}
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
+                  style={{ gridTemplateColumns: '150px 1fr 2fr 1fr 1fr 1fr' }}
                 >
                   <span className={'text-gray-500 text-sm'}>{notification.id}</span>
-                  <span className={'text-blue-600 font-semibold'}>{saleNumber}</span>
+                  <span className={'text-blue-600 font-semibold'}>
+                    {extractSaleNumber(notification.title)}
+                  </span>
                   <span className={'text-gray-800'}>{notification.title}</span>
                   <span className={'text-gray-600'}>{author}</span>
                   <span className={'text-gray-500 text-sm'}>
-                    {notificationDate.toLocaleDateString()}
+                    {formatDate(notification.createdAt)}
                   </span>
                   <span className={'text-gray-500 text-sm'}>
-                    {notificationDate.toLocaleTimeString()}
+                    {formatTime(notification.createdAt)}
                   </span>
                   {selectedNotificationId === notification.id && (
                     <div className={'col-span-6 mt-2 text-gray-700 border-t pt-2'}>
