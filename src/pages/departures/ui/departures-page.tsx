@@ -12,6 +12,7 @@ import { useGetWorkersQuery } from '@/entities/workers'
 import { formatCurrency } from '@/pages/kopeechnik'
 
 import { CreateDepartureForm } from './CreateDepartureForm'
+import { DeletedDepartures } from './DeletedDepartures'
 import { EditDepartureForm } from './EditDepartureForm'
 
 const destinationOptions = {
@@ -25,6 +26,9 @@ const specificDestinationOptions = {
   TO_DOOR: 'до двери',
   TO_TERMINAL: 'до терминала',
 }
+
+const buttonBaseStyles =
+  'text-white px-4 py-2 rounded text-center inline-flex items-center justify-center h-[60px] min-w-[200px] mr-[10px]'
 
 const statusOptions = {
   DELIVERED_ALL: 'Доставлено все',
@@ -48,6 +52,7 @@ const formatDate = (date: Date | null | string) => {
 
 export const DeparturesPage = () => {
   const { data: userData } = useMeQuery() // Получаем данные текущего пользователя
+  const [isDeletedOpened, setIsDeletedOpened] = useState(false)
   const [filterNumber, setFilterNumber] = useState(() => localStorage.getItem('filterNumber') || '')
   const [filterCounterparty, setFilterCounterparty] = useState(
     () => localStorage.getItem('filterCounterparty') || ''
@@ -221,10 +226,18 @@ export const DeparturesPage = () => {
         </select>
         {hasCreatePermission && (
           <button
-            className={'bg-green-500 text-white px-4 py-2 rounded'}
+            className={`${buttonBaseStyles} bg-green-500`}
             onClick={() => setIsCreating(true)}
           >
             Добавить отправление
+          </button>
+        )}
+        {userData?.roleName === 'Директор' && (
+          <button
+            className={`${buttonBaseStyles} bg-blue-500`}
+            onClick={() => setIsDeletedOpened(true)}
+          >
+            Показать удаленные отправления
           </button>
         )}
       </div>
@@ -232,7 +245,11 @@ export const DeparturesPage = () => {
       {isCreating && <CreateDepartureForm onClose={() => setIsCreating(false)} />}
 
       {isEditing && selectedDeparture && (
-        <EditDepartureForm departure={selectedDeparture} onClose={() => setIsEditing(false)} />
+        <EditDepartureForm
+          departure={selectedDeparture}
+          onClose={() => setIsEditing(false)}
+          user={userData}
+        />
       )}
 
       <table className={'table-auto w-full border-collapse border'}>
@@ -338,6 +355,7 @@ export const DeparturesPage = () => {
           ))}
         </tbody>
       </table>
+      {isDeletedOpened && <DeletedDepartures onClose={() => setIsDeletedOpened(false)} />}
     </div>
   )
 }

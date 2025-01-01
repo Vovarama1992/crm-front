@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react'
 import {
   useGetLogisticsLinesByPurchaseIdQuery,
   useUpdateLogisticsLineMutation,
-} from '@/entities/deal'
-import { LogisticsLineDto } from '@/entities/deal/deal.types'
+} from '@/entities/purchase'
+import { LogisticsLineDto } from '@/entities/purchase/purchase.types'
 
 interface LogisticsLinesProps {
   onTotalChange: (total: number) => void

@@ -5,11 +5,12 @@ import {
   useGetAllRemainingSalesQuery,
   useGetAllSalesQuery,
   useUpdateSaleWithRemainingMutation,
-} from '@/entities/deal'
-import { SaleDto, SigningStage } from '@/entities/deal/deal.types'
+} from '@/entities/sale'
+import { SaleDto, SigningStage } from '@/entities/sale/sale.types'
 import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
+import DeletedSalesList from './DeletedSalesList'
 import { SalesEditForm } from './SalesEditForm'
 import TableHeaders from './TableHeaders'
 import TableRow from './TableRow'
@@ -54,6 +55,7 @@ export const SalesListPage: React.FC = () => {
   const { data: workersData } = useGetWorkersQuery()
   const [updateSale] = useUpdateSaleWithRemainingMutation()
   const [uploadPdf] = useUploadPdfMutation()
+  const [showDeletedSales, setShowDeletedSales] = useState(false)
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(9999)
   const [selectedYear, setSelectedYear] = useState<string>(() => {
@@ -368,6 +370,14 @@ export const SalesListPage: React.FC = () => {
           <p className={'font-semibold'}>Общий заработок</p>
           <p>{calculateTotalEarned(sales, workersData)}</p>
         </div>
+        <div className={'flex-1 text-center'}>
+          <button
+            className={'bg-yellow-500 text-white p-2 rounded'}
+            onClick={() => setShowDeletedSales(true)}
+          >
+            Удалённые продажи
+          </button>
+        </div>
       </div>
 
       {isEditFormOpen && editingSale && (
@@ -377,6 +387,7 @@ export const SalesListPage: React.FC = () => {
           </div>
         </div>
       )}
+      {showDeletedSales && <DeletedSalesList onClose={() => setShowDeletedSales(false)} />}
     </div>
   )
 }

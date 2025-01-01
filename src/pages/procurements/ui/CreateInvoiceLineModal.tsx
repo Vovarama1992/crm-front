@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-import { useCreateInvoiceLineMutation } from '@/entities/deal' // Импортируем хук
+import { useCreateInvoiceLineMutation } from '@/entities/purchase'
 
 interface CreateInvoiceLineModalProps {
   onCancel: () => void

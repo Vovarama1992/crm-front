@@ -7,13 +7,13 @@ type User = {
   id: number
   middleName: string
   name: string
-  remaining: number // Поле remaining для остатков
+  remaining: number
   surname: string
 }
 
 type CreatePaymentFormProps = {
   onClose: () => void
-  usersWithRemaining: User[] // Получаем массив пользователей с остатками через пропсы
+  usersWithRemaining: User[]
 }
 
 const PAYMENT_TYPES = [

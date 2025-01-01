@@ -3,9 +3,9 @@ import React, { useEffect, useState } from 'react'
 
 import {
   useGetAllPaymentsQuery,
-  useGetAllSalesQuery,
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
 } from '@/entities/deal'
+import { useGetAllSalesQuery } from '@/entities/sale'
 import { useMeQuery } from '@/entities/session'
 import { useGetActiveQuery } from '@/entities/workers'
 import { useGetDepartmentsQuery } from '@/entities/workers'

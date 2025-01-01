@@ -2,13 +2,13 @@
 /* eslint-disable no-constant-condition */
 import React, { useEffect, useState } from 'react'
 
+import { useGetSuppliersQuery } from '@/entities/departure/departure.api'
 import {
   useDeleteSupplierLineMutation,
   useGetSupplierLinesByPurchaseIdQuery,
   useUpdateSupplierLineMutation,
-} from '@/entities/deal'
-import { SupplierLineDto } from '@/entities/deal/deal.types'
-import { useGetSuppliersQuery } from '@/entities/departure/departure.api'
+} from '@/entities/purchase'
+import { SupplierLineDto } from '@/entities/purchase/purchase.types'
 import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 import CreateSupplierLineModal from './CreateSupplierLineModal'

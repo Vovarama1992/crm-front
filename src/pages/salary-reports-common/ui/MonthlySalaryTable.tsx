@@ -58,15 +58,13 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
           totalRemaining += report.remaining
         })
 
-        if (totalRemaining > 0) {
-          usersWithRemainingArray.push({
-            id: employee.id,
-            middleName: employee.middleName,
-            name: employee.name,
-            remaining: totalRemaining,
-            surname: employee.surname,
-          })
-        }
+        usersWithRemainingArray.push({
+          id: employee.id,
+          middleName: employee.middleName,
+          name: employee.name,
+          remaining: totalRemaining,
+          surname: employee.surname,
+        })
       })
     })
 

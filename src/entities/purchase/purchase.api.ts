@@ -1,26 +1,40 @@
 /* eslint-disable max-lines */
 import type {
+  CreateInvoiceLineDto,
+  CreateSupplierLineDto,
+  InvoiceLineDto,
+  LogisticsLineDto,
+  PurchaseDto,
+  SupplierLineDto,
+  UpdateInvoiceLineDto,
+  UpdateLogisticsLineDto,
+  UpdatePurchaseDto,
+  UpdateSupplierLineDto,
+} from './purchase.types'
+
+import { baseApi } from '@/shared/api'
+
+import { ChangeDto } from '../changes/change.types'
+import { DealDto } from '../deal'
+import {
   CounterpartyDto,
   CreateCounterpartyDto,
   CreateDealDto,
   CreateExpenseDto,
   CreatePaymentDto,
-  DealDto,
   ExpenseDto,
   PaymentDto,
-  SaleDto,
-  SupplierLineDto,
-  UpdateSupplierLineDto,
-} from './deal.types'
+} from '../deal/deal.types'
+import { SaleDto } from '../sale'
 
-import { baseApi } from '@/shared/api'
-
-import { ChangeDto } from '../changes/change.types'
-import { PurchaseDto } from '../purchase'
-import { UpdatePurchaseDto } from '../purchase/purchase.types'
-
-const dealApi = baseApi.injectEndpoints({
+const purchaseApi = baseApi.injectEndpoints({
   endpoints: builder => ({
+    GetDeletedPurchases: builder.query<PurchaseDto[], void>({
+      query: () => ({
+        url: '/purchases-deleted',
+      }),
+    }),
+
     createCounterparty: builder.mutation<CounterpartyDto, CreateCounterpartyDto>({
       query: counterparty => ({
         body: counterparty,
@@ -45,6 +59,13 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    createInvoiceLine: builder.mutation<InvoiceLineDto, CreateInvoiceLineDto>({
+      query: invoiceLine => ({
+        body: invoiceLine,
+        method: 'POST',
+        url: `/purchases/${invoiceLine.purchaseId}/invoice-lines`,
+      }),
+    }),
     createMultiplePayments: builder.mutation<PaymentDto[], CreatePaymentDto[]>({
       query: payments => ({
         body: payments,
@@ -58,6 +79,28 @@ const dealApi = baseApi.injectEndpoints({
         body: payment,
         method: 'POST',
         url: '/payments',
+      }),
+    }),
+
+    createSupplierLine: builder.mutation<SupplierLineDto, CreateSupplierLineDto>({
+      query: supplierLine => ({
+        body: supplierLine,
+        method: 'POST',
+        url: `/purchases/${supplierLine.purchaseId}/supplier-lines`,
+      }),
+    }),
+
+    deleteInvoiceLine: builder.mutation<void, number>({
+      query: id => ({
+        method: 'DELETE',
+        url: `/purchases/invoice-line/${id}`,
+      }),
+    }),
+
+    deleteSupplierLine: builder.mutation<void, number>({
+      query: id => ({
+        method: 'DELETE',
+        url: `/purchases/supplier-line/${id}`,
       }),
     }),
 
@@ -82,6 +125,12 @@ const dealApi = baseApi.injectEndpoints({
     getAllPayments: builder.query<PaymentDto[], void>({
       query: () => ({
         url: '/payments',
+      }),
+    }),
+
+    getAllPurchases: builder.query<PurchaseDto[], void>({
+      query: () => ({
+        url: '/purchases',
       }),
     }),
 
@@ -135,6 +184,22 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    // Новый эндпойнт для получения invoice lines по purchaseId
+    getInvoiceLinesByPurchaseId: builder.query<InvoiceLineDto[], number>({
+      query: purchaseId => ({
+        method: 'GET',
+        url: `/purchases/${purchaseId}/invoice-lines`,
+      }),
+    }),
+
+    // Новый эндпойнт для получения logistics lines по purchaseId
+    getLogisticsLinesByPurchaseId: builder.query<LogisticsLineDto[], number>({
+      query: purchaseId => ({
+        method: 'GET',
+        url: `/purchases/${purchaseId}/logistics-lines`,
+      }),
+    }),
+
     getMonthlyTurnoverAndMargin: builder.query<any[], { month: number; year: number }>({
       query: ({ month, year }) => ({
         method: 'GET',
@@ -156,6 +221,12 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    getSupplierLinesByPurchaseId: builder.query<SupplierLineDto[], number>({
+      query: purchaseId => ({
+        method: 'GET',
+        url: `/purchases/${purchaseId}/supplier-lines`,
+      }),
+    }),
     // Эндпойнт для восстановления расхода
     restoreExpense: builder.mutation<ExpenseDto, number>({
       query: id => ({
@@ -172,6 +243,13 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    softDeletePurchase: builder.mutation<void, number>({
+      query: id => ({
+        method: 'PATCH',
+        url: `/purchases/${id}/soft-delete`,
+      }),
+    }),
+
     updateDeal: builder.mutation<DealDto, { deal: Partial<DealDto>; id: number }>({
       query: ({ deal, id }) => ({
         body: deal,
@@ -180,11 +258,24 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
-    updateExpense: builder.mutation<ExpenseDto, { data: Partial<ExpenseDto>; id: number }>({
+    updateInvoiceLine: builder.mutation<InvoiceLineDto, { data: UpdateInvoiceLineDto; id: number }>(
+      {
+        query: ({ data, id }) => ({
+          body: data,
+          method: 'PUT',
+          url: `purchases/invoice-line/${id}`,
+        }),
+      }
+    ),
+
+    updateLogisticsLine: builder.mutation<
+      LogisticsLineDto,
+      { data: UpdateLogisticsLineDto; id: number }
+    >({
       query: ({ data, id }) => ({
         body: data,
-        method: 'PATCH',
-        url: `/expenses/${id}`,
+        method: 'PUT',
+        url: `purchases/logistics-line/${id}`,
       }),
     }),
 
@@ -222,24 +313,32 @@ export const {
   useCreateCounterpartyMutation,
   useCreateDealMutation,
   useCreateExpenseMutation,
-
+  useCreateInvoiceLineMutation,
   useCreateMultiplePaymentsMutation,
   useCreatePaymentMutation,
 
+  useCreateSupplierLineMutation,
+  useDeleteInvoiceLineMutation,
+  useDeleteSupplierLineMutation,
   useGetAllCounterpartiesQuery,
   useGetAllDealsQuery,
   useGetAllExpensesQuery,
   useGetAllPaymentsQuery,
+  useGetAllPurchasesQuery,
 
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
+
   useGetDealsByDateRangeQuery,
   useGetDealsByDepartmentQuery,
   useGetDealsByUserIdQuery,
-
   useGetDeletedExpensesQuery,
+
+  useGetDeletedPurchasesQuery,
 
   useGetExpenseChangesQuery,
   useGetExpensesByUserIdQuery,
+  useGetInvoiceLinesByPurchaseIdQuery,
+  useGetLogisticsLinesByPurchaseIdQuery,
 
   useGetMonthlyTurnoverAndMarginQuery,
   useGetPaymentChangesQuery,
@@ -247,16 +346,19 @@ export const {
   // Новые хуки для работы с продажами
 
   useGetSalesByUserIdQuery,
-
+  useGetSupplierLinesByPurchaseIdQuery,
   useRestoreExpenseMutation,
   useSoftDeleteExpenseMutation,
+  useSoftDeletePurchaseMutation,
 
   useUpdateDealMutation,
-  useUpdateExpenseMutation,
 
+  useUpdateInvoiceLineMutation,
+  useUpdateLogisticsLineMutation,
   useUpdatePaymentMutation,
   useUpdatePurchaseMutation,
+
   useUpdateSupplierLineMutation,
 
   util: dealUtil,
-} = dealApi
+} = purchaseApi

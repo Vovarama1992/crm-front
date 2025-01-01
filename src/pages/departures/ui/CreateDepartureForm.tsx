@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 
-import { useGetAllSalesQuery } from '@/entities/deal/deal.api'
 import { useCreateDepartureMutation } from '@/entities/departure/departure.api'
+import { useGetAllSalesQuery } from '@/entities/sale'
 import { useMeQuery } from '@/entities/session'
 
 const destinationOptions = [

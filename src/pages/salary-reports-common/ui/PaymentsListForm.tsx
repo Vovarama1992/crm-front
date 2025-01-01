@@ -42,7 +42,7 @@ const PaymentsListForm: React.FC<PaymentsListFormProps> = ({ onClose }) => {
   return (
     <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
       <div className={'bg-white p-4 rounded shadow-lg w-1/2'}>
-        <h2 className={'text-lg font-bold mb-4'}>All Payments</h2>
+        <h2 className={'text-lg font-bold mb-4'}>Все выплаты</h2>
         <table className={'table-auto w-full border-collapse'}>
           <thead>
             <tr>
@@ -86,7 +86,7 @@ const PaymentsListForm: React.FC<PaymentsListFormProps> = ({ onClose }) => {
         </table>
         <div className={'mt-4 flex justify-end'}>
           <button className={'bg-red-500 text-white px-4 py-2 rounded'} onClick={onClose}>
-            Close
+            Закрыть
           </button>
         </div>
         {showUpdatePaymentForm && selectedPayment && (

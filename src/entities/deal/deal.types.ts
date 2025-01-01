@@ -7,7 +7,7 @@ export type UserDto = {
 export type DealDto = {
   closeDate: null | string
   comment: null | string
-  counterparty: CounterpartyDto // Информация о контрагенте
+  counterparty: CounterpartyDto
   counterpartyName: string
   createdAt?: null | string
   dealType: 'REQUEST' | 'TASK'
@@ -25,7 +25,7 @@ export type DealDto = {
     | 'QUOTE_SENT'
     | 'WORKING_WITH_OBJECTIONS'
   turnoverRub: number | string
-  user: UserDto // Добавлено поле для пользователя
+  user: UserDto
   userId: number
 }
 
@@ -123,41 +123,6 @@ export type CreateRemainingSaleDto = Omit<RemainingSaleDto, 'id'>
 
 export type UpdateSaleDto = Partial<SaleDto>
 
-export type PurchaseDto = {
-  counterpartyId: number
-  createdAt?: string
-  dealId: number
-  deliveryDeadline: string
-  id: number
-  invoiceLines: InvoiceLineDto[]
-  invoiceToCustomer: number
-  isSentAll?: boolean
-  logisticsLines: LogisticsLineDto[]
-  requestNumber: string
-  supplierLines: SupplierLineDto[]
-  userId: number
-}
-
-export type CreatePurchaseDto = Omit<PurchaseDto, 'id'>
-
-export type UpdatePurchaseDto = { id: number } & Partial<CreatePurchaseDto>
-
-export type InvoiceLineDto = {
-  articleNumber: string
-  comment?: string
-  description: string
-  id: number
-  purchase?: any
-  purchaseId: number
-  quantity: number
-  totalPrice: number
-  unitPrice: number
-}
-
-export type CreateInvoiceLineDto = Omit<InvoiceLineDto, 'id'>
-
-export type UpdateInvoiceLineDto = Partial<CreateInvoiceLineDto>
-
 export type SupplierLineDto = {
   articleNumber: string
   comment?: string
@@ -177,21 +142,6 @@ export type SupplierLineDto = {
 export type CreateSupplierLineDto = Omit<SupplierLineDto, 'id'>
 
 export type UpdateSupplierLineDto = Partial<CreateSupplierLineDto>
-
-export type LogisticsLineDto = {
-  amount: number
-  carrier: string
-  date: string
-  description: string
-  destination: Destination
-  id: number
-  pdfUrl?: string
-  purchaseId: number
-}
-
-export type CreateLogisticsLineDto = Omit<LogisticsLineDto, 'id'>
-
-export type UpdateLogisticsLineDto = Partial<CreateLogisticsLineDto>
 
 export enum PaymentType {
   BONUS = 'BONUS',

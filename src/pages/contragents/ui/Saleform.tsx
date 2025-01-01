@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery } from '@/entities/deal/deal.api'
 import { useGetAllDealsQuery } from '@/entities/deal/deal.api'
-import { useCreateSaleMutation } from '@/entities/deal/deal.api'
-import { useUpdateSaleMutation } from '@/entities/deal/deal.api'
+import { useCreateSaleMutation } from '@/entities/sale'
+import { useUpdateSaleMutation } from '@/entities/sale'
 import { useUploadPdfMutation } from '@/entities/session' // Хук для обновления продажи
 import { useMeQuery } from '@/entities/session'
 

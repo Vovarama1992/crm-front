@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
 
 import { useGetAllCounterpartiesQuery, useUpdatePurchaseMutation } from '@/entities/deal'
-import { useGetAllSalesQuery } from '@/entities/deal'
-import { PurchaseDto } from '@/entities/deal/deal.types'
 import { useCreateNotificationMutation } from '@/entities/notifications'
+import { PurchaseDto } from '@/entities/purchase'
+import { useGetAllSalesQuery } from '@/entities/sale'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 import { formatCurrency } from '@/pages/kopeechnik'
 
+import { HistoryModal } from './HistoryModal'
 import InvoiceLines from './InvoiceLines'
 import LogisticsLines from './LogisticsLines'
 import SupplierLines from './SupplierLines'
@@ -23,6 +24,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   const [totalInvoice, setTotalInvoice] = useState<number>(0)
   const [totalSupplier, setTotalSupplier] = useState<number>(0)
   const [totalLogistics, setTotalLogistics] = useState<number>(0)
+  const [isHistoryModalOpen, setHistoryModalOpen] = useState(false)
   const { data: counters } = useGetAllCounterpartiesQuery()
   const { data: workers } = useGetWorkersQuery()
   const { data: salesData } = useGetAllSalesQuery()
@@ -70,6 +72,14 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
     } catch (error) {
       alert('Не удалось обновить статус')
     }
+  }
+
+  const openHistoryModal = () => {
+    setHistoryModalOpen(true) // Открытие модалки при клике
+  }
+
+  const closeHistoryModal = () => {
+    setHistoryModalOpen(false) // Закрытие модалки
   }
 
   return (
@@ -188,9 +198,19 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
             >
               Сохранить
             </button>
+            <button
+              className={'bg-yellow-500 text-white px-4 py-2 rounded'}
+              onClick={openHistoryModal}
+              type={'button'}
+            >
+              Получить историю изменений
+            </button>
           </div>
         </form>
       </div>
+      {isHistoryModalOpen && (
+        <HistoryModal onClose={closeHistoryModal} purchaseId={initialValue.id} />
+      )}
     </div>
   )
 }

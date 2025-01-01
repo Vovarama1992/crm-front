@@ -2,7 +2,14 @@ import type { DepartureDto } from '@/entities/departure/departure.types'
 
 import React, { useState } from 'react'
 
-import { useUpdateDepartureMutation } from '@/entities/departure/departure.api'
+import {
+  useGetDeparturesChangesQuery,
+  useSoftDeleteDepartureMutation,
+  useUpdateDepartureMutation,
+} from '@/entities/departure/departure.api'
+import { UserAuthenticatedDto } from '@/entities/session/session.types'
+
+import { ChangesHistoryModal } from './ChangesHistoryModal'
 
 const destinationOptions = {
   RETURN_FROM_CLIENT: 'Возврат от клиента',
@@ -27,11 +34,27 @@ const statusOptions = {
 interface EditDepartureFormProps {
   departure: DepartureDto
   onClose: () => void
+  user: UserAuthenticatedDto | undefined
 }
 
-export const EditDepartureForm: React.FC<EditDepartureFormProps> = ({ departure, onClose }) => {
+export const EditDepartureForm: React.FC<EditDepartureFormProps> = ({
+  departure,
+  onClose,
+  user,
+}) => {
   const [updateDeparture] = useUpdateDepartureMutation()
+  const [softDeleteDeparture] = useSoftDeleteDepartureMutation()
   const [formData, setFormData] = useState<DepartureDto>({ ...departure })
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+
+  const {
+    data: changes,
+    isError,
+    isLoading,
+  } = useGetDeparturesChangesQuery({
+    entityId: departure.id,
+    entityType: 'DEPARTURE',
+  })
 
   const formatDate = (date: Date | null | string) => {
     if (!date) {
@@ -63,6 +86,15 @@ export const EditDepartureForm: React.FC<EditDepartureFormProps> = ({ departure,
     updateDeparture({ data: dataToSubmit, id: departure.id }).then(() => {
       onClose()
     })
+  }
+  const handleDelete = () => {
+    softDeleteDeparture({ id: departure.id }).then(() => {
+      onClose()
+    })
+  }
+
+  const toggleHistoryModal = () => {
+    setIsHistoryModalOpen(!isHistoryModalOpen)
   }
 
   return (
@@ -166,6 +198,28 @@ export const EditDepartureForm: React.FC<EditDepartureFormProps> = ({ departure,
       <button className={'mt-2 bg-blue-500 text-white p-2 rounded'} onClick={handleSave}>
         Сохранить
       </button>
+      {user?.roleName === 'Директор' && (
+        <>
+          <button className={'mt-2 bg-red-500 text-white p-2 rounded'} onClick={handleDelete}>
+            Удалить
+          </button>
+          <button
+            className={'mt-2 bg-gray-500 text-white p-2 rounded'}
+            onClick={toggleHistoryModal}
+          >
+            Показать историю изменений
+          </button>
+        </>
+      )}
+      {isHistoryModalOpen && (
+        <ChangesHistoryModal
+          changes={changes}
+          departureId={departure.id}
+          isError={isError}
+          isLoading={isLoading}
+          onClose={toggleHistoryModal}
+        />
+      )}
     </div>
   )
 }

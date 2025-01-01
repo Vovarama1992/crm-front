@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 
-import { useCreateSupplierLineMutation, useUpdateSupplierLineMutation } from '@/entities/deal'
-import { SupplierLineDto } from '@/entities/deal/deal.types'
 import { useGetSuppliersQuery } from '@/entities/departure/departure.api'
+import { useCreateSupplierLineMutation, useUpdateSupplierLineMutation } from '@/entities/purchase'
+import { SupplierLineDto } from '@/entities/purchase/purchase.types'
 import { useUploadSupplierPdfMutation } from '@/entities/session'
 
 interface CreateSupplierLineModalProps {

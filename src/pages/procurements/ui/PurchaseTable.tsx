@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 
-import { useGetAllSalesQuery } from '@/entities/deal'
 import { useGetAllDealsQuery } from '@/entities/deal'
-import { useGetSupplierLinesByPurchaseIdQuery } from '@/entities/deal'
-import { PurchaseDto, SaleDto } from '@/entities/deal/deal.types'
+import { useGetSupplierLinesByPurchaseIdQuery } from '@/entities/purchase'
+import { useSoftDeletePurchaseMutation } from '@/entities/purchase'
+import { PurchaseDto } from '@/entities/purchase/purchase.types'
+import { SaleDto } from '@/entities/sale'
+import { useGetAllSalesQuery } from '@/entities/sale' // Новый хук для удаления закупок
 
 import EditableForm from './EditableForm'
 
@@ -28,8 +30,10 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
   const [editingOrder, setEditingOrder] = useState<PurchaseDto | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [pdfPaths, setPdfPaths] = useState<{ [key: number]: null | string }>({})
+
   const { data: deals } = useGetAllDealsQuery()
   const { data: salesData } = useGetAllSalesQuery()
+  const [deletePurchase] = useSoftDeletePurchaseMutation()
 
   const getRequestNumber = (dealId: number) => {
     const sale = salesData?.find((sale: SaleDto) => sale.id === dealId)
@@ -68,6 +72,11 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
     } else {
       console.error('PDF не найден')
     }
+  }
+
+  const handleDeleteClick = (purchaseId: number) => {
+    deletePurchase(purchaseId)
+    // Логика для удаления из локального состояния или перезапуска данных
   }
 
   useEffect(() => {
@@ -144,6 +153,12 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
                   onClick={() => handleEditClick(purchase)}
                 >
                   Редактировать
+                </button>
+                <button
+                  className={'bg-red-500 text-white px-2 py-1 rounded ml-2'}
+                  onClick={() => handleDeleteClick(purchase.id)}
+                >
+                  Удалить
                 </button>
               </td>
             </tr>

@@ -1,7 +1,10 @@
+/* eslint-disable max-lines */
 import React, { useState } from 'react'
 
 import { useUpdateWorkerMutation } from '@/entities/workers'
 import { WorkerDto } from '@/entities/workers'
+
+import WorkerChanges from './WorkerChanges'
 
 type EditWorkerFormProps = {
   existingWorker: WorkerDto
@@ -12,6 +15,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const [updateWorker] = useUpdateWorkerMutation()
   const [isPasswordChanged, setIsPasswordChanged] = useState(false)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
 
   const [formData, setFormData] = useState<WorkerDto>({
     ...existingWorker,
@@ -274,20 +278,37 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
             </div>
           </div>
 
-          <div className={'flex justify-end gap-2 mt-4'}>
+          <div className={'col-span-2'}>
             <button
-              className={'px-4 py-2 bg-gray-300 rounded-lg'}
+              className={'px-4 py-2 bg-gray-300 rounded-lg mb-2'}
+              onClick={() => setIsHistoryModalOpen(true)} // Открыть модалку истории изменений
+              type={'button'}
+            >
+              История изменений
+            </button>
+          </div>
+
+          <div className={'flex justify-end gap-2 mb-[50px]'}>
+            <button
+              className={'px-[16px] py-[8px] bg-gray-300 rounded-[8px] h-[40px]'}
               onClick={onClose}
               type={'button'}
             >
               Отмена
             </button>
-            <button className={'px-4 py-2 bg-blue-500 text-white rounded-lg'} type={'submit'}>
+            <button
+              className={'px-[16px] py-[8px] bg-blue-500 text-white rounded-[8px] h-[40px]'}
+              type={'submit'}
+            >
               Сохранить
             </button>
           </div>
         </form>
       </div>
+
+      {isHistoryModalOpen && (
+        <WorkerChanges onClose={() => setIsHistoryModalOpen(false)} workerId={existingWorker.id} />
+      )}
     </div>
   )
 }

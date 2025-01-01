@@ -3,6 +3,8 @@ import type { WorkerDto } from './workers.types'
 
 import { WORKERS_TAG, baseApi } from '@/shared/api'
 
+import { ChangeDto } from '../changes'
+
 export type DepartmentDto = {
   id: number
   name: string
@@ -67,6 +69,11 @@ const workersApi = baseApi.injectEndpoints({
         url: `/users/${id}`,
       }),
     }),
+    getWorkerChanges: builder.query<ChangeDto[], number>({
+      query: workerId => ({
+        url: `/change?entityType=EMPLOYEE&entityId=${workerId}`,
+      }),
+    }),
     getWorkers: builder.query<WorkerDto[], void>({
       providesTags: [WORKERS_TAG],
       query: () => ({
@@ -89,12 +96,13 @@ const workersApi = baseApi.injectEndpoints({
         url: `users/departments/${body.id}`,
       }),
     }),
+
     updateWorker: builder.mutation<WorkerDto, Partial<UserAuthenticatedDto>>({
       invalidatesTags: [WORKERS_TAG],
       query: ({ id, ...updateData }) => ({
         body: updateData,
         method: 'PATCH',
-        url: `/users/${id}`, // id теперь передается в URL
+        url: `/users/${id}`,
       }),
     }),
   }),
@@ -109,7 +117,8 @@ export const {
   useGetActiveQuery,
   useGetDepartmentsQuery,
   useGetFiredWorkersQuery,
-  useGetWorkerByIdQuery, // Новый хук для получения пользователя по ID
+  useGetWorkerByIdQuery,
+  useGetWorkerChangesQuery,
   useGetWorkersQuery,
   useRestoreWorkerMutation,
   useUpdateDepartmentMutation,

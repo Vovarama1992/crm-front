@@ -1,12 +1,14 @@
 /* eslint-disable max-lines */
 import React, { useEffect, useState } from 'react'
 
-import { useGetAllPaymentsQuery, useGetAllSalesQuery } from '@/entities/deal'
+import { useGetAllPaymentsQuery } from '@/entities/deal'
 import { ExpenseDto } from '@/entities/deal/deal.types'
+import { useGetAllSalesQuery } from '@/entities/sale'
 import { useGetWorkersQuery } from '@/entities/workers'
 import { formatCurrency } from '@/pages/kopeechnik'
 
 import AddExpenseModal from './AddExpenseModal'
+import DeletedExpensesModal from './DeletedExpensesModal'
 import ReportDetailsModal from './ReportDetailsModal'
 
 type Subcategory = {
@@ -47,11 +49,19 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
   const [selectedReport, setSelectedReport] = useState<ExpenseDto | null>(null)
   const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isDeletedExpensesModalOpen, setIsDeletedExpensesModalOpen] = useState(false)
   const [startMonth, setStartMonth] = useState<string>(() => {
     const savedStartMonth = localStorage.getItem('expensesStartMonth')
 
     return savedStartMonth || months[0]
   })
+  const handleOpenDeletedExpensesModal = () => {
+    setIsDeletedExpensesModalOpen(true)
+  }
+
+  const handleCloseDeletedExpensesModal = () => {
+    setIsDeletedExpensesModalOpen(false)
+  }
 
   const [endMonth, setEndMonth] = useState<string>(() => {
     const savedEndMonth = localStorage.getItem('expensesEndMonth')
@@ -440,6 +450,13 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
         Добавить расход
       </button>
 
+      <button
+        className={'mt-4 ml-2 p-2 bg-red-500 text-white rounded'}
+        onClick={handleOpenDeletedExpensesModal}
+      >
+        Показать удаленные расходы
+      </button>
+
       <AddExpenseModal
         categories={categories}
         isOpen={isAddExpenseModalOpen}
@@ -451,6 +468,11 @@ const ExpenseTable: React.FC<{ expenses: ExpenseDto[] }> = ({ expenses }) => {
         onClose={() => setIsDetailModalOpen(false)}
         onSave={handleUpdateReport}
         report={selectedReport}
+      />
+
+      <DeletedExpensesModal
+        isOpen={isDeletedExpensesModalOpen}
+        onClose={handleCloseDeletedExpensesModal}
       />
     </div>
   )

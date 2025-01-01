@@ -2,9 +2,13 @@ import type { SaleDto } from '@/entities/deal/deal.types'
 
 import React, { useState } from 'react'
 
-import { useGetAllCounterpartiesQuery, useUpdateSaleMutation } from '@/entities/deal'
+import { useGetAllCounterpartiesQuery } from '@/entities/deal'
+import { useSoftDeleteSaleMutation, useUpdateSaleMutation } from '@/entities/sale'
+import { useGetSaleChangesQuery } from '@/entities/sale'
 import { useMeQuery } from '@/entities/session'
-import { useGetWorkersQuery } from '@/entities/workers' // Получаем информацию о текущем пользователе
+import { useGetWorkersQuery } from '@/entities/workers'
+
+import { ChangeHistoryModal } from './ChangeHistoryModal'
 
 interface SalesEditFormProps {
   onClose: () => void
@@ -14,14 +18,21 @@ interface SalesEditFormProps {
 export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) => {
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: workers = [] } = useGetWorkersQuery()
-  const { data: meData } = useMeQuery() // Получаем текущего пользователя
+  const { data: meData } = useMeQuery()
+
+  const { data: changes } = useGetSaleChangesQuery({
+    entityId: sale.id,
+    entityType: 'SALE',
+  })
 
   const [updateSale] = useUpdateSaleMutation()
+  const [softDeleteSale] = useSoftDeleteSaleMutation()
   const [isFinalAmount, setIsFinalAmount] = useState(sale.isFinalAmount)
   const [formData, setFormData] = useState<SaleDto>({ ...sale })
   const [additionalAmount, setAdditionalAmount] = useState<number>(0)
   const [refundAmount, setRefundAmount] = useState<number>(0)
   const [selectedFileName, setSelectedFileName] = useState<string | undefined>(sale.pdfPath)
+  const [isHistoryVisible, setIsHistoryVisible] = useState(false)
 
   const handleChange = (field: keyof SaleDto, value: number | string) => {
     setFormData(prevState => ({
@@ -62,6 +73,12 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
     })
   }
 
+  const handleDelete = () => {
+    softDeleteSale(sale.id).then(() => {
+      onClose()
+    })
+  }
+
   const handleAdditionalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAdditionalAmount(Number(e.target.value))
   }
@@ -86,7 +103,14 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
     handleChange('totalSaleAmount', Number(e.target.value))
   }
 
-  // Проверка, может ли пользователь редактировать все поля
+  const handleShowHistory = () => {
+    setIsHistoryVisible(true)
+  }
+
+  const handleCloseHistory = () => {
+    setIsHistoryVisible(false)
+  }
+
   const canEditAllFields = meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер'
 
   return (
@@ -210,6 +234,22 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
             type={'file'}
           />
         </div>
+      )}
+
+      {/* Кнопка для отображения истории изменений */}
+      <button className={'mt-2 bg-gray-500 text-white p-2 rounded'} onClick={handleShowHistory}>
+        История изменений
+      </button>
+
+      {/* Модальное окно для отображения истории изменений */}
+      {isHistoryVisible && changes && (
+        <ChangeHistoryModal changes={changes} onClose={handleCloseHistory} />
+      )}
+
+      {meData?.roleName === 'Директор' && (
+        <button className={'mt-2 bg-red-500 text-white p-2 rounded'} onClick={handleDelete}>
+          Удалить
+        </button>
       )}
 
       <button className={'mt-2 bg-blue-500 text-white p-2 rounded'} onClick={handleSave}>

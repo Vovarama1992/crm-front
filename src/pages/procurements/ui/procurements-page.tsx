@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 
-import { useGetAllCounterpartiesQuery, useGetAllPurchasesQuery } from '@/entities/deal'
+import { useGetAllCounterpartiesQuery } from '@/entities/deal'
+import { useGetAllPurchasesQuery } from '@/entities/purchase'
 import { useGetWorkersQuery } from '@/entities/workers'
 
+import DeletedPurchasesModal from './DeletedPurchasesModal'
 import PurchaseTable from './PurchaseTable'
 
 export const ProcurementsPage: React.FC = () => {
@@ -15,6 +17,7 @@ export const ProcurementsPage: React.FC = () => {
   const [searchCustomer, setSearchCustomer] = useState('')
   const [priceRange, setPriceRange] = useState({ max: '', min: '' })
   const [completedDealsOnly, setCompletedDealsOnly] = useState(false)
+  const [isDeletedModalOpen, setIsDeletedModalOpen] = useState(false)
   const [issuesOnly, setIssuesOnly] = useState(false)
   const [unpaidSupplierInvoicesOnly, setUnpaidSupplierInvoicesOnly] = useState(false)
 
@@ -104,6 +107,14 @@ export const ProcurementsPage: React.FC = () => {
     )
   })
 
+  const handleOpenDeletedModal = () => {
+    setIsDeletedModalOpen(true)
+  }
+
+  const handleCloseDeletedModal = () => {
+    setIsDeletedModalOpen(false)
+  }
+
   return (
     <div className={'absolute left-[2%] top-[5%]'}>
       <h2 className={'text-xl font-bold mt-4'}>Таблица закупок</h2>
@@ -146,6 +157,13 @@ export const ProcurementsPage: React.FC = () => {
           type={'number'}
           value={priceRange.max}
         />
+
+        <button
+          className={'mt-4 bg-gray-500 text-white px-4 py-2 rounded'}
+          onClick={handleOpenDeletedModal}
+        >
+          История удалённых закупок
+        </button>
       </div>
 
       <div className={'ml-[200px] filters mb-4'}>
@@ -185,6 +203,9 @@ export const ProcurementsPage: React.FC = () => {
           managerName: getWorkerName(purchase.userId),
         }))}
       />
+      {isDeletedModalOpen && (
+        <DeletedPurchasesModal isOpen={isDeletedModalOpen} onClose={handleCloseDeletedModal} />
+      )}
     </div>
   )
 }

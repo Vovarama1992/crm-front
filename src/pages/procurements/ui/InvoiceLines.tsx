@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react'
 
-import { useDeleteInvoiceLineMutation, useGetInvoiceLinesByPurchaseIdQuery } from '@/entities/deal'
-import { InvoiceLineDto } from '@/entities/deal/deal.types'
+import {
+  useDeleteInvoiceLineMutation,
+  useGetInvoiceLinesByPurchaseIdQuery,
+} from '@/entities/purchase'
+import { InvoiceLineDto } from '@/entities/purchase/purchase.types'
 
 import CreateInvoiceLineModal from './CreateInvoiceLineModal'
 

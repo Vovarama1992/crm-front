@@ -8,6 +8,8 @@ import type {
 
 import { DEPARTURE_TAG, baseApi } from '@/shared/api'
 
+import { ChangeDto } from '../changes'
+
 const departureApi = baseApi.injectEndpoints({
   endpoints: builder => ({
     createDeparture: builder.mutation<DepartureDto, CreateDepartureDto>({
@@ -18,13 +20,16 @@ const departureApi = baseApi.injectEndpoints({
         url: 'departures',
       }),
     }),
-    // Новые маршруты для поставщиков
+
     createSupplier: builder.mutation<SupplierDto, CreateSupplierDto>({
       query: body => ({
         body,
         method: 'POST',
         url: 'suppliers',
       }),
+    }),
+    getDeletedDepartures: builder.query<DepartureDto[], void>({
+      query: () => 'departures-deleted',
     }),
     getDepartures: builder.query<DepartureDto[], void>({
       providesTags: [DEPARTURE_TAG],
@@ -43,9 +48,33 @@ const departureApi = baseApi.injectEndpoints({
       providesTags: [DEPARTURE_TAG],
       query: userId => `departures/user/${userId}`,
     }),
+    getDeparturesChanges: builder.query<ChangeDto[], { entityId: number; entityType: string }>({
+      query: ({ entityId, entityType }) => ({
+        params: { entityId, entityType },
+        url: 'change',
+      }),
+    }),
+
     getSuppliers: builder.query<SupplierDto[], void>({
       query: () => 'suppliers',
     }),
+
+    restoreDeparture: builder.mutation<DepartureDto, { id: number }>({
+      invalidatesTags: [DEPARTURE_TAG],
+      query: ({ id }) => ({
+        method: 'PATCH',
+        url: `departures/${id}/restore`,
+      }),
+    }),
+
+    softDeleteDeparture: builder.mutation<DepartureDto, { id: number }>({
+      invalidatesTags: [DEPARTURE_TAG],
+      query: ({ id }) => ({
+        method: 'PATCH',
+        url: `departures/${id}/soft-delete`,
+      }),
+    }),
+
     updateDeparture: builder.mutation<DepartureDto, { data: Partial<DepartureDto>; id: number }>({
       invalidatesTags: [DEPARTURE_TAG],
       query: ({ data, id }) => ({
@@ -54,6 +83,7 @@ const departureApi = baseApi.injectEndpoints({
         url: `departures/${id}`,
       }),
     }),
+
     updateSupplier: builder.mutation<SupplierDto, { data: UpdateSupplierDto; id: number }>({
       query: ({ data, id }) => ({
         body: data,
@@ -68,11 +98,14 @@ export const {
   endpoints: departureEndpoints,
   useCreateDepartureMutation,
   useCreateSupplierMutation,
+  useGetDeletedDeparturesQuery,
   useGetDeparturesByDateRangeQuery,
   useGetDeparturesByUserQuery,
+  useGetDeparturesChangesQuery,
   useGetDeparturesQuery,
   useGetSuppliersQuery,
-  useUpdateDepartureMutation, // <-- Экспортируем новый хук
+  useRestoreDepartureMutation,
+  useSoftDeleteDepartureMutation,
+  useUpdateDepartureMutation,
   useUpdateSupplierMutation,
-  util: departureUtil,
 } = departureApi
