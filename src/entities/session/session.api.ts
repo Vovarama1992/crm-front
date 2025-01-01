@@ -1,4 +1,4 @@
-import type { LogisticsLineDto, SaleDto, SupplierLineDto } from '../deal/deal.types'
+import type { LogisticsLineDto, SupplierLineDto } from '../purchase/purchase.types'
 import type {
   BaseUserDto,
   LoginDto,
@@ -8,6 +8,8 @@ import type {
 } from './session.types'
 
 import { SESSION_TAG, baseApi } from '@/shared/api'
+
+import { SaleDto } from '../deal/deal.types'
 
 const sessionApi = baseApi.injectEndpoints({
   endpoints: builder => ({

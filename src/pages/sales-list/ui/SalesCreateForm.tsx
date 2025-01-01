@@ -2,7 +2,7 @@ import type { SaleDto } from '@/entities/deal/deal.types'
 
 import React from 'react'
 
-import { useUpdateSaleWithRemainingMutation } from '@/entities/deal'
+import { useUpdateSaleWithRemainingMutation } from '@/entities/sale'
 
 interface SalesCreateFormProps {
   onClose: () => void
@@ -19,7 +19,7 @@ export const SalesCreateForm: React.FC<SalesCreateFormProps> = ({ onClose, sale 
       .then(() => {
         onClose() // Закрываем окно после успешного обновления
       })
-      .catch(error => {
+      .catch((error: any) => {
         console.error('Ошибка при обновлении продажи:', error)
       })
   }
