@@ -7,21 +7,6 @@ interface DeletedSalesListProps {
   onClose: () => void
 }
 
-const months = [
-  { label: 'Январь', value: 1 },
-  { label: 'Февраль', value: 2 },
-  { label: 'Март', value: 3 },
-  { label: 'Апрель', value: 4 },
-  { label: 'Май', value: 5 },
-  { label: 'Июнь', value: 6 },
-  { label: 'Июль', value: 7 },
-  { label: 'Август', value: 8 },
-  { label: 'Сентябрь', value: 9 },
-  { label: 'Октябрь', value: 10 },
-  { label: 'Ноябрь', value: 11 },
-  { label: 'Декабрь', value: 12 },
-]
-
 const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
   const { data: deletedSalesData, isError, isLoading } = useGetDeletedSalesQuery()
   const [restoreSale] = useRestoreSaleMutation()
@@ -31,22 +16,19 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
   const [selectedEndMonth, setSelectedEndMonth] = useState<string>('12')
   const [filteredSales, setFilteredSales] = useState<SaleDto[]>([])
 
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const year = event.target.value
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const itemsPerPage = 10
 
-    setSelectedYear(year)
+  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedYear(event.target.value)
   }
 
   const handleStartMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const month = event.target.value
-
-    setSelectedStartMonth(month)
+    setSelectedStartMonth(event.target.value)
   }
 
   const handleEndMonthChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const month = event.target.value
-
-    setSelectedEndMonth(month)
+    setSelectedEndMonth(event.target.value)
   }
 
   useEffect(() => {
@@ -64,6 +46,7 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
       })
 
       setFilteredSales(filtered)
+      setCurrentPage(1)
     }
   }, [deletedSalesData, selectedYear, selectedStartMonth, selectedEndMonth])
 
@@ -79,6 +62,14 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
     }
   }
 
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const currentSales = filteredSales.slice(startIndex, startIndex + itemsPerPage)
+  const totalPages = Math.ceil(filteredSales.length / itemsPerPage)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   if (isLoading) {
     return <div>Загрузка...</div>
   }
@@ -89,16 +80,15 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
   return (
     <div
       className={
-        'absolute top-[20%] left-[5%] w-[90vw] h-[60vh] bg-white p-4 rounded shadow-lg overflow-y-auto'
+        'absolute top-[20%] left-[5%] w-[90vw] h-[80vh] bg-white p-4 rounded shadow-lg overflow-y-auto'
       }
     >
       <h2 className={'text-2xl font-semibold mb-4'}>Удалённые продажи</h2>
 
-      {/* Фильтры */}
       <div className={'mb-4'}>
         <label className={'mr-2'}>Выберите год:</label>
         <select onChange={handleYearChange} value={selectedYear}>
-          {[...Array(5)].map((_, i) => (
+          {[...Array(6)].map((_, i) => (
             <option key={2020 + i} value={2020 + i}>
               {2020 + i}
             </option>
@@ -107,39 +97,52 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
 
         <label className={'mr-2 ml-4'}>Выберите начальный месяц:</label>
         <select onChange={handleStartMonthChange} value={selectedStartMonth}>
-          {months.map(month => (
-            <option key={month.value} value={month.value}>
-              {month.label}
+          {[...Array(12)].map((_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {new Date(0, i).toLocaleString('default', { month: 'long' })}
             </option>
           ))}
         </select>
 
         <label className={'mr-2 ml-4'}>Выберите конечный месяц:</label>
         <select onChange={handleEndMonthChange} value={selectedEndMonth}>
-          {months.map(month => (
-            <option key={month.value} value={month.value}>
-              {month.label}
+          {[...Array(12)].map((_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {new Date(0, i).toLocaleString('default', { month: 'long' })}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Таблица с удалёнными продажами */}
       <table className={'min-w-full table-fixed border-collapse divide-y divide-gray-200'}>
         <thead>
           <tr>
-            <th className={'px-4 py-2 text-left'}>ID</th>
+            <th className={'px-4 py-2 text-left'}>Номер продажи</th>
             <th className={'px-4 py-2 text-left'}>Дата</th>
+
             <th className={'px-4 py-2 text-left'}>Сумма</th>
+            <th className={'px-4 py-2 text-left'}>Логистика</th>
+            <th className={'px-4 py-2 text-left'}>Маржа</th>
+            <th className={'px-4 py-2 text-left'}>Предоплата</th>
+            <th className={'px-4 py-2 text-left'}>Последняя доставка</th>
             <th className={'px-4 py-2 text-left'}>Действие</th>
           </tr>
         </thead>
         <tbody>
-          {filteredSales.map((sale: SaleDto) => (
+          {currentSales.map(sale => (
             <tr key={sale.id}>
               <td className={'px-4 py-2'}>{sale.id}</td>
               <td className={'px-4 py-2'}>{new Date(sale.date).toLocaleDateString()}</td>
+
               <td className={'px-4 py-2'}>{sale.totalSaleAmount}</td>
+              <td className={'px-4 py-2'}>{sale.logisticsCost}</td>
+              <td className={'px-4 py-2'}>{sale.margin}</td>
+              <td className={'px-4 py-2'}>{sale.prepaymentAmount}</td>
+              <td className={'px-4 py-2'}>
+                {sale.lastDeliveryDate
+                  ? new Date(sale.lastDeliveryDate).toLocaleDateString()
+                  : 'Нет данных'}
+              </td>
               <td className={'px-4 py-2'}>
                 <button
                   className={'bg-green-500 text-white p-2 rounded'}
@@ -153,8 +156,28 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
         </tbody>
       </table>
 
+      <div className={'flex justify-between items-center mt-4'}>
+        <button
+          className={'bg-gray-300 text-gray-700 p-2 rounded'}
+          disabled={currentPage === 1}
+          onClick={() => handlePageChange(currentPage - 1)}
+        >
+          Предыдущая
+        </button>
+        <span>
+          Страница {currentPage} из {totalPages}
+        </span>
+        <button
+          className={'bg-gray-300 text-gray-700 p-2 rounded'}
+          disabled={currentPage === totalPages}
+          onClick={() => handlePageChange(currentPage + 1)}
+        >
+          Следующая
+        </button>
+      </div>
+
       <button
-        className={'mt-4 ml-[100px] mb-[10px] bg-red-500 text-white p-2 rounded'}
+        className={'absolute bottom-4 right-4 bg-red-500 text-white p-2 rounded shadow-md'}
         onClick={onClose}
       >
         Закрыть
