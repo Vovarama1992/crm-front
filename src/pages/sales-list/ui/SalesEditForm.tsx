@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import type { SaleDto } from '@/entities/deal/deal.types'
 
 import React, { useState } from 'react'
@@ -8,14 +9,18 @@ import { useGetSaleChangesQuery } from '@/entities/sale'
 import { useMeQuery } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
 
+import { AdditionalPaymentModal } from './AdditionalPaymentModal'
 import { ChangeHistoryModal } from './ChangeHistoryModal'
+import { PaymentHistoryModal } from './PaymentHistoryModal'
+import { RefundModal } from './RefundModal'
 
 interface SalesEditFormProps {
+  onCancel: () => void
   onClose: () => void
   sale: SaleDto
 }
 
-export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) => {
+export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose, sale }) => {
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: workers = [] } = useGetWorkersQuery()
   const { data: meData } = useMeQuery()
@@ -29,10 +34,12 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
   const [softDeleteSale] = useSoftDeleteSaleMutation()
   const [isFinalAmount, setIsFinalAmount] = useState(sale.isFinalAmount)
   const [formData, setFormData] = useState<SaleDto>({ ...sale })
-  const [additionalAmount, setAdditionalAmount] = useState<number>(0)
-  const [refundAmount, setRefundAmount] = useState<number>(0)
+  const [isIndependentDeal, setIsIndependentDeal] = useState(sale.isIndependentDeal)
   const [selectedFileName, setSelectedFileName] = useState<string | undefined>(sale.pdfPath)
   const [isHistoryVisible, setIsHistoryVisible] = useState(false)
+  const [isAdditionalPaymentModalVisible, setIsAdditionalPaymentModalVisible] = useState(false)
+  const [isRefundModalVisible, setIsRefundModalVisible] = useState(false)
+  const [isPaymentListModalVisible, setIsPaymentListModalVisible] = useState(false)
 
   const handleChange = (field: keyof SaleDto, value: number | string) => {
     setFormData(prevState => ({
@@ -57,14 +64,14 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
   }
 
   const handleSave = () => {
-    const newPaidNow = (formData.paidNow || 0) + additionalAmount - refundAmount
     const { counterpartyId, dealId, id, pdfUrl, ...dataWithoutId } = formData
 
     const updatedFields: Omit<SaleDto, 'counterpartyId' | 'dealId' | 'id' | 'pdfUrl' | 'userId'> = {
       ...dataWithoutId,
       counterparty: { connect: { id: formData.counterpartyId } },
       isFinalAmount,
-      paidNow: newPaidNow,
+      isIndependentDeal,
+
       pdfPath: selectedFileName,
     }
 
@@ -73,18 +80,18 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
     })
   }
 
+  const handleIndependentDealChange = () => {
+    setIsIndependentDeal(!isIndependentDeal)
+    setFormData(prevState => ({
+      ...prevState,
+      isIndependentDeal: !isIndependentDeal,
+    }))
+  }
+
   const handleDelete = () => {
     softDeleteSale(sale.id).then(() => {
       onClose()
     })
-  }
-
-  const handleAdditionalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAdditionalAmount(Number(e.target.value))
-  }
-
-  const handleRefundAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRefundAmount(Number(e.target.value))
   }
 
   const handleCounterpartyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -109,6 +116,30 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
 
   const handleCloseHistory = () => {
     setIsHistoryVisible(false)
+  }
+
+  const handleShowAdditionalPaymentModal = () => {
+    setIsAdditionalPaymentModalVisible(true)
+  }
+
+  const handleCloseAdditionalPaymentModal = () => {
+    setIsAdditionalPaymentModalVisible(false)
+  }
+
+  const handleShowRefundModal = () => {
+    setIsRefundModalVisible(true)
+  }
+
+  const handleCloseRefundModal = () => {
+    setIsRefundModalVisible(false)
+  }
+
+  const handleShowPaymentListModal = () => {
+    setIsPaymentListModalVisible(true)
+  }
+
+  const handleClosePaymentListModal = () => {
+    setIsPaymentListModalVisible(false)
   }
 
   const canEditAllFields = meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер'
@@ -190,30 +221,16 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
       )}
 
       <div>
-        <label>Доплата:</label>
+        <label>Оплачено сейчас</label>
         <input
           className={'border border-gray-300 rounded p-1 w-full'}
-          onChange={handleAdditionalAmountChange}
           type={'number'}
-          value={additionalAmount}
+          value={sale.paidNow}
         />
       </div>
 
       {canEditAllFields && (
         <div>
-          <label>Возврат:</label>
-          <input
-            className={'border border-gray-300 rounded p-1 w-full'}
-            onChange={handleRefundAmountChange}
-            type={'number'}
-            value={refundAmount}
-          />
-        </div>
-      )}
-
-      {canEditAllFields && (
-        <div>
-          <label>Финальная сумма:</label>
           <label className={'inline-flex items-center'}>
             <input
               checked={isFinalAmount}
@@ -221,6 +238,19 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
               type={'checkbox'}
             />
             <span className={'ml-2'}>Финальная сумма</span>
+          </label>
+        </div>
+      )}
+
+      {meData?.roleName === 'Директор' && (
+        <div>
+          <label className={'inline-flex items-center'}>
+            <input
+              checked={isIndependentDeal}
+              onChange={handleIndependentDealChange}
+              type={'checkbox'}
+            />
+            <span className={'ml-2'}>Самостоятельная сделка</span>
           </label>
         </div>
       )}
@@ -241,9 +271,40 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
         История изменений
       </button>
 
+      <button
+        className={'mt-2 bg-green-500 text-white p-2 rounded'}
+        onClick={handleShowAdditionalPaymentModal}
+      >
+        Доплата
+      </button>
+
+      <button className={'mt-2 bg-red-500 text-white p-2 rounded'} onClick={handleShowRefundModal}>
+        Возврат
+      </button>
+
+      <button
+        className={'mt-2 bg-blue-500 text-white p-2 rounded'}
+        onClick={handleShowPaymentListModal}
+      >
+        Список платежей
+      </button>
       {/* Модальное окно для отображения истории изменений */}
       {isHistoryVisible && changes && (
         <ChangeHistoryModal changes={changes} onClose={handleCloseHistory} />
+      )}
+
+      {isAdditionalPaymentModalVisible && (
+        <AdditionalPaymentModal
+          onClose={handleCloseAdditionalPaymentModal}
+          sale={sale}
+          userId={meData?.id as number}
+        />
+      )}
+      {isRefundModalVisible && (
+        <RefundModal onClose={handleCloseRefundModal} sale={sale} userId={meData?.id as number} />
+      )}
+      {isPaymentListModalVisible && (
+        <PaymentHistoryModal onClose={handleClosePaymentListModal} saleId={sale.id} />
       )}
 
       {meData?.roleName === 'Директор' && (
@@ -254,6 +315,9 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onClose, sale }) =
 
       <button className={'mt-2 bg-blue-500 text-white p-2 rounded'} onClick={handleSave}>
         Сохранить
+      </button>
+      <button className={'mt-2 bg-red-500 text-white p-2 rounded'} onClick={onCancel}>
+        Отмена
       </button>
     </div>
   )

@@ -73,3 +73,24 @@ export enum Destination {
   TO_CLIENT = 'TO_CLIENT',
   TO_US = 'TO_US',
 }
+
+export enum ComissionType {
+  ADDITIONAL = 'ADDITIONAL',
+  ADVANCE = 'ADVANCE',
+  REFUND = 'REFUND',
+}
+
+export type CommissionDto = {
+  comissionType: ComissionType
+  commissionAmount: number
+  createdAt: string
+  createdBy: number
+  description?: string
+  id: number
+  saleId: number
+  updatedAt: string
+}
+
+export type CreateCommissionDto = Omit<CommissionDto, 'createdAt' | 'id' | 'updatedAt'>
+
+export type UpdateCommissionDto = Partial<CreateCommissionDto>

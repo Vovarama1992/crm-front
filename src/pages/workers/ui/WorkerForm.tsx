@@ -5,24 +5,27 @@ import { useSignUpMutation } from '@/entities/session'
 import { RegistrationDto } from '@/entities/session/session.types'
 
 type WorkerFormProps = {
-  onClose?: () => void // Обработчик закрытия формы
+  onClose?: () => void
 }
 
-const ROLES = ['Директор', 'Бухгалтер', 'РОП', 'Закупщик', 'Логист', 'Менеджер']
+export type MotivationType = 'EASY' | 'HARD'
+
+const ROLES = ['Директор', 'Бухгалтер', 'РОП', 'Закупщик', 'Логист', 'Менеджер', 'РОЗ']
 
 const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
   const [createWorker] = useSignUpMutation()
 
   const [formState, setFormState] = useState<RegistrationDto>({
-    birthday: new Date().toISOString().split('T')[0], // Текущая дата по умолчанию
+    birthday: new Date().toISOString().split('T')[0],
     cardNumber: '',
     department_id: null,
     dobNumber: '0',
     email: '',
-    hireDate: new Date().toISOString().split('T')[0], // Текущая дата по умолчанию
+    hireDate: new Date().toISOString().split('T')[0],
     margin_percent: 10,
     middleName: '',
     mobile: '',
+    motivation: 'EASY' as MotivationType,
     name: '',
     password: '',
     position: '',
@@ -36,10 +39,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
 
     setFormState(prevState => ({
       ...prevState,
-      [name]:
-        name === 'department_id' || name === 'margin_percent' || name === 'salary'
-          ? Number(value)
-          : value,
+      [name]: name === 'department_id' || name === 'margin_percent' ? Number(value) : value,
     }))
   }
 
@@ -52,13 +52,34 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
     }))
   }
 
+  const handleMotivationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target
+
+    setFormState(prevState => ({
+      ...prevState,
+      motivation: value as MotivationType,
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Преобразуем процент маржи перед отправкой
+    const allowedZeroRoles = ['Директор', 'Бухгалтер', 'Закупщик', 'РОЗ']
+
+    if (
+      !allowedZeroRoles.includes(formState.roleName) &&
+      (formState.salary <= 0 || formState.margin_percent <= 0)
+    ) {
+      alert('Для выбранной роли оклад и процент маржи не могут быть нулевыми.')
+
+      return
+    }
+
     const workerData = {
       ...formState,
       margin_percent: formState.margin_percent / 100,
+      motivatedAt: formState.motivation === 'HARD' ? new Date().toISOString() : undefined,
+      salary: Number(formState.salary),
     }
 
     await createWorker(workerData)
@@ -154,6 +175,31 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             type={'text'}
             value={formState.position}
           />
+        </div>
+        <div className={'flex flex-col col-span-full'}>
+          <label className={'text-gray-700 text-sm'}>Тип мотивации</label>
+          <div className={'flex items-center space-x-4'}>
+            <label className={'flex items-center'}>
+              <input
+                checked={formState.motivation === 'EASY'}
+                name={'motivation'}
+                onChange={handleMotivationChange}
+                type={'radio'}
+                value={'EASY'}
+              />
+              <span className={'ml-2 text-sm text-gray-700'}>Простая мотивация</span>
+            </label>
+            <label className={'flex items-center'}>
+              <input
+                checked={formState.motivation === 'HARD'}
+                name={'motivation'}
+                onChange={handleMotivationChange}
+                type={'radio'}
+                value={'HARD'}
+              />
+              <span className={'ml-2 text-sm text-gray-700'}>Сложная мотивация</span>
+            </label>
+          </div>
         </div>
         {/* Почта */}
         <div className={'flex flex-col'}>
@@ -309,7 +355,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             name={'salary'}
             onChange={handleChange}
             required
-            type={'text'}
+            type={'number'}
             value={formState.salary || ''}
           />
         </div>

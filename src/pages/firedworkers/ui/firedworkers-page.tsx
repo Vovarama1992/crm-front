@@ -1,131 +1,76 @@
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
-import { WorkerDto } from '@/entities/workers'
 import { useGetFiredWorkersQuery } from '@/entities/workers'
+import { WorkerDto } from '@/entities/workers'
+import { ROUTER_PATHS } from '@/shared/config/routes'
 
-import RestoreWorkerForm from './RestoreWorkerForm'
+import FiredEmployeeTable from './FiredEmployeeTable'
 
-function formatDate(date: Date | null | string | undefined): string {
-  if (!date) {
-    return ''
+export const FiredWorkersPage: React.FC = () => {
+  const { data: firedWorkersData, error, isLoading } = useGetFiredWorkersQuery()
+
+  const [firedWorkers, setFiredWorkers] = useState<WorkerDto[]>([])
+  const [searchName, setSearchName] = useState('')
+  const [searchEmail, setSearchEmail] = useState('')
+
+  useEffect(() => {
+    if (firedWorkersData) {
+      setFiredWorkers(firedWorkersData)
+    }
+  }, [firedWorkersData])
+
+  const handleSearchNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchName(e.target.value)
   }
 
-  const validDate = typeof date === 'string' ? new Date(date) : date
+  const handleSearchEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchEmail(e.target.value)
+  }
 
-  return validDate.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+  // Фильтрация уволенных сотрудников по имени и почте
+  const filteredFiredWorkers = firedWorkers.filter(worker => {
+    const matchesName = worker.name.toLowerCase().includes(searchName.toLowerCase())
+    const matchesEmail = worker.email.toLowerCase().includes(searchEmail.toLowerCase())
+
+    return matchesName && matchesEmail
   })
-}
-
-export function FiredWorkersPage() {
-  const { data: firedWorkers, error, isLoading } = useGetFiredWorkersQuery()
-  const [workerToRestore, setWorkerToRestore] = useState<Omit<WorkerDto, 'table_id'> | null>(null)
-  const [openRestoreForm, setOpenRestoreForm] = useState(false)
-
-  const handleRestoreWorker = (worker: Omit<WorkerDto, 'table_id'>) => {
-    setWorkerToRestore(worker)
-    setOpenRestoreForm(true)
-  }
 
   if (isLoading) {
     return <div>Loading...</div>
   }
+
   if (error) {
     return <div>Error loading fired workers</div>
   }
 
   return (
-    <div className={'p-4'}>
-      <table className={'min-w-full divide-y divide-gray-200'}>
-        <thead className={'bg-gray-50'}>
-          <tr>
-            <th
-              className={
-                'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-              }
-            >
-              ФИО
-            </th>
-            <th
-              className={
-                'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-              }
-            >
-              Должность
-            </th>
-            <th
-              className={
-                'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-              }
-            >
-              Почта
-            </th>
-            <th
-              className={
-                'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-              }
-            >
-              Добавочный
-            </th>
-            <th
-              className={
-                'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-              }
-            >
-              Мобильный
-            </th>
-            <th
-              className={
-                'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-              }
-            >
-              Дата рождения
-            </th>
-            <th
-              className={
-                'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
-              }
-            >
-              Действия
-            </th>
-          </tr>
-        </thead>
-        <tbody className={'bg-white divide-y divide-gray-200'}>
-          {firedWorkers?.map((worker, index) => (
-            <tr key={index}>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{worker.name}</td>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {worker.position}
-              </td>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {worker.email}
-              </td>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {worker.dobNumber}
-              </td>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {worker.mobile}
-              </td>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {formatDate(worker.birthday)}
-              </td>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium'}>
-                <button
-                  className={'text-blue-600 hover:text-blue-900'}
-                  onClick={() => handleRestoreWorker(worker)}
-                >
-                  Восстановить
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {openRestoreForm && workerToRestore && (
-        <RestoreWorkerForm onClose={() => setOpenRestoreForm(false)} worker={workerToRestore} />
-      )}
+    <div className={'absolute left-[15%] top-[15%]'}>
+      <div className={'flex justify-between items-center mb-4'}>
+        <div>
+          <input
+            className={'mr-2 p-1 border'}
+            onChange={handleSearchNameChange}
+            placeholder={'Поиск по ФИО'}
+            type={'text'}
+            value={searchName}
+          />
+          <input
+            className={'p-1 border'}
+            onChange={handleSearchEmailChange}
+            placeholder={'Поиск по почте'}
+            type={'text'}
+            value={searchEmail}
+          />
+        </div>
+        <Link className={'p-2 bg-blue-500 text-white rounded'} to={ROUTER_PATHS.WORKERS}>
+          Обратно
+        </Link>
+      </div>
+
+      <FiredEmployeeTable workers={filteredFiredWorkers} />
     </div>
   )
 }
+
+export default FiredWorkersPage

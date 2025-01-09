@@ -29,7 +29,7 @@ const stageToPercentageMap: { [key: string]: number } = {
   WORKING_WITH_OBJECTIONS: 60,
 }
 
-const formatDate = (date: Date | null | string) => {
+export const formatDate = (date: Date | null | string | undefined) => {
   if (!date) {
     return ''
   }

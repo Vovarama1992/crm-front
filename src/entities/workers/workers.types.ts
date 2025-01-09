@@ -1,7 +1,10 @@
+import { MotivationType } from '@/pages/workers/ui/WorkerForm'
+
 export type WorkerDto = {
   address?: string // Адрес работника (необязательное поле)
   birthday?: string // Дата рождения в формате YYYY-MM-DD
   cardNumber?: string // Номер карты для перевода (если применимо)
+  deletedAt?: Date
   department_id: number | undefined // Отдел (необязательное поле)
   dobNumber: string | undefined // Добавочный номер
   email: string // Электронная почта
@@ -11,6 +14,8 @@ export type WorkerDto = {
   margin_percent: number
   middleName: string
   mobile?: string // Мобильный телефон
+  motivatedAt?: string
+  motivation: MotivationType
   name: string // ФИО работника
   password?: string
   position?: string // Должность

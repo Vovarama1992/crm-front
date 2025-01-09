@@ -1,10 +1,26 @@
 import { baseApi } from '@/shared/api'
 
 import { ChangeDto } from '../changes/change.types'
-import { CreateSaleDto, RemainingSaleDto, SaleDto, UpdateSaleDto } from './sale.types'
+import {
+  CommissionDto,
+  CreateCommissionDto,
+  CreateSaleDto,
+  RemainingSaleDto,
+  SaleDto,
+  UpdateCommissionDto,
+  UpdateSaleDto,
+} from './sale.types'
 
 const saleApi = baseApi.injectEndpoints({
   endpoints: builder => ({
+    createCommission: builder.mutation<CommissionDto, CreateCommissionDto>({
+      query: commission => ({
+        body: commission,
+        method: 'POST',
+        url: '/commissions',
+      }),
+    }),
+
     createRemainingSale: builder.mutation<RemainingSaleDto, RemainingSaleDto>({
       query: remainingSale => ({
         body: remainingSale,
@@ -31,6 +47,13 @@ const saleApi = baseApi.injectEndpoints({
     getAllSales: builder.query<SaleDto[], void>({
       query: () => ({
         url: '/sales',
+      }),
+    }),
+
+    getCommissionsBySaleId: builder.query<CommissionDto[], number>({
+      query: saleId => ({
+        method: 'GET',
+        url: `/commissions/sale/${saleId}`,
       }),
     }),
 
@@ -74,6 +97,17 @@ const saleApi = baseApi.injectEndpoints({
       }),
     }),
 
+    updateCommission: builder.mutation<
+      CommissionDto,
+      { commission: UpdateCommissionDto; id: number }
+    >({
+      query: ({ commission, id }) => ({
+        body: commission,
+        method: 'PUT',
+        url: `/commissions/${id}`,
+      }),
+    }),
+
     updateSale: builder.mutation<SaleDto, { id: number; sale: UpdateSaleDto }>({
       query: ({ id, sale }) => ({
         body: sale,
@@ -93,16 +127,19 @@ const saleApi = baseApi.injectEndpoints({
 })
 
 export const {
+  useCreateCommissionMutation,
   useCreateRemainingSaleMutation,
   useCreateSaleMutation,
   useGetAllRemainingSalesQuery,
   useGetAllSalesQuery,
+  useGetCommissionsBySaleIdQuery,
   useGetDeletedSalesQuery,
   useGetSaleByIdQuery,
   useGetSaleChangesQuery,
   useGetSalesByUserIdQuery,
   useRestoreSaleMutation,
   useSoftDeleteSaleMutation,
+  useUpdateCommissionMutation,
   useUpdateSaleMutation,
   useUpdateSaleWithRemainingMutation,
 } = saleApi

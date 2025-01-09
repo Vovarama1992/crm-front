@@ -224,6 +224,11 @@ export const SalesListPage: React.FC = () => {
     window.location.reload()
   }
 
+  const cancel = () => {
+    setEditingSale(null)
+    setIsEditFormOpen(false)
+  }
+
   // Вычисление общей маржи, оборота и заработка
   const totalMargin = sales.reduce((acc, sale) => {
     if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
@@ -288,7 +293,7 @@ export const SalesListPage: React.FC = () => {
           </select>
           <label className={'mr-2 ml-4'}>Выберите год:</label>
           <select onChange={handleYearChange} value={selectedYear}>
-            {[...Array(5)].map((_, i) => (
+            {[...Array(6)].map((_, i) => (
               <option key={2020 + i} value={2020 + i}>
                 {2020 + i}
               </option>
@@ -307,7 +312,7 @@ export const SalesListPage: React.FC = () => {
               <option value={meData?.id}>Я сам</option>
               {workersData?.map(employee => (
                 <option key={employee.id} value={employee.id}>
-                  {employee.name}
+                  {employee.surname}
                 </option>
               ))}
             </select>
@@ -383,7 +388,7 @@ export const SalesListPage: React.FC = () => {
       {isEditFormOpen && editingSale && (
         <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
           <div className={'bg-white p-4 rounded'}>
-            <SalesEditForm onClose={closeEditModal} sale={editingSale} />
+            <SalesEditForm onCancel={cancel} onClose={closeEditModal} sale={editingSale} />
           </div>
         </div>
       )}

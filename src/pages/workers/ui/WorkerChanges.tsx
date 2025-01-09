@@ -2,6 +2,7 @@ import React from 'react'
 
 import { ChangeDto } from '@/entities/changes'
 import { useGetWorkerChangesQuery } from '@/entities/workers'
+import { formatDate } from '@/pages/contragents/ui/contragents-page'
 
 type WorkerChangesProps = {
   onClose: () => void

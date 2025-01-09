@@ -7,11 +7,17 @@ import { ROUTER_PATHS } from '@/shared/config/routes'
 
 import ConfirmModal from './ConfirmModal'
 import EditWorkerForm from './EditWorkerForm'
-import WorkerForm from './WorkerForm'
+import WorkerForm, { MotivationType } from './WorkerForm'
 
 type EmployeeTableProps = {
   roleName: string
   workers: WorkerDto[]
+}
+
+const motivationMapping: Record<MotivationType, string> = {
+  EASY: 'Простая',
+
+  HARD: 'Сложная',
 }
 
 function formatDate(date: Date | null | string | undefined): string {
@@ -36,6 +42,8 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [workerIdToDelete, setWorkerIdToDelete] = useState<number | undefined>(undefined)
   const [editWorkerOpen, setEditWorkerOpen] = useState(false)
+
+  const motivationSee = roleName == 'Директор' || roleName == 'Бухгалтер'
 
   const handleFireWorker = (workerId: number) => {
     setWorkerIdToDelete(workerId)
@@ -122,6 +130,15 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                 Карта для перевода
               </th>
             )}
+            {motivationSee && (
+              <th
+                className={
+                  'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
+                }
+              >
+                Тип мотивации
+              </th>
+            )}
             {roleName === 'Директор' && (
               <th
                 className={
@@ -146,7 +163,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                     href={'#'}
                     onClick={() => handleViewDetails(worker)}
                   >
-                    {worker.name + ' ' + worker.middleName + ' ' + worker.surname}
+                    {worker.surname + ' ' + worker.name + ' ' + worker.middleName}
                   </a>
                 ) : (
                   worker.name + ' ' + worker.middleName + ' ' + worker.surname
@@ -172,6 +189,9 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                   {worker.cardNumber}
                 </td>
               )}
+              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                {motivationMapping[worker.motivation] || 'Простая'}
+              </td>
               {roleName === 'Директор' && (
                 <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium'}>
                   <button

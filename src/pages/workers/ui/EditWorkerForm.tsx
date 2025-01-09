@@ -3,8 +3,10 @@ import React, { useState } from 'react'
 
 import { useUpdateWorkerMutation } from '@/entities/workers'
 import { WorkerDto } from '@/entities/workers'
+import { formatDate } from '@/pages/contragents/ui/contragents-page'
 
 import WorkerChanges from './WorkerChanges'
+import { MotivationType } from './WorkerForm'
 
 type EditWorkerFormProps = {
   existingWorker: WorkerDto
@@ -15,14 +17,26 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const [updateWorker] = useUpdateWorkerMutation()
   const [isPasswordChanged, setIsPasswordChanged] = useState(false)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+  const [isMotivationModalOpen, setIsMotivationModalOpen] = useState(false)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+
+  const [motivatedAt, setMotivatedAt] = useState(existingWorker.motivatedAt || '')
 
   const [formData, setFormData] = useState<WorkerDto>({
     ...existingWorker,
     margin_percent: (existingWorker.margin_percent || 0) * 100, // Default value for marginPercent
+    motivation: existingWorker.motivation || 'EASY',
     roleName: existingWorker.roleName, // Default value for role
-    salary: existingWorker.salary || 0, // Default value for salary
+    salary: existingWorker.salary || 0,
   })
+
+  const handleMotivationDateSave = () => {
+    setFormData(prevData => ({
+      ...prevData,
+      motivatedAt,
+    }))
+    setIsMotivationModalOpen(false)
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -36,6 +50,10 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
         ...prevData,
         [name]: parseFloat(value) || 0,
       }))
+    } else if (name === 'motivation') {
+      if (value === 'HARD') {
+        setIsMotivationModalOpen(true) // Открываем модалку, если выбрана сложная мотивация
+      }
     } else {
       setFormData(prevData => ({
         ...prevData,
@@ -47,18 +65,29 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const margin = Number(formData.margin_percent) / 100 // Преобразуем margin_percent
+      const margin = Number(formData.margin_percent) / 100
 
-      // Обновляем поля для отправки
       const { id, ...updateData } = formData
 
       updateData.margin_percent = margin
+
+      if (formData.motivation === 'HARD') {
+        if (!motivatedAt) {
+          throw new Error('Для сложной мотивации необходимо указать дату перехода')
+        }
+
+        const validDate = new Date(motivatedAt).toISOString()
+
+        updateData.motivatedAt = validDate
+      } else {
+        delete updateData.motivatedAt
+      }
 
       if (!isPasswordChanged) {
         delete updateData.password
       }
 
-      await updateWorker({ id, ...updateData }).unwrap() // Передаем id и обновленные данные
+      await updateWorker({ id, ...updateData }).unwrap()
       onClose()
     } catch (error) {
       console.error('Failed to update the worker:', error)
@@ -71,7 +100,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
         'fixed top-[8vh] left-[8vw] h-[90vh] w-[90vw] flex items-center justify-center border-4 border-gray-400 shadow-inner text-sm overflow-y-auto'
       }
     >
-      <div className={'bg-white p-6 rounded-lg shadow-lg w-full h-full'}>
+      <div className={'bg-white p-6 rounded-lg w-full h-full'}>
         <h2 className={'text-lg font-semibold mb-4'}>Редактировать сотрудника</h2>
         <form className={'grid grid-cols-1 gap-4 w-full h-full'} onSubmit={handleSubmit}>
           <div className={'grid grid-cols-2 gap-4 w-full h-full'}>
@@ -228,6 +257,78 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
               />
             </div>
 
+            <div className={'flex flex-col'}>
+              <label className={'block text-gray-700'}>Мотивация</label>
+              <select
+                className={
+                  'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
+                }
+                name={'motivation'}
+                onChange={e => {
+                  const selectedMotivation = e.target.value
+
+                  setFormData(prevData => ({
+                    ...prevData,
+                    motivatedAt: selectedMotivation === 'HARD' ? prevData.motivatedAt : undefined,
+                    motivation: selectedMotivation as MotivationType,
+                  }))
+
+                  if (selectedMotivation === 'HARD') {
+                    setIsMotivationModalOpen(true)
+                  }
+                }}
+                value={formData.motivation}
+              >
+                <option value={'HARD'}>Сложная</option>
+                <option value={'EASY'}>Простая</option>
+              </select>
+            </div>
+
+            {isMotivationModalOpen && (
+              <div
+                className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50'}
+              >
+                <div className={'bg-white p-4 rounded-lg w-1/3'}>
+                  <h2 className={'text-lg font-semibold mb-4'}>Укажите дату перехода</h2>
+                  <input
+                    className={'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'}
+                    onChange={e => setMotivatedAt(e.target.value)}
+                    type={'date'}
+                    value={motivatedAt}
+                  />
+                  <div className={'flex justify-end gap-2 mt-4'}>
+                    <button
+                      className={'px-4 py-2 bg-gray-300 rounded-lg'}
+                      onClick={() => setIsMotivationModalOpen(false)}
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      className={'px-4 py-2 bg-blue-500 text-white rounded-lg'}
+                      onClick={handleMotivationDateSave}
+                    >
+                      Сохранить
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {existingWorker.motivation === 'HARD' && (
+              <div className={'flex flex-col'}>
+                <label className={'block text-gray-700'}>Дата перехода на сложную мотивацию</label>
+                <input
+                  className={
+                    'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
+                  }
+                  name={'motivatedAt'}
+                  onChange={handleChange}
+                  type={'text'}
+                  value={formatDate(existingWorker.motivatedAt)}
+                />
+              </div>
+            )}
+
             {/* New field for salary */}
             <div className={'flex flex-col'}>
               <label className={'block text-gray-700'}>Зарплата</label>
@@ -288,7 +389,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
             </button>
           </div>
 
-          <div className={'flex justify-end gap-2 mb-[50px]'}>
+          <div className={'flex justify-end gap-2 mb-[150px]'}>
             <button
               className={'px-[16px] py-[8px] bg-gray-300 rounded-[8px] h-[40px]'}
               onClick={onClose}
