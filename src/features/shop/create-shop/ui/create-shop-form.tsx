@@ -34,7 +34,7 @@ export const CreateShopForm = ({ className, ...rest }: CreateShopFormProps) => {
   const [createShop, { isLoading }] = useCreateShopMutation()
 
   const onSubmit = handleSubmit(({ name }) => {
-    createShop({ name, owner: undefined ?? 0 })
+    createShop({ name, owner: 0 })
       .unwrap()
       .then(res => {
         resetField('name')
