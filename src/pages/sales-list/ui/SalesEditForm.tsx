@@ -145,12 +145,12 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
   const canEditAllFields = meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер'
 
   return (
-    <div className={'flex flex-col space-y-2'}>
+    <div className={'flex flex-col space-y-1'}>
       {canEditAllFields && (
         <div>
           <label>Контрагент:</label>
           <select
-            className={'border rounded p-2 w-full'}
+            className={'border rounded p-1 w-full'}
             onChange={handleCounterpartyChange}
             value={formData.counterpartyId || ''}
           >
@@ -170,7 +170,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
         <div>
           <label>Менеджер:</label>
           <select
-            className={'border rounded p-2 w-full'}
+            className={'border rounded p-1 w-full'}
             onChange={handleManagerChange}
             value={formData.userId || ''}
           >
@@ -190,7 +190,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
         <div>
           <label>РОП:</label>
           <select
-            className={'border rounded p-2 w-full'}
+            className={'border rounded p-1 w-full'}
             onChange={handleROPChange}
             value={formData.ropId || ''}
           >
@@ -237,7 +237,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
               onChange={() => setIsFinalAmount(!isFinalAmount)}
               type={'checkbox'}
             />
-            <span className={'ml-2'}>Финальная сумма</span>
+            <span className={'ml-1'}>Финальная сумма</span>
           </label>
         </div>
       )}
@@ -250,7 +250,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
               onChange={handleIndependentDealChange}
               type={'checkbox'}
             />
-            <span className={'ml-2'}>Самостоятельная сделка</span>
+            <span className={'ml-1'}>Самостоятельная сделка</span>
           </label>
         </div>
       )}
@@ -259,36 +259,43 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
         <div>
           <label>Загрузить файл</label>
           <input
-            className={'border rounded p-2 w-full'}
+            className={'border rounded p-1 w-full'}
             onChange={handleFileChange}
             type={'file'}
           />
         </div>
       )}
 
-      {/* Кнопка для отображения истории изменений */}
-      <button className={'mt-2 bg-gray-500 text-white p-2 rounded'} onClick={handleShowHistory}>
-        История изменений
-      </button>
+      <div className={'mt-1 flex space-x-2'}>
+        <button
+          className={'bg-gray-500 text-white p-1 rounded text-sm'}
+          onClick={handleShowHistory}
+        >
+          История изменений
+        </button>
 
-      <button
-        className={'mt-2 bg-green-500 text-white p-2 rounded'}
-        onClick={handleShowAdditionalPaymentModal}
-      >
-        Доплата
-      </button>
+        <button
+          className={'bg-green-500 text-white p-1 rounded text-sm'}
+          onClick={handleShowAdditionalPaymentModal}
+        >
+          Доплата
+        </button>
 
-      <button className={'mt-2 bg-red-500 text-white p-2 rounded'} onClick={handleShowRefundModal}>
-        Возврат
-      </button>
+        <button
+          className={'bg-red-500 text-white p-1 rounded text-sm'}
+          onClick={handleShowRefundModal}
+        >
+          Возврат
+        </button>
 
-      <button
-        className={'mt-2 bg-blue-500 text-white p-2 rounded'}
-        onClick={handleShowPaymentListModal}
-      >
-        Список платежей
-      </button>
-      {/* Модальное окно для отображения истории изменений */}
+        <button
+          className={'bg-blue-500 text-white p-1 rounded text-sm'}
+          onClick={handleShowPaymentListModal}
+        >
+          Список платежей
+        </button>
+      </div>
+
       {isHistoryVisible && changes && (
         <ChangeHistoryModal changes={changes} onClose={handleCloseHistory} />
       )}
@@ -308,17 +315,19 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
       )}
 
       {meData?.roleName === 'Директор' && (
-        <button className={'mt-2 bg-red-500 text-white p-2 rounded'} onClick={handleDelete}>
+        <button className={'bg-red-500 text-white p-1 rounded text-sm'} onClick={handleDelete}>
           Удалить
         </button>
       )}
 
-      <button className={'mt-2 bg-blue-500 text-white p-2 rounded'} onClick={handleSave}>
-        Сохранить
-      </button>
-      <button className={'mt-2 bg-red-500 text-white p-2 rounded'} onClick={onCancel}>
-        Отмена
-      </button>
+      <div className={'mt-1 flex space-x-2'}>
+        <button className={'bg-blue-500 text-white p-1 rounded text-sm'} onClick={handleSave}>
+          Сохранить
+        </button>
+        <button className={'bg-red-500 text-white p-1 rounded text-sm'} onClick={onCancel}>
+          Отмена
+        </button>
+      </div>
     </div>
   )
 }
