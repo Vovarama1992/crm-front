@@ -16,24 +16,40 @@ export const AdditionalPaymentModal: React.FC<AdditionalPaymentModalProps> = ({
 }) => {
   const [amount, setAmount] = useState(0)
   const [comment, setComment] = useState('')
+  const [date, setDate] = useState('')
   const [createCommission] = useCreateCommissionMutation()
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(Number(e.target.value))
+    const value = Number(e.target.value)
+
+    if (value >= 0) {
+      setAmount(value)
+    }
   }
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setComment(e.target.value)
   }
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDate(e.target.value)
+  }
+
   const handleSave = async () => {
+    if (amount <= 0 || !date) {
+      alert('Сумма и дата обязательны для заполнения, и сумма должна быть положительной!')
+
+      return
+    }
+
     try {
       await createCommission({
-        comissionType: ComissionType.ADDITIONAL,
+        category: ComissionType.ADDITIONAL,
         commissionAmount: amount,
         createdBy: userId,
         description: comment,
         saleId: sale.id,
+        updatedAt: new Date(date).toISOString(),
       })
       onClose()
     } catch (error) {
@@ -49,9 +65,21 @@ export const AdditionalPaymentModal: React.FC<AdditionalPaymentModalProps> = ({
           <label className={'block mb-1'}>Сумма</label>
           <input
             className={'w-full p-2 border border-gray-300 rounded'}
+            min={0} // Обеспечиваем минимальное значение 0
             onChange={handleAmountChange}
+            required
             type={'number'}
             value={amount}
+          />
+        </div>
+        <div className={'mb-4'}>
+          <label className={'block mb-1'}>Дата</label>
+          <input
+            className={'w-full p-2 border border-gray-300 rounded'}
+            onChange={handleDateChange}
+            required
+            type={'date'}
+            value={date}
           />
         </div>
         <div className={'mb-4'}>

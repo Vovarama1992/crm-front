@@ -103,8 +103,8 @@ const saleApi = baseApi.injectEndpoints({
     >({
       query: ({ commission, id }) => ({
         body: commission,
-        method: 'PUT',
-        url: `/commissions/${id}`,
+        method: 'POST',
+        url: `/commissions/${id}/update`,
       }),
     }),
 

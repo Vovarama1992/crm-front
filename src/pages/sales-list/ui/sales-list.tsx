@@ -9,6 +9,7 @@ import {
 import { SaleDto, SigningStage } from '@/entities/sale/sale.types'
 import { useMeQuery, useUploadPdfMutation } from '@/entities/session'
 import { useGetWorkersQuery } from '@/entities/workers'
+import { SaleForm } from '@/pages/contragents/ui/Saleform'
 
 import DeletedSalesList from './DeletedSalesList'
 import { SalesEditForm } from './SalesEditForm'
@@ -56,6 +57,8 @@ export const SalesListPage: React.FC = () => {
   const [updateSale] = useUpdateSaleWithRemainingMutation()
   const [uploadPdf] = useUploadPdfMutation()
   const [showDeletedSales, setShowDeletedSales] = useState(false)
+
+  const [isSaleFormOpen, setSaleFormOpen] = useState(false)
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(9999)
   const [selectedYear, setSelectedYear] = useState<string>(() => {
@@ -377,6 +380,15 @@ export const SalesListPage: React.FC = () => {
         </div>
         <div className={'flex-1 text-center'}>
           <button
+            className={'bg-blue-500 text-white px-4 py-2 rounded'}
+            onClick={() => setSaleFormOpen(true)}
+          >
+            Открыть форму создания продажи
+          </button>
+        </div>
+
+        <div className={'flex-1 text-center'}>
+          <button
             className={'bg-yellow-500 text-white p-2 rounded'}
             onClick={() => setShowDeletedSales(true)}
           >
@@ -391,6 +403,13 @@ export const SalesListPage: React.FC = () => {
             <SalesEditForm onCancel={cancel} onClose={closeEditModal} sale={editingSale} />
           </div>
         </div>
+      )}
+      {isSaleFormOpen && (
+        <SaleForm
+          dealId={9999}
+          onClose={() => setSaleFormOpen(false)}
+          userId={meData?.id as number}
+        />
       )}
       {showDeletedSales && <DeletedSalesList onClose={() => setShowDeletedSales(false)} />}
     </div>

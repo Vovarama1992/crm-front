@@ -11,11 +11,18 @@ interface RefundModalProps {
 
 export const RefundModal: React.FC<RefundModalProps> = ({ onClose, sale, userId }) => {
   const [amount, setAmount] = useState(0)
+  const [date, setDate] = useState('')
   const [comment, setComment] = useState('')
   const [createCommission] = useCreateCommissionMutation()
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(Number(e.target.value))
+    const value = Number(e.target.value)
+
+    setAmount(value)
+  }
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDate(e.target.value)
   }
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,13 +30,20 @@ export const RefundModal: React.FC<RefundModalProps> = ({ onClose, sale, userId 
   }
 
   const handleSave = async () => {
+    if (!date) {
+      alert('Дата b сумма обязательна')
+
+      return
+    }
+
     try {
       await createCommission({
-        comissionType: ComissionType.REFUND,
+        category: ComissionType.REFUND,
         commissionAmount: amount,
         createdBy: userId,
         description: comment,
         saleId: sale.id,
+        updatedAt: new Date(date).toISOString(), // Преобразуем дату в формат ISO-8601
       })
       onClose()
     } catch (error) {
@@ -41,6 +55,15 @@ export const RefundModal: React.FC<RefundModalProps> = ({ onClose, sale, userId 
     <div className={'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50'}>
       <div className={'bg-white p-6 rounded-lg shadow-lg w-96'}>
         <h2 className={'text-xl font-semibold mb-4'}>Возврат</h2>
+        <div className={'mb-4'}>
+          <label className={'block mb-1'}>Дата</label>
+          <input
+            className={'w-full p-2 border border-gray-300 rounded'}
+            onChange={handleDateChange}
+            type={'date'}
+            value={date}
+          />
+        </div>
         <div className={'mb-4'}>
           <label className={'block mb-1'}>Сумма</label>
           <input

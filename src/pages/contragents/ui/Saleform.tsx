@@ -27,7 +27,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
 
   const deal = deals?.find(deal => deal.id === dealId) // Найти сделку по dealId
 
-  const requestNumber = deal ? deal.requestNumber : null
+  const number = dealId !== 9999 ? deal?.requestNumber : undefined
+  const [requestNumber, setRequestNumber] = useState<number | string | undefined>(number)
 
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: worker } = useMeQuery()
@@ -166,6 +167,18 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
             value={invoiceNumber}
           />
         </div>
+
+        {dealId === 9999 && (
+          <div className={'mb-4'}>
+            <label className={'block text-sm font-bold mb-1'}>№ запроса/задачи</label>
+            <input
+              className={'border rounded p-2 w-full'}
+              onChange={e => setRequestNumber(e.target.value)}
+              type={'text'}
+              value={requestNumber}
+            />
+          </div>
+        )}
 
         <div className={'mb-4'}>
           <label className={'block text-sm font-bold mb-1'}>Крайняя дата поставки</label>

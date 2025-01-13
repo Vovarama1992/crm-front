@@ -66,18 +66,41 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
   const handleSave = () => {
     const { counterpartyId, dealId, id, pdfUrl, ...dataWithoutId } = formData
 
-    const updatedFields: Omit<SaleDto, 'counterpartyId' | 'dealId' | 'id' | 'pdfUrl' | 'userId'> = {
-      ...dataWithoutId,
-      counterparty: { connect: { id: formData.counterpartyId } },
-      isFinalAmount,
-      isIndependentDeal,
+    const updatedFields: Partial<SaleDto> = {}
 
-      pdfPath: selectedFileName,
+    const addUpdatedField = (key: keyof SaleDto) => {
+      if (formData[key] !== sale[key]) {
+        updatedFields[key] = formData[key]
+      }
     }
 
-    updateSale({ id: sale.id, sale: updatedFields }).then(() => {
-      onClose()
+    Object.keys(dataWithoutId).forEach(key => {
+      addUpdatedField(key as keyof SaleDto)
     })
+
+    addUpdatedField('counterpartyId')
+    addUpdatedField('userId')
+    addUpdatedField('ropId')
+    addUpdatedField('totalSaleAmount')
+    addUpdatedField('paidNow')
+    addUpdatedField('isFinalAmount')
+    addUpdatedField('isIndependentDeal')
+
+    if (selectedFileName !== sale.pdfPath) {
+      updatedFields.pdfPath = selectedFileName
+    }
+
+    if (formData.counterpartyId !== sale.counterpartyId) {
+      updatedFields.counterparty = { connect: { id: formData.counterpartyId } }
+    }
+
+    if (Object.keys(updatedFields).length > 0) {
+      updateSale({ id: sale.id, sale: updatedFields }).then(() => {
+        onClose()
+      })
+    } else {
+      onClose()
+    }
   }
 
   const handleIndependentDealChange = () => {
@@ -143,6 +166,8 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
   }
 
   const canEditAllFields = meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер'
+  const canAdd =
+    meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер' || meData?.id == sale.userId
 
   return (
     <div className={'flex flex-col space-y-1'}>
@@ -250,7 +275,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
               onChange={handleIndependentDealChange}
               type={'checkbox'}
             />
-            <span className={'ml-1'}>Самостоятельная сделка</span>
+            <span className={'ml-1'}>Самостоятельная продажа</span>
           </label>
         </div>
       )}
@@ -274,19 +299,23 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
           История изменений
         </button>
 
-        <button
-          className={'bg-green-500 text-white p-1 rounded text-sm'}
-          onClick={handleShowAdditionalPaymentModal}
-        >
-          Доплата
-        </button>
+        {canAdd && (
+          <button
+            className={'bg-green-500 text-white p-1 rounded text-sm'}
+            onClick={handleShowAdditionalPaymentModal}
+          >
+            Доплата
+          </button>
+        )}
 
-        <button
-          className={'bg-red-500 text-white p-1 rounded text-sm'}
-          onClick={handleShowRefundModal}
-        >
-          Возврат
-        </button>
+        {canEditAllFields && (
+          <button
+            className={'bg-red-500 text-white p-1 rounded text-sm'}
+            onClick={handleShowRefundModal}
+          >
+            Возврат
+          </button>
+        )}
 
         <button
           className={'bg-blue-500 text-white p-1 rounded text-sm'}

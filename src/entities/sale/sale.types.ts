@@ -81,16 +81,16 @@ export enum ComissionType {
 }
 
 export type CommissionDto = {
-  comissionType: ComissionType
+  category: ComissionType
   commissionAmount: number
   createdAt: string
   createdBy: number
   description?: string
   id: number
   saleId: number
-  updatedAt: string
+  updatedAt?: string
 }
 
-export type CreateCommissionDto = Omit<CommissionDto, 'createdAt' | 'id' | 'updatedAt'>
+export type CreateCommissionDto = Omit<CommissionDto, 'createdAt' | 'id'>
 
 export type UpdateCommissionDto = Partial<CreateCommissionDto>
