@@ -45,15 +45,20 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, purchaseId 
     }
   }
 
-  const formatData = (data: Record<string, any>) => (
-    <ul className={'pl-4 list-disc'}>
-      {Object.entries(data).map(([key, value]) => (
-        <li key={key}>
-          <strong>{key}:</strong> {String(value)}
-        </li>
-      ))}
-    </ul>
-  )
+  const compareData = (oldData: Record<string, any>, newData: Record<string, any>) => {
+    const diff: Record<string, any> = {}
+
+    Object.keys(newData).forEach(key => {
+      if (oldData[key] !== newData[key]) {
+        diff[key] = {
+          new: newData[key],
+          old: oldData[key],
+        }
+      }
+    })
+
+    return diff
+  }
 
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50'}>
@@ -64,22 +69,32 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, purchaseId 
             <p>Нет изменений для отображения</p>
           ) : (
             <ul>
-              {currentChanges.map(change => (
-                <li className={'border-b py-4'} key={change.id}>
-                  <div>
-                    <strong>Дата:</strong> {new Date(change.changedAt).toLocaleString()}
-                  </div>
-                  <div>
-                    <strong>Изменение:</strong> {change.description}
-                  </div>
-                  {change.oldData && Object.keys(change.oldData).length > 0 && (
+              {currentChanges.map(change => {
+                const diffs = compareData(change.oldData, change.newData)
+
+                return (
+                  <li className={'border-b py-4'} key={change.id}>
                     <div>
-                      <strong>Старые данные:</strong>
-                      {formatData(change.oldData)}
+                      <strong>Дата:</strong> {new Date(change.changedAt).toLocaleString()}
                     </div>
-                  )}
-                </li>
-              ))}
+                    <div>
+                      <strong>Изменение:</strong> {change.description}
+                    </div>
+                    {Object.keys(diffs).length > 0 && (
+                      <div>
+                        <strong>Измененные данные:</strong>
+                        <ul className={'pl-4 list-disc'}>
+                          {Object.entries(diffs).map(([key, { new: newValue, old }]) => (
+                            <li key={key}>
+                              <strong>{key}:</strong> Старое: {old}, Новое: {newValue}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
