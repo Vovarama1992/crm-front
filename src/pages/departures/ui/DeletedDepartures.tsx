@@ -1,9 +1,14 @@
 import React, { useState } from 'react'
 
+import { DepartureDto } from '@/entities/departure'
 import {
   useGetDeletedDeparturesQuery,
   useRestoreDepartureMutation,
 } from '@/entities/departure/departure.api'
+import { WorkerDto } from '@/entities/workers'
+import { useGetWorkersQuery } from '@/entities/workers/workers.api'
+
+import { statusOptions } from './departures-page'
 
 const destinationOptions = {
   RETURN_FROM_CLIENT: 'Возврат от клиента',
@@ -18,14 +23,24 @@ interface DeletedDeparturesProps {
 
 export const DeletedDepartures: React.FC<DeletedDeparturesProps> = ({ onClose }) => {
   const { data: deletedDepartures, isLoading } = useGetDeletedDeparturesQuery()
+
   const [restoreDeparture] = useRestoreDepartureMutation()
 
   const [filterNumber, setFilterNumber] = useState('')
   const [filterCounterparty, setFilterCounterparty] = useState('')
   const [filterDestination, setFilterDestination] = useState('')
   const [filterTransportCompany, setFilterTransportCompany] = useState('')
-  const [filterSalesManager, setFilterSalesManager] = useState('') // Новый фильтр
-  const [filterStatus, setFilterStatus] = useState('') // Новый фильтр
+  const [filterSalesManager, setFilterSalesManager] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+
+  const { data: workers } = useGetWorkersQuery()
+
+  function findCreator(id: number) {
+    const defaultWorker = { name: '', surname: '' }
+    const worker = workers?.find((worker: WorkerDto) => worker.id === id)
+
+    return worker ? worker.name + ' ' + worker.surname : defaultWorker.name
+  }
 
   const handleFilterNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterNumber(e.target.value)
@@ -44,12 +59,10 @@ export const DeletedDepartures: React.FC<DeletedDeparturesProps> = ({ onClose })
   }
 
   const handleFilterSalesManagerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Новый обработчик
     setFilterSalesManager(e.target.value)
   }
 
   const handleFilterStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // Новый обработчик
     setFilterStatus(e.target.value)
   }
 
@@ -116,7 +129,7 @@ export const DeletedDepartures: React.FC<DeletedDeparturesProps> = ({ onClose })
 
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'}>
-      <div className={'bg-white p-4 rounded shadow-lg w-[800px] max-w-full'}>
+      <div className={'bg-white p-4 rounded shadow-lg w-[1600px] max-w-full'}>
         <h2 className={'text-lg font-bold mb-4'}>Удаленные отправления</h2>
 
         <div className={'mb-4'}>
@@ -155,15 +168,15 @@ export const DeletedDepartures: React.FC<DeletedDeparturesProps> = ({ onClose })
           />
           <input
             className={'border rounded px-2 py-1 mr-2'}
-            onChange={handleFilterSalesManagerChange} // Новый фильтр
+            onChange={handleFilterSalesManagerChange}
             placeholder={'Фильтр по менеджеру продаж'}
             type={'text'}
-            value={filterSalesManager} // Новый фильтр
+            value={filterSalesManager}
           />
           <select
             className={'border rounded px-2 py-1 mr-2'}
-            onChange={handleFilterStatusChange} // Новый фильтр
-            value={filterStatus} // Новый фильтр
+            onChange={handleFilterStatusChange}
+            value={filterStatus}
           >
             <option value={''}>Все статусы</option>
             <option value={'ACTIVE'}>Активно</option>
@@ -178,19 +191,27 @@ export const DeletedDepartures: React.FC<DeletedDeparturesProps> = ({ onClose })
               <th className={'border px-4 py-2'}>Контрагент</th>
               <th className={'border px-4 py-2'}>Куда</th>
               <th className={'border px-4 py-2'}>Транспортная компания</th>
+              <th className={'border px-4 py-2'}>Менеджер продаж</th> {/* Новый столбец */}
+              <th className={'border px-4 py-2'}>Статус</th> {/* Новый столбец */}
               <th className={'border px-4 py-2'}>Комментарий</th>
               <th className={'border px-4 py-2'}>Действия</th>
             </tr>
           </thead>
           <tbody>
-            {filteredDeletedDepartures.map(departure => (
+            {filteredDeletedDepartures.map((departure: DepartureDto) => (
               <tr key={departure.id}>
                 <td className={'border px-4 py-2'}>{departure.dealId}</td>
-                <td className={'border px-4 py-2'}>{departure?.counterparty?.name}</td>
+                <td className={'border px-4 py-2'}>
+                  {departure?.counterparty?.name || 'Неизвестно'}
+                </td>
                 <td className={'border px-4 py-2'}>
                   {destinationOptions[departure.destination] || 'Неизвестно'}
                 </td>
                 <td className={'border px-4 py-2'}>{departure.transportCompany}</td>
+                <td className={'border px-4 py-2'}>{findCreator(departure.userId)}</td>
+                {/* Отображение менеджера продаж */}
+                <td className={'border px-4 py-2'}>{statusOptions[departure.status]}</td>{' '}
+                {/* Отображение статуса */}
                 <td className={'border px-4 py-2'}>{departure.comments}</td>
                 <td className={'border px-4 py-2'}>
                   <button

@@ -8,7 +8,7 @@ import DeletedPurchasesModal from './DeletedPurchasesModal'
 import PurchaseTable from './PurchaseTable'
 
 export const ProcurementsPage: React.FC = () => {
-  const { data: purchaseData = [] } = useGetAllPurchasesQuery()
+  const { data: purchaseData = [], refetch } = useGetAllPurchasesQuery()
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery() // Получаем всех контрагентов
   const { data: workers = [] } = useGetWorkersQuery() // Получаем всех сотрудников
 
@@ -82,8 +82,8 @@ export const ProcurementsPage: React.FC = () => {
         .toLowerCase()
         .includes(searchCustomer.toLowerCase())
     const matchesPriceRange =
-      (!priceRange.min || purchase.invoiceToCustomer >= parseFloat(priceRange.min)) &&
-      (!priceRange.max || purchase.invoiceToCustomer <= parseFloat(priceRange.max))
+      (!priceRange.min || parseFloat(purchase.invoiceToCustomer) >= parseFloat(priceRange.min)) &&
+      (!priceRange.max || parseFloat(purchase.invoiceToCustomer) <= parseFloat(priceRange.max))
 
     // Убедитесь, что логистические линии и линии поставщиков определены и являются массивами
     const matchesCompletedDealsOnly =
@@ -202,6 +202,7 @@ export const ProcurementsPage: React.FC = () => {
           counterpartyName: getCounterpartyName(purchase.counterpartyId),
           managerName: getWorkerName(purchase.userId),
         }))}
+        refetch={refetch}
       />
       {isDeletedModalOpen && (
         <DeletedPurchasesModal isOpen={isDeletedModalOpen} onClose={handleCloseDeletedModal} />

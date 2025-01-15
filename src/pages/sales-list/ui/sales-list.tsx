@@ -51,14 +51,19 @@ const getSaleStage = (signingStage: SigningStage | undefined): string => {
 
 export const SalesListPage: React.FC = () => {
   const { data: meData } = useMeQuery()
-  const { data: salesData } = useGetAllSalesQuery()
-  const { data: remainingSalesData } = useGetAllRemainingSalesQuery()
+  const { data: salesData, refetch: refetchSales } = useGetAllSalesQuery()
+  const { data: remainingSalesData, refetch: refetchRemainings } = useGetAllRemainingSalesQuery()
   const { data: workersData } = useGetWorkersQuery()
   const [updateSale] = useUpdateSaleWithRemainingMutation()
   const [uploadPdf] = useUploadPdfMutation()
   const [showDeletedSales, setShowDeletedSales] = useState(false)
 
   const [isSaleFormOpen, setSaleFormOpen] = useState(false)
+
+  const refetch = () => {
+    refetchSales()
+    refetchRemainings()
+  }
 
   const [selectedEmployee, setSelectedEmployee] = useState<null | number>(9999)
   const [selectedYear, setSelectedYear] = useState<string>(() => {
@@ -224,7 +229,6 @@ export const SalesListPage: React.FC = () => {
   const closeEditModal = () => {
     setEditingSale(null)
     setIsEditFormOpen(false)
-    window.location.reload()
   }
 
   const cancel = () => {
@@ -400,7 +404,12 @@ export const SalesListPage: React.FC = () => {
       {isEditFormOpen && editingSale && (
         <div className={'fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center'}>
           <div className={'bg-white p-4 rounded'}>
-            <SalesEditForm onCancel={cancel} onClose={closeEditModal} sale={editingSale} />
+            <SalesEditForm
+              onCancel={cancel}
+              onClose={closeEditModal}
+              refetch={refetch}
+              sale={editingSale}
+            />
           </div>
         </div>
       )}

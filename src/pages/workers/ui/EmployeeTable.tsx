@@ -39,23 +39,25 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
 
   const [selectedWorker, setSelectedWorker] = useState<WorkerDto | undefined>(undefined)
   const [open, setOpen] = useState(false)
+  const [workerToDelete, setWorkerToDelete] = useState<WorkerDto | undefined>(undefined)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
-  const [workerIdToDelete, setWorkerIdToDelete] = useState<number | undefined>(undefined)
   const [editWorkerOpen, setEditWorkerOpen] = useState(false)
 
   const motivationSee = roleName == 'Директор' || roleName == 'Бухгалтер'
 
-  const handleFireWorker = (workerId: number) => {
-    setWorkerIdToDelete(workerId)
+  const handleFireWorker = (worker: WorkerDto) => {
+    setWorkerToDelete(worker)
     setConfirmModalOpen(true)
   }
 
   const handleConfirmDelete = async () => {
-    if (workerIdToDelete !== undefined) {
+    if (workerToDelete !== undefined) {
       try {
-        await deleteWorker(workerIdToDelete).unwrap()
+        const response = await deleteWorker(workerToDelete.id as number).unwrap()
+
+        console.log('Worker deleted:', response) // Логируем ответ от сервера
         setConfirmModalOpen(false)
-        setWorkerIdToDelete(undefined)
+        setWorkerToDelete(undefined)
       } catch (error) {
         console.error('Failed to delete the worker:', error)
       }
@@ -196,7 +198,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                 <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium'}>
                   <button
                     className={'text-red-600 hover:text-red-900'}
-                    onClick={() => handleFireWorker(worker.id)}
+                    onClick={() => handleFireWorker(worker)}
                   >
                     Уволить
                   </button>
@@ -247,12 +249,13 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
           }}
         />
       )}
-      <ConfirmModal
-        isOpen={confirmModalOpen}
-        onClose={() => setConfirmModalOpen(false)}
-        onConfirm={handleConfirmDelete}
-        workerId={workerIdToDelete || -1}
-      />
+      {confirmModalOpen && (
+        <ConfirmModal
+          onClose={() => setConfirmModalOpen(false)}
+          onConfirm={handleConfirmDelete}
+          worker={workerToDelete}
+        />
+      )}
     </div>
   )
 }

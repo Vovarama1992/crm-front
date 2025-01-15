@@ -17,10 +17,16 @@ import { RefundModal } from './RefundModal'
 interface SalesEditFormProps {
   onCancel: () => void
   onClose: () => void
+  refetch: () => void
   sale: SaleDto
 }
 
-export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose, sale }) => {
+export const SalesEditForm: React.FC<SalesEditFormProps> = ({
+  onCancel,
+  onClose,
+  refetch,
+  sale,
+}) => {
   const { data: counterparties = [] } = useGetAllCounterpartiesQuery()
   const { data: workers = [] } = useGetWorkersQuery()
   const { data: meData } = useMeQuery()
@@ -32,7 +38,6 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
 
   const [updateSale] = useUpdateSaleMutation()
   const [softDeleteSale] = useSoftDeleteSaleMutation()
-  const [isFinalAmount, setIsFinalAmount] = useState(sale.isFinalAmount)
   const [formData, setFormData] = useState<SaleDto>({ ...sale })
   const [isIndependentDeal, setIsIndependentDeal] = useState(sale.isIndependentDeal)
   const [selectedFileName, setSelectedFileName] = useState<string | undefined>(sale.pdfPath)
@@ -41,7 +46,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
   const [isRefundModalVisible, setIsRefundModalVisible] = useState(false)
   const [isPaymentListModalVisible, setIsPaymentListModalVisible] = useState(false)
 
-  const handleChange = (field: keyof SaleDto, value: number | string) => {
+  const handleChange = (field: keyof SaleDto, value: null | number | string) => {
     setFormData(prevState => ({
       ...prevState,
       [field]: value,
@@ -64,17 +69,16 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
   }
 
   const handleSave = () => {
-    const { counterpartyId, dealId, id, pdfUrl, ...dataWithoutId } = formData
-
     const updatedFields: Partial<SaleDto> = {}
 
     const addUpdatedField = (key: keyof SaleDto) => {
       if (formData[key] !== sale[key]) {
         updatedFields[key] = formData[key]
+        console.log(`Поле ${key} обновлено:`, { новое: formData[key], старое: sale[key] }) // Лог изменений
       }
     }
 
-    Object.keys(dataWithoutId).forEach(key => {
+    Object.keys(formData).forEach(key => {
       addUpdatedField(key as keyof SaleDto)
     })
 
@@ -96,6 +100,7 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
 
     if (Object.keys(updatedFields).length > 0) {
       updateSale({ id: sale.id, sale: updatedFields }).then(() => {
+        refetch()
         onClose()
       })
     } else {
@@ -126,7 +131,9 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
   }
 
   const handleROPChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    handleChange('ropId', Number(e.target.value))
+    const value = e.target.value ? Number(e.target.value) : null // null, если значение пустое
+
+    handleChange('ropId', value)
   }
 
   const handleTotalSaleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,11 +224,9 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
           <select
             className={'border rounded p-1 w-full'}
             onChange={handleROPChange}
-            value={formData.ropId || ''}
+            value={formData.ropId || ''} // Убедитесь, что отображается корректное значение
           >
-            <option disabled value={''}>
-              Выберите РОПа
-            </option>
+            <option value={''}>Не выбран</option> {/* Опция для удаления РОПа */}
             {workers
               .filter(worker => worker.roleName === 'РОП')
               .map(worker => (
@@ -255,16 +260,19 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
       </div>
 
       {canEditAllFields && (
-        <div>
-          <label className={'inline-flex items-center'}>
-            <input
-              checked={isFinalAmount}
-              onChange={() => setIsFinalAmount(!isFinalAmount)}
-              type={'checkbox'}
-            />
-            <span className={'ml-1'}>Финальная сумма</span>
-          </label>
-        </div>
+        <label className={'inline-flex items-center'}>
+          <input
+            checked={formData.isFinalAmount}
+            onChange={() =>
+              setFormData(prevState => ({
+                ...prevState,
+                isFinalAmount: !prevState.isFinalAmount,
+              }))
+            }
+            type={'checkbox'}
+          />
+          <span className={'ml-1'}>Финальная сумма</span>
+        </label>
       )}
 
       {meData?.roleName === 'Директор' && (
@@ -332,12 +340,18 @@ export const SalesEditForm: React.FC<SalesEditFormProps> = ({ onCancel, onClose,
       {isAdditionalPaymentModalVisible && (
         <AdditionalPaymentModal
           onClose={handleCloseAdditionalPaymentModal}
+          refetch={refetch}
           sale={sale}
           userId={meData?.id as number}
         />
       )}
       {isRefundModalVisible && (
-        <RefundModal onClose={handleCloseRefundModal} sale={sale} userId={meData?.id as number} />
+        <RefundModal
+          onClose={handleCloseRefundModal}
+          refetch={refetch}
+          sale={sale}
+          userId={meData?.id as number}
+        />
       )}
       {isPaymentListModalVisible && (
         <PaymentHistoryModal onClose={handleClosePaymentListModal} saleId={sale.id} />

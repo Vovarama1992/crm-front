@@ -5,12 +5,14 @@ import { ComissionType } from '@/entities/sale/sale.types'
 
 interface AdditionalPaymentModalProps {
   onClose: () => void
+  refetch: () => void
   sale: { id: number; paidNow: number }
   userId: number
 }
 
 export const AdditionalPaymentModal: React.FC<AdditionalPaymentModalProps> = ({
   onClose,
+  refetch,
   sale,
   userId,
 }) => {
@@ -51,6 +53,7 @@ export const AdditionalPaymentModal: React.FC<AdditionalPaymentModalProps> = ({
         saleId: sale.id,
         updatedAt: new Date(date).toISOString(),
       })
+      refetch()
       onClose()
     } catch (error) {
       console.error('Ошибка при создании доплаты:', error)

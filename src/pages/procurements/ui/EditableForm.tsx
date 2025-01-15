@@ -18,13 +18,25 @@ interface EditableFormProps {
   onCancel: () => void
   onSave: () => void
   pdfUrl: null | string
+  refetch: () => void
 }
 
-const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onSave, pdfUrl }) => {
+const EditableForm: React.FC<EditableFormProps> = ({
+  initialValue,
+  onCancel,
+  onSave,
+  pdfUrl,
+  refetch,
+}) => {
   const [totalInvoice, setTotalInvoice] = useState<number>(0)
   const [totalSupplier, setTotalSupplier] = useState<number>(0)
   const [totalLogistics, setTotalLogistics] = useState<number>(0)
+  const [invoiceToCustomer, setInvoiceToCustomer] = useState(
+    initialValue.invoiceToCustomer.toString()
+  )
   const [isHistoryModalOpen, setHistoryModalOpen] = useState(false)
+  const [requestNumber, setRequestNumber] = useState(initialValue.requestNumber)
+  const [userId, setUserId] = useState(initialValue.userId)
   const { data: counters } = useGetAllCounterpartiesQuery()
   const { data: workers } = useGetWorkersQuery()
   const { data: salesData } = useGetAllSalesQuery()
@@ -34,16 +46,11 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   const [updatePurchase] = useUpdatePurchaseMutation()
 
   console.log(totalInvoice)
+
   function findTotalAmount(id: number) {
     const sale = salesData?.find((sale: any) => sale.id === id)
 
     return sale?.totalSaleAmount || 0
-  }
-
-  function findName(id: number) {
-    const worker = workers?.find(worker => worker.id === id)
-
-    return worker ? worker.name + ' ' + worker.surname : undefined
   }
 
   function findCounter(id: number) {
@@ -57,7 +64,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
   const handleAllArrived = async () => {
     try {
       await updatePurchase({
-        data: { id: initialValue.id, isSentAll: true }, // Добавляем id, чтобы соответствовать типу UpdatePurchaseDto
+        data: { id: initialValue.id, isSentAll: true },
         id: initialValue.id,
       }).unwrap()
 
@@ -82,10 +89,46 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
     setHistoryModalOpen(false) // Закрытие модалки
   }
 
+  const handleSave = async () => {
+    try {
+      const updatedData = {
+        id: initialValue.id,
+
+        invoiceToCustomer,
+        requestNumber,
+        userId,
+      }
+
+      await updatePurchase({
+        data: { ...updatedData },
+        id: initialValue.id,
+      }).unwrap()
+
+      await createNotification({
+        content: `Изменен запрос по продаже №${initialValue.dealId} для ${findCounter(initialValue.counterpartyId)} счет № ${initialValue.requestNumber}`,
+        createdBy: meData?.id || 1,
+        intendedFor: [initialValue.userId],
+        title: `Запрос изменен по продаже №${initialValue.dealId}`,
+      }).unwrap()
+
+      alert('Данные успешно обновлены')
+      refetch()
+      onSave()
+    } catch (error) {
+      alert('Не удалось обновить данные')
+    }
+  }
+
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50'}>
       <div className={'bg-white p-6 rounded shadow-lg max-h-[90vh] overflow-auto w-[90vw]'}>
-        <form className={'space-y-4'} onSubmit={e => e.preventDefault()}>
+        <form
+          className={'space-y-4'}
+          onSubmit={e => {
+            e.preventDefault()
+            handleSave
+          }}
+        >
           <h3 className={'text-lg font-medium'}>Основная информация</h3>
 
           <div className={'grid grid-cols-2 gap-4'}>
@@ -93,9 +136,9 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               <label className={'block text-sm font-medium'}>Номер запроса</label>
               <input
                 className={'border p-2 w-full'}
-                defaultValue={initialValue.invoiceToCustomer}
-                name={'invoiceToCustomer'}
+                onChange={e => setInvoiceToCustomer(e.target.value)}
                 type={'number'}
+                value={invoiceToCustomer}
               />
             </div>
 
@@ -128,19 +171,25 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
               <label className={'block text-sm font-medium'}>Счет заказчику</label>
               <input
                 className={'border p-2 w-full'}
-                defaultValue={initialValue.requestNumber}
-                name={'requestNumber'}
+                onChange={e => setRequestNumber(e.target.value)}
                 type={'text'}
+                value={requestNumber}
               />
             </div>
 
             <div>
               <label className={'block text-sm font-medium'}>Менеджер</label>
-              <input
+              <select
                 className={'border p-2 w-full'}
-                defaultValue={findName(initialValue.userId)}
-                readOnly
-              />
+                onChange={e => setUserId(Number(e.target.value))}
+                value={userId}
+              >
+                {workers?.map(worker => (
+                  <option key={worker.id} value={worker.id}>
+                    {worker.name} {worker.surname}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -193,7 +242,7 @@ const EditableForm: React.FC<EditableFormProps> = ({ initialValue, onCancel, onS
             </button>
             <button
               className={'bg-blue-500 text-white px-4 py-2 rounded'}
-              onClick={onSave}
+              onClick={handleSave}
               type={'button'}
             >
               Сохранить

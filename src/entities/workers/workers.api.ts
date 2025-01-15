@@ -40,9 +40,9 @@ const workersApi = baseApi.injectEndpoints({
     fireWorker: builder.mutation<void, number>({
       invalidatesTags: [WORKERS_TAG],
       query: id => ({
-        body: { department_id: null, isActive: false }, // Устанавливаем isActive в false и удаляем из отдела
+        body: { department_id: null, isActive: false },
         method: 'PATCH',
-        url: `/users/${id}`,
+        url: `/users/fire/${id}`,
       }),
     }),
     getActive: builder.query<WorkerDto[], void>({

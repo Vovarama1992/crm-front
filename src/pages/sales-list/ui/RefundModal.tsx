@@ -5,11 +5,12 @@ import { ComissionType } from '@/entities/sale/sale.types'
 
 interface RefundModalProps {
   onClose: () => void
+  refetch: () => void
   sale: { id: number; paidNow: number }
   userId: number
 }
 
-export const RefundModal: React.FC<RefundModalProps> = ({ onClose, sale, userId }) => {
+export const RefundModal: React.FC<RefundModalProps> = ({ onClose, refetch, sale, userId }) => {
   const [amount, setAmount] = useState(0)
   const [date, setDate] = useState('')
   const [comment, setComment] = useState('')
@@ -45,6 +46,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({ onClose, sale, userId 
         saleId: sale.id,
         updatedAt: new Date(date).toISOString(), // Преобразуем дату в формат ISO-8601
       })
+      refetch()
       onClose()
     } catch (error) {
       console.error('Ошибка при создании возврата:', error)

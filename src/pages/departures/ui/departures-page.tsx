@@ -30,7 +30,7 @@ const specificDestinationOptions = {
 const buttonBaseStyles =
   'text-white px-4 py-2 rounded text-center inline-flex items-center justify-center h-[60px] min-w-[200px] mr-[10px]'
 
-const statusOptions = {
+export const statusOptions = {
   DELIVERED_ALL: 'Доставлено все',
   DELIVERED_PARTIALLY: 'Доставлено частично',
   PROBLEM: 'Проблема',

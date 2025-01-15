@@ -81,21 +81,22 @@ export const StructurePage = () => {
     }
   }
 
-  const handleFormSubmit = () => {
-    window.location.reload() // Перезагружаем страницу после отправки формы
+  const onClose = () => {
+    setSelectedWorker(null)
+    setFormType(null)
   }
 
   const handleTransfer = async (worker: WorkerDto, newDepartmentId: null | number) => {
     const newDepartment = departmentsData.find(dept => dept.id === newDepartmentId)
     const managedBy = newDepartment?.ropId ?? undefined
+    const { password, ...workerData } = worker
 
     await updateWorker({
-      ...worker,
+      ...workerData,
       department_id: newDepartmentId,
       managed_by: managedBy,
     })
-
-    handleFormSubmit()
+    onClose()
   }
 
   const handleCreateDepartmentForRop = async (worker: WorkerDto) => {
@@ -110,7 +111,6 @@ export const StructurePage = () => {
           department_id: newDepartment.data.id,
           roleName: 'РОП',
         })
-        handleFormSubmit()
       }
     }
   }
@@ -190,11 +190,12 @@ export const StructurePage = () => {
                 department_id: worker.department_id,
                 roleName: 'РОП',
               })
+              onClose()
             } else {
               await updateWorker({ ...worker, department_id: undefined, roleName: 'Менеджер' })
               await deleteDepartment(worker.department_id!)
+              onClose()
             }
-            handleFormSubmit()
           }}
           onPromote={async (worker: WorkerDto, departmentName: string) => {
             const newDepartment = await createDepartment({ name: departmentName, ropId: worker.id })
@@ -205,7 +206,7 @@ export const StructurePage = () => {
                 department_id: newDepartment.data.id,
                 roleName: 'РОП',
               })
-              handleFormSubmit()
+              onClose()
             }
           }}
           onTransfer={handleTransfer}

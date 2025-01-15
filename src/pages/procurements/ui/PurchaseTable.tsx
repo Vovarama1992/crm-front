@@ -24,9 +24,10 @@ const formatDate = (date: Date | null | string | undefined) => {
 
 interface PurchaseTableProps {
   data: ({ counterpartyName: string; managerName: string } & PurchaseDto)[]
+  refetch: () => void
 }
 
-const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
+const PurchaseTable: React.FC<PurchaseTableProps> = ({ data, refetch }) => {
   const [editingOrder, setEditingOrder] = useState<PurchaseDto | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [pdfPaths, setPdfPaths] = useState<{ [key: number]: null | string }>({})
@@ -172,6 +173,7 @@ const PurchaseTable: React.FC<PurchaseTableProps> = ({ data }) => {
           onCancel={() => setIsFormOpen(false)}
           onSave={handleFormSave}
           pdfUrl={pdfPaths[editingOrder.id] || null}
+          refetch={refetch}
         />
       )}
     </div>

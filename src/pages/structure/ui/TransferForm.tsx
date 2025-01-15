@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import { DepartmentDto, WorkerDto } from '@/entities/workers'
-import { useUpdateWorkerMutation } from '@/entities/workers'
 
 type TransferFormProps = {
   departments: DepartmentDto[]
@@ -28,9 +27,6 @@ const TransferForm: React.FC<TransferFormProps> = ({
   // Найдем текущий департамент сотрудника
   const currentDepartment = departments.find(dept => dept.id === employee.department_id)
 
-  // Мутация для обновления данных сотрудника
-  const [updateWorker] = useUpdateWorkerMutation()
-
   // Функция для поиска ropId в департаменте
   function findRopId(departmentId: number) {
     const department = departments.find(dep => dep.id === departmentId)
@@ -45,21 +41,13 @@ const TransferForm: React.FC<TransferFormProps> = ({
     if (formType === 'transfer') {
       const managedBy = selectedDepartmentId ? findRopId(selectedDepartmentId) : undefined
 
+      const { password, ...employeeData } = employee
+
       console.log('Обновляем сотрудника:', {
-        ...employee,
+        ...employeeData,
         department_id: selectedDepartmentId,
         managed_by: managedBy,
       })
-
-      const { password, ...employeeData } = employee
-
-      await updateWorker({
-        ...employeeData,
-        department_id: selectedDepartmentId,
-        managed_by: managedBy, // Устанавливаем найденный ropId или undefined
-      })
-
-      console.log('Сотрудник успешно обновлен. Передаем данные в onTransfer.')
 
       onTransfer(employee, selectedDepartmentId)
     } else if (formType === 'promote' && departmentName) {

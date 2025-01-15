@@ -66,6 +66,7 @@ const purchaseApi = baseApi.injectEndpoints({
         url: `/purchases/${invoiceLine.purchaseId}/invoice-lines`,
       }),
     }),
+
     createMultiplePayments: builder.mutation<PaymentDto[], CreatePaymentDto[]>({
       query: payments => ({
         body: payments,
@@ -81,7 +82,6 @@ const purchaseApi = baseApi.injectEndpoints({
         url: '/payments',
       }),
     }),
-
     createSupplierLine: builder.mutation<SupplierLineDto, CreateSupplierLineDto>({
       query: supplierLine => ({
         body: supplierLine,
@@ -215,6 +215,13 @@ const purchaseApi = baseApi.injectEndpoints({
       }),
     }),
 
+    getPurchaseChanges: builder.query<ChangeDto[], { entityId: number }>({
+      query: ({ entityId }) => ({
+        params: { entityId, entityType: 'PURCHASE' },
+        url: 'change',
+      }),
+    }),
+
     getSalesByUserId: builder.query<SaleDto[], string>({
       query: userId => ({
         url: `/sales/user/${userId}`,
@@ -227,11 +234,18 @@ const purchaseApi = baseApi.injectEndpoints({
         url: `/purchases/${purchaseId}/supplier-lines`,
       }),
     }),
+
     // Эндпойнт для восстановления расхода
     restoreExpense: builder.mutation<ExpenseDto, number>({
       query: id => ({
         method: 'PATCH',
         url: `/expenses/${id}/restore`,
+      }),
+    }),
+    restorePurchase: builder.mutation<PurchaseDto, number>({
+      query: id => ({
+        method: 'PATCH',
+        url: `/purchases/${id}/restore`,
       }),
     }),
 
@@ -327,27 +341,29 @@ export const {
   useGetAllPurchasesQuery,
 
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
-
   useGetDealsByDateRangeQuery,
+
   useGetDealsByDepartmentQuery,
   useGetDealsByUserIdQuery,
   useGetDeletedExpensesQuery,
-
   useGetDeletedPurchasesQuery,
 
   useGetExpenseChangesQuery,
+
   useGetExpensesByUserIdQuery,
   useGetInvoiceLinesByPurchaseIdQuery,
   useGetLogisticsLinesByPurchaseIdQuery,
-
   useGetMonthlyTurnoverAndMarginQuery,
   useGetPaymentChangesQuery,
 
+  useGetPurchaseChangesQuery,
+  useGetSalesByUserIdQuery,
+
   // Новые хуки для работы с продажами
 
-  useGetSalesByUserIdQuery,
   useGetSupplierLinesByPurchaseIdQuery,
   useRestoreExpenseMutation,
+  useRestorePurchaseMutation,
   useSoftDeleteExpenseMutation,
   useSoftDeletePurchaseMutation,
 

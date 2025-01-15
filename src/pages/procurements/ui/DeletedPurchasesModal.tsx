@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react'
 
-import { useGetDeletedPurchasesQuery } from '@/entities/purchase'
+import { useGetDeletedPurchasesQuery, useRestorePurchaseMutation } from '@/entities/purchase'
 import { useGetAllCounterpartiesQuery } from '@/entities/purchase'
 import { PurchaseDto } from '@/entities/purchase/purchase.types'
+import { useMeQuery } from '@/entities/session'
 import { useGetActiveQuery } from '@/entities/workers'
 
 interface DeletedPurchasesModalProps {
@@ -14,6 +15,9 @@ const DeletedPurchasesModal: React.FC<DeletedPurchasesModalProps> = ({ isOpen, o
   const { data: deletedPurchases, isLoading: isPurchasesLoading } = useGetDeletedPurchasesQuery()
   const { data: counterparties } = useGetAllCounterpartiesQuery()
   const { data: workers } = useGetActiveQuery()
+  const { data: user } = useMeQuery()
+  const [restorePurchase] = useRestorePurchaseMutation()
+  const roleName = user?.roleName || ''
 
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -25,6 +29,17 @@ const DeletedPurchasesModal: React.FC<DeletedPurchasesModalProps> = ({ isOpen, o
         purchase.requestNumber.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [deletedPurchases, searchTerm])
+
+  const handleRestore = async (purchaseId: number) => {
+    try {
+      await restorePurchase(purchaseId).unwrap()
+      alert('Закупка успешно восстановлена!')
+      onClose()
+    } catch (error) {
+      console.error('Ошибка при восстановлении:', error)
+      alert('Не удалось восстановить закупку.')
+    }
+  }
 
   if (!isOpen) {
     return null
@@ -52,6 +67,7 @@ const DeletedPurchasesModal: React.FC<DeletedPurchasesModalProps> = ({ isOpen, o
                 <th className={'border px-4 py-2'}>Контрагент</th>
                 <th className={'border px-4 py-2'}>Менеджер</th>
                 <th className={'border px-4 py-2'}>Сумма</th>
+                {roleName == 'Директор' && <th className={'border px-4 py-2'}>Действия</th>}
               </tr>
             </thead>
             <tbody>
@@ -74,6 +90,14 @@ const DeletedPurchasesModal: React.FC<DeletedPurchasesModalProps> = ({ isOpen, o
                       {worker ? `${worker.name} ${worker.surname}` : 'Не найден'}
                     </td>
                     <td className={'border px-4 py-2'}>{purchase.invoiceToCustomer}</td>
+                    <td className={'border px-4 py-2'}>
+                      <button
+                        className={'bg-green-500 text-white px-2 py-1 rounded'}
+                        onClick={() => handleRestore(purchase.id)}
+                      >
+                        Восстановить
+                      </button>
+                    </td>
                   </tr>
                 )
               })}

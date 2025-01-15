@@ -106,7 +106,7 @@ const TableRow: React.FC<TableRowProps> = ({
       <td className={'px-2 py-1 whitespace-nowrap text-sm text-gray-500 truncate'}>
         {sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец'
           ? formatCurrency(
-              (sale.totalSaleAmount as number) - sale.logisticsCost - sale.purchaseCost
+              sale.paidNow + sale.prepaymentAmount - sale.logisticsCost - sale.purchaseCost
             )
           : '—'}
       </td>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 
 import { useGetDeletedSalesQuery, useRestoreSaleMutation } from '@/entities/sale'
 import { SaleDto } from '@/entities/sale/sale.types'
+import { formatCurrency } from '@/pages/kopeechnik'
 
 interface DeletedSalesListProps {
   onClose: () => void
@@ -11,7 +12,7 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
   const { data: deletedSalesData, isError, isLoading } = useGetDeletedSalesQuery()
   const [restoreSale] = useRestoreSaleMutation()
 
-  const [selectedYear, setSelectedYear] = useState<string>('2024')
+  const [selectedYear, setSelectedYear] = useState<string>('2025')
   const [selectedStartMonth, setSelectedStartMonth] = useState<string>('1')
   const [selectedEndMonth, setSelectedEndMonth] = useState<string>('12')
   const [filteredSales, setFilteredSales] = useState<SaleDto[]>([])
@@ -136,7 +137,13 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
 
               <td className={'px-4 py-2'}>{sale.totalSaleAmount}</td>
               <td className={'px-4 py-2'}>{sale.logisticsCost}</td>
-              <td className={'px-4 py-2'}>{sale.margin}</td>
+              <td className={'px-4 py-2'}>
+                {formatCurrency(
+                  ((sale.paidNow + sale.prepaymentAmount) as number) -
+                    sale.logisticsCost -
+                    sale.purchaseCost
+                )}
+              </td>
               <td className={'px-4 py-2'}>{sale.prepaymentAmount}</td>
               <td className={'px-4 py-2'}>
                 {sale.lastDeliveryDate

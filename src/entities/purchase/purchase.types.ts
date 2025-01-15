@@ -19,7 +19,7 @@ export type PurchaseDto = {
   deliveryDeadline: string
   id: number
   invoiceLines: InvoiceLineDto[]
-  invoiceToCustomer: number
+  invoiceToCustomer: string
   isSentAll?: boolean
   logisticsLines: LogisticsLineDto[]
   requestNumber: string
