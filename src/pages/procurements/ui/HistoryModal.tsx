@@ -45,21 +45,6 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, purchaseId 
     }
   }
 
-  const compareData = (oldData: Record<string, any>, newData: Record<string, any>) => {
-    const diff: Record<string, any> = {}
-
-    Object.keys(newData).forEach(key => {
-      if (oldData[key] !== newData[key]) {
-        diff[key] = {
-          new: newData[key],
-          old: oldData[key],
-        }
-      }
-    })
-
-    return diff
-  }
-
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50'}>
       <div className={'bg-white p-6 rounded shadow-lg w-[70vw] max-h-[80vh] overflow-auto'}>
@@ -70,8 +55,6 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, purchaseId 
           ) : (
             <ul>
               {currentChanges.map(change => {
-                const diffs = compareData(change.oldData, change.newData)
-
                 return (
                   <li className={'border-b py-4'} key={change.id}>
                     <div>
@@ -80,18 +63,6 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, purchaseId 
                     <div>
                       <strong>Изменение:</strong> {change.description}
                     </div>
-                    {Object.keys(diffs).length > 0 && (
-                      <div>
-                        <strong>Измененные данные:</strong>
-                        <ul className={'pl-4 list-disc'}>
-                          {Object.entries(diffs).map(([key, { new: newValue, old }]) => (
-                            <li key={key}>
-                              <strong>{key}:</strong> Старое: {old}, Новое: {newValue}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
                   </li>
                 )
               })}

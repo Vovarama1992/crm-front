@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { ChangeDto } from '@/entities/changes'
 
@@ -16,6 +16,9 @@ export const ChangesHistoryModal: React.FC<ChangesHistoryModalProps> = ({
   isLoading,
   onClose,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
+
   if (isLoading) {
     return (
       <div className={'p-4'}>
@@ -32,12 +35,21 @@ export const ChangesHistoryModal: React.FC<ChangesHistoryModalProps> = ({
     )
   }
 
+  const totalPages = changes ? Math.ceil(changes.length / itemsPerPage) : 1
+  const paginatedChanges = changes?.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1))
+  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages))
+
   return (
-    <div className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'}>
-      <div className={'bg-white p-4 rounded shadow-lg w-[800px] max-w-full'}>
+    <div className={'fixed top-[10%] left-[10%] bg-black bg-opacity-50 w-[80%] h-[80%] z-50'}>
+      <div className={'bg-white p-4 rounded shadow-lg h-full'}>
         <h2 className={'text-lg font-bold mb-4'}>История изменений</h2>
-        <ul>
-          {changes?.map(change => (
+        <ul className={'overflow-y-auto h-[calc(100%-80px)]'}>
+          {paginatedChanges?.map(change => (
             <li className={'mb-2'} key={change.id}>
               <div className={'text-sm text-gray-400'}>
                 <span>
@@ -50,9 +62,28 @@ export const ChangesHistoryModal: React.FC<ChangesHistoryModalProps> = ({
             </li>
           ))}
         </ul>
-        <button className={'bg-red-500 text-white px-4 py-2 rounded mt-4'} onClick={onClose}>
-          Закрыть
-        </button>
+        <div className={'flex justify-between items-center mt-4'}>
+          <button
+            className={'bg-gray-300 px-4 py-1 rounded'}
+            disabled={currentPage === 1}
+            onClick={handlePrevPage}
+          >
+            Назад
+          </button>
+          <span>
+            Страница {currentPage} из {totalPages}
+          </span>
+          <button
+            className={'bg-gray-300 px-4 py-1 rounded'}
+            disabled={currentPage === totalPages}
+            onClick={handleNextPage}
+          >
+            Вперед
+          </button>
+          <button className={'bg-red-500 text-white px-4 py-1 rounded'} onClick={onClose}>
+            Закрыть
+          </button>
+        </div>
       </div>
     </div>
   )

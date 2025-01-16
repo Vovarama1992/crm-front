@@ -139,9 +139,7 @@ const DeletedSalesList: React.FC<DeletedSalesListProps> = ({ onClose }) => {
               <td className={'px-4 py-2'}>{sale.logisticsCost}</td>
               <td className={'px-4 py-2'}>
                 {formatCurrency(
-                  ((sale.paidNow + sale.prepaymentAmount) as number) -
-                    sale.logisticsCost -
-                    sale.purchaseCost
+                  (sale?.totalSaleAmount as number) - sale.logisticsCost - sale.purchaseCost
                 )}
               </td>
               <td className={'px-4 py-2'}>{sale.prepaymentAmount}</td>
