@@ -94,7 +94,15 @@ export const PlanPage = () => {
   }
 
   return (
-    <div className={'p-6'} style={{ left: '10%', position: 'relative', top: '10%' }}>
+    <div
+      className={'p-6'}
+      style={{
+        height: 'calc(100vh - 40px)',
+        left: '3%',
+        position: 'relative',
+        top: '10%',
+      }}
+    >
       <Typography className={'text-center text-4xl font-semibold mb-6'} variant={'h1'}>
         Годовой план
       </Typography>
@@ -134,10 +142,13 @@ export const PlanPage = () => {
         </label>
       </div>
 
-      {/* Контейнер для таблицы с вертикальной прокруткой */}
-      <div className={'overflow-y-auto max-h-[500px]'}>
-        {' '}
-        {/* Ограничиваем высоту контейнера */}
+      {/* Контейнер для таблицы с фиксированным размером и прокруткой */}
+      <div
+        className={'overflow-y-auto'}
+        style={{
+          maxHeight: 'calc(100vh - 220px)', // Ограничиваем высоту таблицы, чтобы она прокручивалась
+        }}
+      >
         <table className={'w-full mt-6 table-auto border-collapse text-left bg-white shadow-lg'}>
           <thead>
             <tr className={'bg-gray-200 text-lg text-gray-800'}>
@@ -220,7 +231,10 @@ export const PlanPage = () => {
       </div>
 
       {/* Кнопка, фиксированная внизу */}
-      <div className={'absolute bottom-6 left-1/2 transform -translate-x-1/2'}>
+      <div
+        className={'absolute bottom-6 left-1/2 transform -translate-x-1/2'}
+        style={{ paddingLeft: '10px', paddingRight: '10px', width: 'calc(100% - 20px)' }}
+      >
         <button
           className={'bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-all'}
           onClick={toggleHistoryModal}
