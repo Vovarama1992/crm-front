@@ -23,6 +23,8 @@ export const PlanPage = () => {
   const { data: departments = [], isLoading: isDepartmentsLoading } = useGetDepartmentsQuery()
   const { data: userData, isLoading: isUserDataLoading } = useMeQuery()
 
+  const isLoading = isUsersLoading || isDepartmentsLoading || isUserDataLoading
+
   const [filterYear, setFilterYear] = useState<string>('')
   const [filterNonSales, setFilterNonSales] = useState<boolean>(false)
   const [filterComplexMotivation, setFilterComplexMotivation] = useState<boolean>(false)
@@ -38,35 +40,7 @@ export const PlanPage = () => {
   console.log('userRole:', userRole)
   console.log('usersWithMotivations:', usersWithMotivations)
 
-  const filtered = (() => {
-    if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
-      const filteredUsers = usersWithMotivations.filter(user => user.id === userData?.id)
-
-      console.log('Filtered (Менеджер/Логист/Закупщик):', filteredUsers)
-
-      return filteredUsers
-    } else if (userRole === 'РОП') {
-      const ropDepartment = departments.find(department => department.ropId === userData?.id)
-      const filteredByRop =
-        ropDepartment?.users.filter(user => user.department_id === ropDepartment.id) ?? []
-
-      console.log('Filtered (РОП):', filteredByRop)
-
-      return filteredByRop
-    } else if (userRole === 'Директор') {
-      console.log('Filtered (Директор):', usersWithMotivations)
-
-      return usersWithMotivations
-    } else {
-      console.log('Filtered (default):', [])
-
-      return []
-    }
-  })()
-
-  console.log('Final Filtered Users:', filtered)
-
-  const [filteredUsers, setFilteredUsers] = useState<WorkerDto[]>(filtered)
+  const [filteredUsers, setFilteredUsers] = useState<WorkerDto[]>([])
 
   useEffect(() => {
     recalculateAll().then(({ data }) => {
@@ -84,39 +58,53 @@ export const PlanPage = () => {
   }, [])
 
   useEffect(() => {
-    let users = filteredUsers
+    if (!isLoading) {
+      let users = usersWithMotivations
 
-    if (filterYear) {
-      users = users.filter(user => {
-        const demotivatedYear = user.demotivatedAt
-          ? new Date(user.demotivatedAt).getFullYear()
-          : null
-        const motivatedYear = user.motivatedAt ? new Date(user.motivatedAt).getFullYear() : null
+      if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
+        users = users.filter(user => user.id === userData?.id)
+      } else if (userRole === 'РОП') {
+        const ropDepartment = departments.find(department => department.ropId === userData?.id)
 
-        return (
-          !(demotivatedYear && demotivatedYear < Number(filterYear)) &&
-          !(motivatedYear && motivatedYear > Number(filterYear))
-        )
-      })
+        users = ropDepartment?.users.filter(user => user.department_id === ropDepartment.id) ?? []
+      } else if (userRole === 'Директор') {
+        users = usersWithMotivations
+      } else {
+        users = []
+      }
+
+      setFilteredUsers(users)
+
+      if (filterYear) {
+        users = users.filter(user => {
+          const demotivatedYear = user.demotivatedAt
+            ? new Date(user.demotivatedAt).getFullYear()
+            : null
+          const motivatedYear = user.motivatedAt ? new Date(user.motivatedAt).getFullYear() : null
+
+          return (
+            !(demotivatedYear && demotivatedYear < Number(filterYear)) &&
+            !(motivatedYear && motivatedYear > Number(filterYear))
+          )
+        })
+      }
+
+      if (filterNonSales) {
+        users = users.filter(user => !user.department_id)
+      }
+
+      if (filterComplexMotivation) {
+        users = users.filter(user => user.motivationType === 'HARD')
+      }
+
+      setFilteredUsers(users)
     }
-
-    if (filterNonSales) {
-      users = users.filter(user => !user.department_id)
-    }
-
-    if (filterComplexMotivation) {
-      users = users.filter(user => user.motivationType === 'HARD')
-    }
-
-    setFilteredUsers(users)
   }, [filterYear, filterNonSales, filterComplexMotivation, usersWithMotivations, departments])
 
   const handleMotivationClick = (motivation: any) => {
     setSelectedMotivation(motivation)
     toggleMotivationModal()
   }
-
-  const isLoading = isUsersLoading || isDepartmentsLoading || isUserDataLoading
 
   if (isLoading) {
     return <div>Загрузка данных...</div> // Показываем индикатор загрузки
