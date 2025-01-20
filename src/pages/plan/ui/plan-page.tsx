@@ -31,19 +31,36 @@ export const PlanPage = () => {
 
   const userRole = userData?.roleName
 
+  console.log('userRole:', userRole)
+  console.log('usersWithMotivations:', usersWithMotivations)
+
   const filtered = (() => {
     if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
-      return usersWithMotivations.filter(user => user.id === userData?.id)
+      const filteredUsers = usersWithMotivations.filter(user => user.id === userData?.id)
+
+      console.log('Filtered (Менеджер/Логист/Закупщик):', filteredUsers)
+
+      return filteredUsers
     } else if (userRole === 'РОП') {
       const ropDepartment = departments.find(department => department.ropId === userData?.id)
+      const filteredByRop =
+        ropDepartment?.users.filter(user => user.department_id === ropDepartment.id) ?? []
 
-      return ropDepartment?.users.filter(user => user.department_id === ropDepartment.id) ?? []
+      console.log('Filtered (РОП):', filteredByRop)
+
+      return filteredByRop
     } else if (userRole === 'Директор') {
+      console.log('Filtered (Директор):', usersWithMotivations)
+
       return usersWithMotivations
     } else {
+      console.log('Filtered (default):', [])
+
       return []
     }
   })()
+
+  console.log('Final Filtered Users:', filtered)
 
   const [filteredUsers, setFilteredUsers] = useState<WorkerDto[]>(filtered)
 
@@ -51,7 +68,7 @@ export const PlanPage = () => {
     recalculateAll().then(({ data }) => {
       if (data && Array.isArray(data)) {
         data.forEach(({ newMarginPercent, planMargin, userId }: any) => {
-          const user = usersWithMotivations.find((u: WorkerDto) => u.id === userId)
+          const user = filteredUsers.find((u: WorkerDto) => u.id === userId)
 
           if (user) {
             user.planMargin = planMargin
@@ -63,7 +80,7 @@ export const PlanPage = () => {
   }, [])
 
   useEffect(() => {
-    let users = usersWithMotivations
+    let users = filteredUsers
 
     if (filterYear) {
       users = users.filter(user => {
