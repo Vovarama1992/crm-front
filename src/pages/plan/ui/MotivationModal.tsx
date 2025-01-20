@@ -32,6 +32,11 @@ const UpdateMotivationModal: React.FC<UpdateMotivationModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (marginPercent < initialMarginPercent) {
+      alert('Новый процент маржи не может быть ниже базового')
+
+      return
+    }
     try {
       await updateMotivation({ marginPercent, motivationId, threshold }).unwrap()
       refetch()

@@ -2,11 +2,7 @@
 import { useEffect, useState } from 'react'
 
 import { useMeQuery } from '@/entities/session'
-import {
-  useGetDepartmentsQuery,
-  useGetUsersWithMotivationsQuery,
-  useRecalculateAllUsersMarginMutation,
-} from '@/entities/workers'
+import { useGetDepartmentsQuery, useGetUsersWithMotivationsQuery } from '@/entities/workers'
 import { WorkerDto } from '@/entities/workers'
 import { Typography } from '@/shared/ui/typography'
 
@@ -14,7 +10,6 @@ import { MotivationHistoryModal } from './MotivationHistoryModal'
 import UpdateMotivationModal from './MotivationModal'
 
 export const PlanPage = () => {
-  const [recalculateAll] = useRecalculateAllUsersMarginMutation()
   const {
     data: usersWithMotivations = [],
     isLoading: isUsersLoading,
@@ -41,21 +36,6 @@ export const PlanPage = () => {
   console.log('usersWithMotivations:', usersWithMotivations)
 
   const [filteredUsers, setFilteredUsers] = useState<WorkerDto[]>([])
-
-  useEffect(() => {
-    recalculateAll().then(({ data }) => {
-      if (data && Array.isArray(data)) {
-        data.forEach(({ newMarginPercent, planMargin, userId }: any) => {
-          const user = filteredUsers.find((u: WorkerDto) => u.id === userId)
-
-          if (user) {
-            user.planMargin = planMargin
-            user.margin_percent = newMarginPercent
-          }
-        })
-      }
-    })
-  }, [])
 
   useEffect(() => {
     if (!isLoading) {
@@ -99,9 +79,21 @@ export const PlanPage = () => {
 
       setFilteredUsers(users)
     }
-  }, [filterYear, filterNonSales, filterComplexMotivation, usersWithMotivations, departments])
+  }, [
+    filterYear,
+    filterNonSales,
+    filterComplexMotivation,
+    usersWithMotivations,
+    departments,
+    isLoading,
+    userRole,
+    userData?.id,
+  ])
 
   const handleMotivationClick = (motivation: any) => {
+    if (userData?.roleName !== 'Директор') {
+      return null
+    }
     setSelectedMotivation(motivation)
     toggleMotivationModal()
   }
@@ -205,6 +197,10 @@ export const PlanPage = () => {
 
                   {sortedMotivations.map((motivation, index) => (
                     <td className={'px-6 py-4 border-b'} key={index}>
+                      <div className={'text-sm text-gray-600 mb-2'}>
+                        Процент маржи:{' '}
+                        {motivation.marginPercent ? motivation.marginPercent * 100 : 0}%
+                      </div>
                       <div
                         className={
                           'font-semibold text-gray-800 mb-1 cursor-pointer hover:underline'
@@ -213,16 +209,13 @@ export const PlanPage = () => {
                       >
                         Порог: {motivation.threshold}
                       </div>
-                      <div className={'text-sm text-gray-600 mb-2'}>
-                        Процент маржи:{' '}
-                        {motivation.marginPercent ? motivation.marginPercent * 100 : 0}%
-                      </div>
+
                       <div className={'w-full h-1 bg-gray-300 relative mb-2'}>
                         <div
                           className={'h-full bg-blue-500'}
                           style={{
                             width: `${Math.min(
-                              ((user.planMargin ?? 0) / (motivation.threshold ?? 1)) * 100,
+                              ((user.totalMargin ?? 0) / (motivation.threshold ?? 1)) * 100,
                               100
                             )}%`,
                           }}
@@ -232,7 +225,7 @@ export const PlanPage = () => {
                         Заполненность:{' '}
                         {motivation.threshold > 0
                           ? Math.min(
-                              ((user.planMargin ?? 0) / motivation.threshold) * 100,
+                              ((user.totalMargin ?? 0) / motivation.threshold) * 100,
                               100
                             ).toFixed(2)
                           : '0'}{' '}
@@ -266,7 +259,7 @@ export const PlanPage = () => {
 
       {isMotivationModalOpen && selectedMotivation && (
         <UpdateMotivationModal
-          initialMarginPercent={selectedMotivation.marginPercent}
+          initialMarginPercent={selectedMotivation.marginPercent * 100}
           initialThreshold={selectedMotivation.threshold}
           isOpen={isMotivationModalOpen}
           motivationId={selectedMotivation.id}

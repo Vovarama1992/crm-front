@@ -23,6 +23,7 @@ export type WorkerDto = {
   roleName: string
   salary?: number
   surname: string
+  totalMargin?: number
 }
 
 export enum MotivationType {
