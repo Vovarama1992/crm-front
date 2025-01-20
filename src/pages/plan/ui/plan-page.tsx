@@ -94,7 +94,10 @@ export const PlanPage = () => {
   }
 
   return (
-    <div className={'p-6'} style={{ left: '10%', position: 'fixed', top: '10%' }}>
+    <div
+      className={'p-6'}
+      style={{ left: '10%', overflowY: 'auto', position: 'fixed', top: '10%' }}
+    >
       <Typography className={'text-center text-4xl font-semibold mb-6'} variant={'h1'}>
         Годовой план
       </Typography>
