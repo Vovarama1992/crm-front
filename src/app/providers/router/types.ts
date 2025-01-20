@@ -4,6 +4,7 @@ type Permissions = {
   departures: boolean
   finances: boolean
   my_sales: boolean
+  plan_page: boolean
   procurements: boolean
   salary_reports: boolean
   summary_table: boolean

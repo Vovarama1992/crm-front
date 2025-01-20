@@ -108,7 +108,9 @@ const FiredEmployeeTable: React.FC<FiredEmployeeTableProps> = ({ workers }) => {
               <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'}>
                 {index + 1}
               </td>
-              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>{worker.name}</td>
+              <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
+                {worker.surname} {worker.name} {worker.middleName}
+              </td>
               <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
                 {worker.position}
               </td>

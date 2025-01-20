@@ -8,7 +8,7 @@ type WorkerFormProps = {
   onClose?: () => void
 }
 
-export type MotivationType = 'EASY' | 'HARD'
+import { MotivationType } from '@/entities/workers/workers.types'
 
 const ROLES = ['Директор', 'Бухгалтер', 'РОП', 'Закупщик', 'Логист', 'Менеджер', 'РОЗ']
 
@@ -25,7 +25,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
     margin_percent: 10,
     middleName: '',
     mobile: '',
-    motivation: 'EASY' as MotivationType,
+    motivationType: 'EASY' as MotivationType,
     name: '',
     password: '',
     position: '',
@@ -57,7 +57,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
 
     setFormState(prevState => ({
       ...prevState,
-      motivation: value as MotivationType,
+      motivationType: value as MotivationType,
     }))
   }
 
@@ -78,7 +78,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
     const workerData = {
       ...formState,
       margin_percent: formState.margin_percent / 100,
-      motivatedAt: formState.motivation === 'HARD' ? new Date().toISOString() : undefined,
+      motivatedAt: formState.motivationType === 'HARD' ? new Date().toISOString() : undefined,
       salary: Number(formState.salary),
     }
 
@@ -181,8 +181,8 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
           <div className={'flex items-center space-x-4'}>
             <label className={'flex items-center'}>
               <input
-                checked={formState.motivation === 'EASY'}
-                name={'motivation'}
+                checked={formState.motivationType === 'EASY'}
+                name={'motivationType'}
                 onChange={handleMotivationChange}
                 type={'radio'}
                 value={'EASY'}
@@ -191,7 +191,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
             </label>
             <label className={'flex items-center'}>
               <input
-                checked={formState.motivation === 'HARD'}
+                checked={formState.motivationType === 'HARD'}
                 name={'motivation'}
                 onChange={handleMotivationChange}
                 type={'radio'}

@@ -14,6 +14,7 @@ enum PermissionsEnum {
   DEPARTURES = 'departures',
   FINANCES = 'finances',
   MY_SALES = 'my_sales',
+  PLAN = 'plan_page',
   PROCUREMENTS = 'procurements',
   SALARY_REPORTS = 'salary_reports',
   SALES_LIST = 'contragents',
@@ -49,6 +50,7 @@ const permissionLinks = [
   },
   { label: 'Поставщики', path: ROUTER_PATHS.SUPPLIERS, permission: PermissionsEnum.SUPPLIERS },
   { label: 'Закупки', path: ROUTER_PATHS.PROCUREMENTS, permission: PermissionsEnum.PROCUREMENTS },
+  { label: 'Годовой план', path: ROUTER_PATHS.PLAN, permission: PermissionsEnum.PLAN },
 ]
 
 export const HomePage = () => {
@@ -92,12 +94,36 @@ export const HomePage = () => {
             )
           }
 
+          if (
+            link.permission === PermissionsEnum.PLAN &&
+            (roleName == 'Директор' ||
+              roleName == 'Бухгалтер' ||
+              userData?.motivationType == 'HARD')
+          ) {
+            return (
+              <Link
+                className={
+                  'p-4 lg:p-6 border rounded-lg hover:bg-gray-100 transition transform lg:translate-y-[-10%] lg:translate-x-[-10%]'
+                }
+                key={link.permission}
+                to={link.path}
+              >
+                <Typography
+                  className={'lg:text-[26px] text-[18px] decoration-skip-ink-none'}
+                  variant={'link1'}
+                >
+                  {link.label}
+                </Typography>
+              </Link>
+            )
+          }
+
           if (roleName === 'Закупщик' && link.permission === PermissionsEnum.CONTRAGENTS) {
             return null
           }
 
           // Для "Бухгалтера" показываем все остальные отчеты, даже если прав нет
-          if (roleName === 'Бухгалтер' || permissions[link.permission]) {
+          if (roleName === 'Бухгалтер' || permissions[link.permission as PermissionsEnum]) {
             return (
               <Link
                 className={

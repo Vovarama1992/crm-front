@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 
 import { WorkerDto } from '@/entities/workers'
 import { useFireWorkerMutation } from '@/entities/workers'
+import { MotivationType } from '@/entities/workers/workers.types'
 import { ROUTER_PATHS } from '@/shared/config/routes'
 
 import ConfirmModal from './ConfirmModal'
 import EditWorkerForm from './EditWorkerForm'
-import WorkerForm, { MotivationType } from './WorkerForm'
+import WorkerForm from './WorkerForm'
 
 type EmployeeTableProps = {
   roleName: string
@@ -192,7 +193,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({ roleName, workers }) => {
                 </td>
               )}
               <td className={'px-6 py-4 whitespace-nowrap text-sm text-gray-500'}>
-                {motivationMapping[worker.motivation] || 'Простая'}
+                {motivationMapping[worker.motivationType as MotivationType] || 'Простая'}
               </td>
               {roleName === 'Директор' && (
                 <td className={'px-6 py-4 whitespace-nowrap text-sm font-medium'}>

@@ -8,6 +8,7 @@ import { FiredWorkersPage } from '@/pages/firedworkers'
 import { HomePage } from '@/pages/home'
 import { MySalesPage } from '@/pages/my-sales'
 import { NotificationPage } from '@/pages/notifications'
+import { PlanPage } from '@/pages/plan/ui/plan-page'
 import { ProcurementsPage } from '@/pages/procurements'
 import { SalaryReportsPage } from '@/pages/salary-reports-common'
 import { SalesListPage } from '@/pages/sales-list'
@@ -28,6 +29,7 @@ const {
   HOME,
   MY_SALES,
   NOTIFICATIONS,
+  PLAN,
   PROCUREMENTS,
   SALARY_REPORTS,
   SALES_LIST,
@@ -48,6 +50,10 @@ export const privateRoutes: RouteObject[] = [
       {
         element: <WorkersPage />,
         path: WORKERS,
+      },
+      {
+        element: <PlanPage />,
+        path: PLAN,
       },
       {
         element: <NotificationPage />,

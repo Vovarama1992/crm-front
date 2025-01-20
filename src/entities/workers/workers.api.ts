@@ -1,5 +1,5 @@
 import type { UserAuthenticatedDto } from '../session/session.types'
-import type { WorkerDto } from './workers.types'
+import type { CreateMotivation, Motivation, WorkerDto } from './workers.types'
 
 import { WORKERS_TAG, baseApi } from '@/shared/api'
 
@@ -22,6 +22,13 @@ const workersApi = baseApi.injectEndpoints({
         url: 'users/departments',
       }),
     }),
+    createMotivation: builder.mutation<Motivation, CreateMotivation>({
+      query: body => ({
+        body,
+        method: 'POST',
+        url: '/motivation',
+      }),
+    }),
     createWorker: builder.mutation<WorkerDto, WorkerDto>({
       invalidatesTags: [WORKERS_TAG],
       query: body => ({
@@ -35,6 +42,19 @@ const workersApi = baseApi.injectEndpoints({
       query: id => ({
         method: 'DELETE',
         url: `users/departments/${id}`,
+      }),
+    }),
+
+    deleteMotivation: builder.mutation<void, number>({
+      query: motivationId => ({
+        method: 'DELETE',
+        url: `/motivation/${motivationId}`,
+      }),
+    }),
+    downgradeToSimpleMotivation: builder.mutation<WorkerDto, number>({
+      query: userId => ({
+        method: 'PATCH',
+        url: `/motivation/${userId}/demotivate`,
       }),
     }),
     fireWorker: builder.mutation<void, number>({
@@ -63,6 +83,11 @@ const workersApi = baseApi.injectEndpoints({
         url: '/users/fired',
       }),
     }),
+    getUsersWithMotivations: builder.query<WorkerDto[], void>({
+      query: () => ({
+        url: '/motivation/users-with-motivations',
+      }),
+    }),
     getWorkerById: builder.query<WorkerDto, number>({
       providesTags: [WORKERS_TAG],
       query: id => ({
@@ -80,10 +105,25 @@ const workersApi = baseApi.injectEndpoints({
         url: '/users',
       }),
     }),
+    recalculateAllUsersMargin: builder.mutation<
+      { newMarginPercent: number; totalMargin: number; userId: string }[],
+      void
+    >({
+      query: () => ({
+        method: 'POST',
+        url: '/motivation/recalculate-all',
+      }),
+    }),
+    recalculateUserMargin: builder.mutation<void, number>({
+      query: userId => ({
+        method: 'POST',
+        url: `/motivation/recalculate/${userId}`,
+      }),
+    }),
     restoreWorker: builder.mutation<void, number>({
       invalidatesTags: [WORKERS_TAG],
       query: id => ({
-        body: { isActive: true }, // Устанавливаем isActive в true
+        body: { isActive: true },
         method: 'PATCH',
         url: `/users/${id}`,
       }),
@@ -96,7 +136,16 @@ const workersApi = baseApi.injectEndpoints({
         url: `users/departments/${body.id}`,
       }),
     }),
-
+    updateMotivation: builder.mutation<
+      Motivation,
+      { marginPercent: number; motivationId: number; threshold: number }
+    >({
+      query: ({ marginPercent, motivationId, threshold }) => ({
+        body: { marginPercent, threshold },
+        method: 'PATCH',
+        url: `/motivation/${motivationId}`,
+      }),
+    }),
     updateWorker: builder.mutation<WorkerDto, Partial<UserAuthenticatedDto>>({
       invalidatesTags: [WORKERS_TAG],
       query: ({ id, ...updateData }) => ({
@@ -105,23 +154,37 @@ const workersApi = baseApi.injectEndpoints({
         url: `/users/${id}`,
       }),
     }),
+    upgradeToComplexMotivation: builder.mutation<WorkerDto, number>({
+      query: userId => ({
+        method: 'PATCH',
+        url: `/motivation/${userId}/motivate`,
+      }),
+    }),
   }),
 })
 
 export const {
   endpoints: workersEndpoints,
   useCreateDepartmentMutation,
+  useCreateMotivationMutation,
   useCreateWorkerMutation,
   useDeleteDepartmentMutation,
+  useDeleteMotivationMutation,
+  useDowngradeToSimpleMotivationMutation,
   useFireWorkerMutation,
   useGetActiveQuery,
   useGetDepartmentsQuery,
   useGetFiredWorkersQuery,
+  useGetUsersWithMotivationsQuery,
   useGetWorkerByIdQuery,
   useGetWorkerChangesQuery,
   useGetWorkersQuery,
+  useRecalculateAllUsersMarginMutation,
+  useRecalculateUserMarginMutation,
   useRestoreWorkerMutation,
   useUpdateDepartmentMutation,
+  useUpdateMotivationMutation,
   useUpdateWorkerMutation,
+  useUpgradeToComplexMotivationMutation,
   util: workersUtil,
 } = workersApi

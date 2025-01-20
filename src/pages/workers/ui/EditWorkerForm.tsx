@@ -1,12 +1,16 @@
 /* eslint-disable max-lines */
 import React, { useState } from 'react'
 
-import { useUpdateWorkerMutation } from '@/entities/workers'
+import {
+  useDowngradeToSimpleMotivationMutation,
+  useUpdateWorkerMutation,
+  useUpgradeToComplexMotivationMutation,
+} from '@/entities/workers'
 import { WorkerDto } from '@/entities/workers'
+import { MotivationType } from '@/entities/workers/workers.types'
 import { formatDate } from '@/pages/contragents/ui/contragents-page'
 
 import WorkerChanges from './WorkerChanges'
-import { MotivationType } from './WorkerForm'
 
 type EditWorkerFormProps = {
   existingWorker: WorkerDto
@@ -15,6 +19,8 @@ type EditWorkerFormProps = {
 
 const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose }) => {
   const [updateWorker] = useUpdateWorkerMutation()
+  const [upgradeToComplex] = useUpgradeToComplexMotivationMutation()
+  const [downgrade] = useDowngradeToSimpleMotivationMutation()
   const [isPasswordChanged, setIsPasswordChanged] = useState(false)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isMotivationModalOpen, setIsMotivationModalOpen] = useState(false)
@@ -25,7 +31,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
   const [formData, setFormData] = useState<WorkerDto>({
     ...existingWorker,
     margin_percent: (existingWorker.margin_percent || 0) * 100, // Default value for marginPercent
-    motivation: existingWorker.motivation || 'EASY',
+    motivationType: existingWorker.motivationType || 'EASY',
     roleName: existingWorker.roleName, // Default value for role
     salary: existingWorker.salary || 0,
   })
@@ -50,9 +56,9 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
         ...prevData,
         [name]: parseFloat(value) || 0,
       }))
-    } else if (name === 'motivation') {
+    } else if (name === 'motivationType') {
       if (value === 'HARD') {
-        setIsMotivationModalOpen(true) // Открываем модалку, если выбрана сложная мотивация
+        setIsMotivationModalOpen(true)
       }
     } else {
       setFormData(prevData => ({
@@ -64,14 +70,15 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     try {
       const margin = Number(formData.margin_percent) / 100
 
-      const { id, ...updateData } = formData
+      const { motivationType, ...updateData } = formData
 
       updateData.margin_percent = margin
 
-      if (formData.motivation === 'HARD') {
+      if (formData.motivationType === 'HARD') {
         if (!motivatedAt) {
           throw new Error('Для сложной мотивации необходимо указать дату перехода')
         }
@@ -87,7 +94,16 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
         delete updateData.password
       }
 
-      await updateWorker({ id, ...updateData }).unwrap()
+      if (existingWorker.motivationType !== formData.motivationType) {
+        if (formData.motivationType === 'HARD') {
+          await upgradeToComplex(existingWorker.id).unwrap()
+        } else {
+          await downgrade(existingWorker.id).unwrap()
+        }
+      }
+
+      await updateWorker({ ...updateData }).unwrap()
+
       onClose()
     } catch (error) {
       console.error('Failed to update the worker:', error)
@@ -263,21 +279,22 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 className={
                   'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
                 }
-                name={'motivation'}
+                name={'motivationType'}
                 onChange={e => {
                   const selectedMotivation = e.target.value
 
                   setFormData(prevData => ({
                     ...prevData,
-                    motivatedAt: selectedMotivation === 'HARD' ? prevData.motivatedAt : undefined,
-                    motivation: selectedMotivation as MotivationType,
+                    motivatedAt:
+                      selectedMotivation === MotivationType.HARD ? prevData.motivatedAt : undefined,
+                    motivationType: selectedMotivation as MotivationType,
                   }))
 
                   if (selectedMotivation === 'HARD') {
                     setIsMotivationModalOpen(true)
                   }
                 }}
-                value={formData.motivation}
+                value={formData.motivationType}
               >
                 <option value={'HARD'}>Сложная</option>
                 <option value={'EASY'}>Простая</option>
@@ -314,7 +331,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
               </div>
             )}
 
-            {existingWorker.motivation === 'HARD' && (
+            {existingWorker.motivationType === 'HARD' && (
               <div className={'flex flex-col'}>
                 <label className={'block text-gray-700'}>Дата перехода на сложную мотивацию</label>
                 <input

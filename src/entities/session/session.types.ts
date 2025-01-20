@@ -28,7 +28,7 @@ export type RegistrationDto = {
   margin_percent: number
   middleName: string
   mobile: string
-  motivation: 'EASY' | 'HARD'
+  motivationType: 'EASY' | 'HARD'
   name: string
   password: string
   position?: string

@@ -7,6 +7,7 @@ export const ROUTER_PATHS = {
   HOME: '/',
   MY_SALES: '/my-sales',
   NOTIFICATIONS: '/notifications',
+  PLAN: '/plan',
   PROCUREMENTS: '/procurements',
   SALARY_REPORTS: '/salary-reports',
   SALES_LIST: '/sales-list',

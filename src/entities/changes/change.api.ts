@@ -1,4 +1,4 @@
-import type { ChangeDto, CreateChangeDto } from './change.types'
+import type { ChangeDto, CreateChangeDto, EntityType } from './change.types'
 
 import { baseApi } from '@/shared/api'
 
@@ -18,7 +18,7 @@ const changeApi = baseApi.injectEndpoints({
       }),
     }),
 
-    getChangesByEntityType: builder.query<ChangeDto[], { entityType: string }>({
+    getChangesByEntityType: builder.query<ChangeDto[], { entityType: EntityType }>({
       query: ({ entityType }) => ({
         url: `change/by-entity?entityType=${entityType}`,
       }),

@@ -27,3 +27,16 @@ export type ChangeDto = {
   newValue: boolean | null | number | string
   oldValue: boolean | null | number | string
 }
+
+export enum EntityType {
+  DEPARTURE = 'DEPARTURE',
+  EMPLOYEE = 'EMPLOYEE',
+  EXPENSE = 'EXPENSE',
+  INVOICE_LINE = 'INVOICE_LINE',
+  LOGISTIC_LINE = 'LOGISTIC_LINE',
+  MOTIVATION = 'MOTIVATION',
+  PAYMENT = 'PAYMENT',
+  PURCHASE = 'PURCHASE',
+  SALE = 'SALE',
+  SUPPLIER_LINE = 'SUPPLIER_LINE',
+}

@@ -1,25 +1,46 @@
-import { MotivationType } from '@/pages/workers/ui/WorkerForm'
-
 export type WorkerDto = {
-  address?: string // Адрес работника (необязательное поле)
-  birthday?: string // Дата рождения в формате YYYY-MM-DD
-  cardNumber?: string // Номер карты для перевода (если применимо)
+  address?: string
+  birthday?: string
+  cardNumber?: string
   deletedAt?: Date
-  department_id: number | undefined // Отдел (необязательное поле)
-  dobNumber: string | undefined // Добавочный номер
-  email: string // Электронная почта
-  hireDate?: string // Дата принятия на работу (необязательное поле)
-  id: number // Уникальный идентификатор работника
-  managed_by?: number // Имя менеджера (необязательное поле)
+  demotivatedAt?: string
+  department_id: number | undefined
+  dobNumber: string | undefined
+  email: string
+  hireDate?: string
+  id: number
+  managed_by?: number
   margin_percent: number
   middleName: string
-  mobile?: string // Мобильный телефон
+  mobile?: string
   motivatedAt?: string
-  motivation: MotivationType
-  name: string // ФИО работника
+  motivationType: MotivationType
+  motivations: Motivation[]
+  name: string
   password?: string
-  position?: string // Должность
+  planMargin?: number
+  position?: string
   roleName: string
-  salary?: number // Оклад сотрудника (необязательное поле)
+  salary?: number
   surname: string
+}
+
+export enum MotivationType {
+  EASY = 'EASY',
+  HARD = 'HARD',
+}
+
+export type Motivation = {
+  createdAt: string
+  id: number
+  marginPercent: number
+  threshold: number
+  updatedAt: string
+  userId: number
+}
+
+export type CreateMotivation = {
+  marginPercent: number
+  threshold: number
+  userId: number
 }
