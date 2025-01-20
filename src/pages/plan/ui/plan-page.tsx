@@ -15,9 +15,13 @@ import UpdateMotivationModal from './MotivationModal'
 
 export const PlanPage = () => {
   const [recalculateAll] = useRecalculateAllUsersMarginMutation()
-  const { data: usersWithMotivations = [], refetch } = useGetUsersWithMotivationsQuery()
-  const { data: departments = [] } = useGetDepartmentsQuery()
-  const { data: userData } = useMeQuery()
+  const {
+    data: usersWithMotivations = [],
+    isLoading: isUsersLoading,
+    refetch,
+  } = useGetUsersWithMotivationsQuery()
+  const { data: departments = [], isLoading: isDepartmentsLoading } = useGetDepartmentsQuery()
+  const { data: userData, isLoading: isUserDataLoading } = useMeQuery()
 
   const [filterYear, setFilterYear] = useState<string>('')
   const [filterNonSales, setFilterNonSales] = useState<boolean>(false)
@@ -112,6 +116,12 @@ export const PlanPage = () => {
     toggleMotivationModal()
   }
 
+  const isLoading = isUsersLoading || isDepartmentsLoading || isUserDataLoading
+
+  if (isLoading) {
+    return <div>Загрузка данных...</div> // Показываем индикатор загрузки
+  }
+
   return (
     <div
       className={'p-6'}
@@ -184,7 +194,7 @@ export const PlanPage = () => {
               )
 
               return (
-                <tr className={'hover:bg-gray-50 transition-all'} key={user.id}>
+                <tr className={'hover:bg-gray-50 transition-all'} key={`user-${user.id}`}>
                   <td className={'px-6 py-4 border-b'}>
                     {user.name} {user.surname} <br />
                     {user.motivationType === 'HARD' ? (
