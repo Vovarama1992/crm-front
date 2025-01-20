@@ -183,7 +183,8 @@ export const PlanPage = () => {
                       Порог: {motivation.threshold}
                     </div>
                     <div className={'text-sm text-gray-600 mb-2'}>
-                      Процент маржи: {motivation.marginPercent ?? 0}%
+                      Процент маржи: {motivation.marginPercent ? motivation.marginPercent * 100 : 0}
+                      %
                     </div>
                     <div className={'w-full h-1 bg-gray-300 relative mb-2'}>
                       <div

@@ -95,7 +95,7 @@ const WorkerForm: React.FC<WorkerFormProps> = ({ onClose }) => {
   return (
     <form
       className={
-        'absolute left-[15%] top-[5%] bg-white p-6 rounded-lg shadow-lg w-[50vw] h-[80vh] bg-opacity-100'
+        'absolute left-[15%] top-[70px] bg-white p-6 rounded-lg shadow-lg w-[70vw] h-[97vh] overflow-y-auto bg-opacity-100'
       }
       onSubmit={handleSubmit}
     >
