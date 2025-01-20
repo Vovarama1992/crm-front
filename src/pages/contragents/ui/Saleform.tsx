@@ -131,11 +131,14 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
 
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'}>
-      <form className={'bg-white p-6 rounded shadow-lg w-[90%] max-w-3xl'} onSubmit={handleSubmit}>
-        <h2 className={'text-lg font-bold mb-4'}>Создание продажи</h2>
+      <form
+        className={'bg-white p-4 rounded shadow-lg w-[95%] max-w-lg h-auto'}
+        onSubmit={handleSubmit}
+      >
+        <h2 className={'text-lg font-bold mb-3 text-center'}>Создание продажи</h2>
 
-        <div className={'mb-4'}>
-          <label className={'block text-sm font-bold mb-1'}>Контрагент</label>
+        <div className={'mb-3'}>
+          <label className={'block text-sm font-semibold mb-1'}>Контрагент</label>
           <select
             className={'border rounded p-2 w-full'}
             onChange={handleCounterpartyChange}
@@ -153,13 +156,13 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           </select>
         </div>
 
-        <div className={'mb-4'}>
-          <label className={'block text-sm font-bold mb-1'}>ИНН</label>
+        <div className={'mb-3'}>
+          <label className={'block text-sm font-semibold mb-1'}>ИНН</label>
           <input className={'border rounded p-2 w-full'} readOnly type={'text'} value={inn} />
         </div>
 
-        <div className={'mb-4'}>
-          <label className={'block text-sm font-bold mb-1'}>Номер счёта</label>
+        <div className={'mb-3'}>
+          <label className={'block text-sm font-semibold mb-1'}>Номер счёта</label>
           <input
             className={'border rounded p-2 w-full'}
             onChange={e => setInvoiceNumber(e.target.value)}
@@ -169,8 +172,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
         </div>
 
         {dealId === 9999 && (
-          <div className={'mb-4'}>
-            <label className={'block text-sm font-bold mb-1'}>№ запроса/задачи</label>
+          <div className={'mb-3'}>
+            <label className={'block text-sm font-semibold mb-1'}>№ запроса/задачи</label>
             <input
               className={'border rounded p-2 w-full'}
               onChange={e => setRequestNumber(e.target.value)}
@@ -180,8 +183,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           </div>
         )}
 
-        <div className={'mb-4'}>
-          <label className={'block text-sm font-bold mb-1'}>Крайняя дата поставки</label>
+        <div className={'mb-3'}>
+          <label className={'block text-sm font-semibold mb-1'}>Крайняя дата поставки</label>
           <input
             className={'border rounded p-2 w-full'}
             onChange={e => setDeliveryDeadline(e.target.value)}
@@ -190,27 +193,27 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           />
         </div>
 
-        <div className={'mb-4'}>
-          <label className={'block text-sm font-bold mb-1'}>Сумма предоплаты</label>
+        <div className={'mb-3'}>
+          <label className={'block text-sm font-semibold mb-1'}>Сумма предоплаты</label>
           <input
             className={'border rounded p-2 w-full'}
             onChange={e => setPrepaymentAmount(e.target.value)}
-            type={'text'} // изменено на текст
+            type={'text'}
             value={prepaymentAmount}
           />
         </div>
 
-        <div className={'mb-4'}>
-          <label className={'block text-sm font-bold mb-1'}>Общая сумма продажи</label>
+        <div className={'mb-3'}>
+          <label className={'block text-sm font-semibold mb-1'}>Общая сумма продажи</label>
           <input
             className={'border rounded p-2 w-full'}
             onChange={e => setTotalSaleAmount(e.target.value)}
-            type={'text'} // изменено на текст
+            type={'text'}
             value={totalSaleAmount}
           />
         </div>
 
-        <div className={'ml-[200px] mb-4'}>
+        <div className={'mb-3 flex items-center justify-center'}>
           <label className={'inline-flex items-center'}>
             <input
               checked={isFinalAmount}
@@ -221,7 +224,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           </label>
         </div>
 
-        <div className={'ml-[200px] mb-4'}>
+        <div className={'mb-3 flex items-center justify-center'}>
           <label className={'inline-flex items-center'}>
             <input
               checked={isIndependentDeal}
@@ -232,8 +235,8 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           </label>
         </div>
 
-        <div className={'ml-[200px] mb-4'}>
-          <label className={'block text-sm font-bold mb-1'}>Загрузить файл</label>
+        <div className={'mb-3'}>
+          <label className={'block text-sm font-semibold mb-1'}>Загрузить файл</label>
           <input
             className={'border rounded p-2 w-full'}
             onChange={handleFileChange}
@@ -241,7 +244,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
           />
         </div>
 
-        <button className={'bg-blue-500 ml-[300px] text-white px-4 py-2 rounded'} type={'submit'}>
+        <button className={'bg-blue-500 text-white px-4 py-2 rounded w-full'} type={'submit'}>
           Создать продажу
         </button>
       </form>
