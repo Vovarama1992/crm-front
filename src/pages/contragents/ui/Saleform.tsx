@@ -132,7 +132,7 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
   return (
     <div className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'}>
       <form
-        className={'bg-white p-4 rounded shadow-lg w-[95%] max-w-lg h-auto'}
+        className={'bg-white p-4 rounded shadow-lg w-[95%] max-w-lg h-[90vh] overflow-auto'}
         onSubmit={handleSubmit}
       >
         <h2 className={'text-lg font-bold mb-3 text-center'}>Создание продажи</h2>
