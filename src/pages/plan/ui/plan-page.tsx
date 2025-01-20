@@ -18,7 +18,7 @@ export const PlanPage = () => {
   const { data: usersWithMotivations = [], refetch } = useGetUsersWithMotivationsQuery()
   const { data: departments = [] } = useGetDepartmentsQuery()
   const { data: userData } = useMeQuery()
-  const [filteredUsers, setFilteredUsers] = useState<WorkerDto[]>([])
+
   const [filterYear, setFilterYear] = useState<string>('')
   const [filterNonSales, setFilterNonSales] = useState<boolean>(false)
   const [filterComplexMotivation, setFilterComplexMotivation] = useState<boolean>(false)
@@ -30,6 +30,22 @@ export const PlanPage = () => {
   const toggleMotivationModal = () => setIsMotivationModalOpen(!isMotivationModalOpen)
 
   const userRole = userData?.roleName
+
+  const filtered = (() => {
+    if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
+      return usersWithMotivations.filter(user => user.id === userData?.id)
+    } else if (userRole === 'РОП') {
+      const ropDepartment = departments.find(department => department.ropId === userData?.id)
+
+      return ropDepartment?.users.filter(user => user.department_id === ropDepartment.id) ?? []
+    } else if (userRole === 'Директор') {
+      return usersWithMotivations
+    } else {
+      return []
+    }
+  })()
+
+  const [filteredUsers, setFilteredUsers] = useState<WorkerDto[]>(filtered)
 
   useEffect(() => {
     recalculateAll().then(({ data }) => {
@@ -45,20 +61,6 @@ export const PlanPage = () => {
       }
     })
   }, [])
-
-  useEffect(() => {
-    if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
-      setFilteredUsers(usersWithMotivations.filter(user => user.id === userData?.id))
-    } else if (userRole === 'РОП') {
-      const ropDepartment = departments.find(department => department.ropId === userData?.id)
-      const usersInDepartment =
-        ropDepartment?.users.filter(user => user.department_id == ropDepartment.id) ?? []
-
-      setFilteredUsers(usersInDepartment)
-    } else if (userRole === 'Директор') {
-      setFilteredUsers(usersWithMotivations)
-    }
-  }, [userRole, usersWithMotivations, departments, userData?.id])
 
   useEffect(() => {
     let users = usersWithMotivations
