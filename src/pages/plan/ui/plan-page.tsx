@@ -94,10 +94,7 @@ export const PlanPage = () => {
   }
 
   return (
-    <div
-      className={'p-6'}
-      style={{ left: '10%', overflowY: 'auto', position: 'fixed', top: '10%' }}
-    >
+    <div className={'p-6'} style={{ left: '10%', position: 'relative', top: '10%' }}>
       <Typography className={'text-center text-4xl font-semibold mb-6'} variant={'h1'}>
         Годовой план
       </Typography>
@@ -137,92 +134,101 @@ export const PlanPage = () => {
         </label>
       </div>
 
-      <table className={'w-full mt-6 table-auto border-collapse text-left bg-white shadow-lg'}>
-        <thead>
-          <tr className={'bg-gray-200 text-lg text-gray-800'}>
-            <th className={'px-6 py-4 border-b'}>Сотрудник</th>
-            <th className={'px-6 py-4 border-b'}>Минимальный план</th>
-            <th className={'px-6 py-4 border-b'}>Средний план</th>
-            <th className={'px-6 py-4 border-b'}>Максимальный план</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredUsers.map((user: WorkerDto) => {
-            const sortedMotivations = [...(user.motivations ?? [])].sort(
-              (a, b) => a.threshold - b.threshold
-            )
+      {/* Контейнер для таблицы с вертикальной прокруткой */}
+      <div className={'overflow-y-auto max-h-[500px]'}>
+        {' '}
+        {/* Ограничиваем высоту контейнера */}
+        <table className={'w-full mt-6 table-auto border-collapse text-left bg-white shadow-lg'}>
+          <thead>
+            <tr className={'bg-gray-200 text-lg text-gray-800'}>
+              <th className={'px-6 py-4 border-b'}>Сотрудник</th>
+              <th className={'px-6 py-4 border-b'}>Минимальный план</th>
+              <th className={'px-6 py-4 border-b'}>Средний план</th>
+              <th className={'px-6 py-4 border-b'}>Максимальный план</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.map((user: WorkerDto) => {
+              const sortedMotivations = [...(user.motivations ?? [])].sort(
+                (a, b) => a.threshold - b.threshold
+              )
 
-            return (
-              <tr className={'hover:bg-gray-50 transition-all'} key={user.id}>
-                <td className={'px-6 py-4 border-b'}>
-                  {user.name} {user.surname} <br />
-                  {user.motivationType === 'HARD' ? (
-                    <>
-                      с{' '}
-                      {user.motivatedAt
-                        ? new Date(user.motivatedAt).toLocaleDateString()
-                        : 'не указано'}{' '}
-                      по{' '}
-                      {user.demotivatedAt
-                        ? new Date(user.demotivatedAt).toLocaleDateString()
-                        : new Date(
-                            new Date().setFullYear(new Date().getFullYear(), 11, 31)
-                          ).toLocaleDateString()}
-                    </>
-                  ) : (
-                    'Простая мотивация'
-                  )}
-                </td>
-
-                {sortedMotivations.map((motivation, index) => (
-                  <td className={'px-6 py-4 border-b'} key={index}>
-                    <div
-                      className={'font-semibold text-gray-800 mb-1 cursor-pointer hover:underline'}
-                      onClick={() => handleMotivationClick(motivation)}
-                    >
-                      Порог: {motivation.threshold}
-                    </div>
-                    <div className={'text-sm text-gray-600 mb-2'}>
-                      Процент маржи: {motivation.marginPercent ? motivation.marginPercent * 100 : 0}
-                      %
-                    </div>
-                    <div className={'w-full h-1 bg-gray-300 relative mb-2'}>
-                      <div
-                        className={'h-full bg-blue-500'}
-                        style={{
-                          width: `${Math.min(
-                            ((user.planMargin ?? 0) / (motivation.threshold ?? 1)) * 100,
-                            100
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                    <div className={'text-sm text-gray-500'}>
-                      Заполненность:{' '}
-                      {motivation.threshold > 0
-                        ? Math.min(
-                            ((user.planMargin ?? 0) / motivation.threshold) * 100,
-                            100
-                          ).toFixed(2)
-                        : '0'}{' '}
-                      %
-                    </div>
+              return (
+                <tr className={'hover:bg-gray-50 transition-all'} key={user.id}>
+                  <td className={'px-6 py-4 border-b'}>
+                    {user.name} {user.surname} <br />
+                    {user.motivationType === 'HARD' ? (
+                      <>
+                        с{' '}
+                        {user.motivatedAt
+                          ? new Date(user.motivatedAt).toLocaleDateString()
+                          : 'не указано'}{' '}
+                        по{' '}
+                        {user.demotivatedAt
+                          ? new Date(user.demotivatedAt).toLocaleDateString()
+                          : new Date(
+                              new Date().setFullYear(new Date().getFullYear(), 11, 31)
+                            ).toLocaleDateString()}
+                      </>
+                    ) : (
+                      'Простая мотивация'
+                    )}
                   </td>
-                ))}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
 
-      <button
-        className={
-          'bg-blue-600 mt-[25px] text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-all'
-        }
-        onClick={toggleHistoryModal}
-      >
-        История изменений мотивации
-      </button>
+                  {sortedMotivations.map((motivation, index) => (
+                    <td className={'px-6 py-4 border-b'} key={index}>
+                      <div
+                        className={
+                          'font-semibold text-gray-800 mb-1 cursor-pointer hover:underline'
+                        }
+                        onClick={() => handleMotivationClick(motivation)}
+                      >
+                        Порог: {motivation.threshold}
+                      </div>
+                      <div className={'text-sm text-gray-600 mb-2'}>
+                        Процент маржи:{' '}
+                        {motivation.marginPercent ? motivation.marginPercent * 100 : 0}%
+                      </div>
+                      <div className={'w-full h-1 bg-gray-300 relative mb-2'}>
+                        <div
+                          className={'h-full bg-blue-500'}
+                          style={{
+                            width: `${Math.min(
+                              ((user.planMargin ?? 0) / (motivation.threshold ?? 1)) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <div className={'text-sm text-gray-500'}>
+                        Заполненность:{' '}
+                        {motivation.threshold > 0
+                          ? Math.min(
+                              ((user.planMargin ?? 0) / motivation.threshold) * 100,
+                              100
+                            ).toFixed(2)
+                          : '0'}{' '}
+                        %
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Кнопка, фиксированная внизу */}
+      <div className={'absolute bottom-6 left-1/2 transform -translate-x-1/2'}>
+        <button
+          className={'bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-all'}
+          onClick={toggleHistoryModal}
+        >
+          История изменений мотивации
+        </button>
+      </div>
+
       {isHistoryModalOpen && (
         <MotivationHistoryModal onClose={toggleHistoryModal}></MotivationHistoryModal>
       )}
