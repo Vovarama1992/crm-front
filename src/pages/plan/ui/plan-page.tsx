@@ -98,7 +98,7 @@ export const PlanPage = () => {
       className={'p-6'}
       style={{
         height: 'calc(100vh - 40px)',
-        left: '3%',
+        left: '100px',
         position: 'relative',
         top: '10%',
       }}
@@ -146,7 +146,7 @@ export const PlanPage = () => {
       <div
         className={'overflow-y-auto'}
         style={{
-          maxHeight: 'calc(100vh - 220px)', // Ограничиваем высоту таблицы, чтобы она прокручивалась
+          maxHeight: 'calc(100vh - 280px)', // Ограничиваем высоту таблицы, чтобы она прокручивалась
         }}
       >
         <table className={'w-full mt-6 table-auto border-collapse text-left bg-white shadow-lg'}>
@@ -232,7 +232,7 @@ export const PlanPage = () => {
 
       {/* Кнопка, фиксированная внизу */}
       <div
-        className={'absolute bottom-6 left-1/2 transform -translate-x-1/2'}
+        className={'absolute mt-[10px] bottom-6 left-1/2 transform -translate-x-1/2'}
         style={{ paddingLeft: '10px', paddingRight: '10px', width: 'calc(100% - 20px)' }}
       >
         <button

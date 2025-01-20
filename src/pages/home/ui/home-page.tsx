@@ -94,12 +94,7 @@ export const HomePage = () => {
             )
           }
 
-          if (
-            link.permission === PermissionsEnum.PLAN &&
-            (roleName == 'Директор' ||
-              roleName == 'Бухгалтер' ||
-              userData?.motivationType == 'HARD')
-          ) {
+          if (link.permission === PermissionsEnum.PLAN) {
             return (
               <Link
                 className={
