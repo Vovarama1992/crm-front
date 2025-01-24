@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { useGetNotificationsQuery } from '@/entities/notifications'
 import { useMeQuery } from '@/entities/session'
+//import { useGetUsdRateQuery } from '@/entities/session'
 import { SignOutButton } from '@/features/auth/sign-out'
 //import { ModeToggle } from '@/features/change-theme'
 import { ROUTER_PATHS } from '@/shared/config/routes'
@@ -24,6 +25,8 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
   const [usdRate, setUsdRate] = useState<null | number>(null)
   const [notificationsCount, setNotificationsCount] = useState<number>(0)
   const [showNotificationEffect, setShowNotificationEffect] = useState<boolean>(false)
+
+  //const { data } = useGetUsdRateQuery()
 
   // Получаем текущего пользователя
   const token = localStorage.getItem('token')
@@ -108,7 +111,7 @@ export const Header = ({ className, user, ...rest }: HeaderProps) => {
           <Clock className={'w-6 h-6 text-gray-600'} />
           <span className={'ml-[10px] lg:mr-[160px] mr-[70px]'}> {formattedTime}</span>
           <span className={'inline-block flex flex-row'}>
-            $ {usdRate ? `${usdRate.toFixed(2)} руб` : 'Загрузка...'}
+            {usdRate ? `${usdRate} ₽` : 'Загрузка...'}
           </span>
         </div>
 

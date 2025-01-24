@@ -31,7 +31,6 @@ const sessionApi = baseApi.injectEndpoints({
       }),
     }),
 
-    // Эндпоинт для скачивания PDF для строк логистики
     downloadLogisticsPdf: builder.query<Blob, { filename: string }>({
       query: ({ filename }) => ({
         method: 'GET',
@@ -44,7 +43,6 @@ const sessionApi = baseApi.injectEndpoints({
       }),
     }),
 
-    // Эндпоинт для скачивания PDF
     downloadPdf: builder.query<Blob, { filename: string }>({
       query: ({ filename }) => ({
         method: 'GET',
@@ -66,6 +64,13 @@ const sessionApi = baseApi.injectEndpoints({
           return blob
         },
         url: `/files/download/supplier-pdf/${filename}`,
+      }),
+    }),
+
+    getUsdRate: builder.query<{ rate: number }, void>({
+      query: () => ({
+        method: 'GET',
+        url: 'deals/rates/usd',
       }),
     }),
 
@@ -172,6 +177,7 @@ export const {
   useDownloadLogisticsPdfQuery, // Хук для скачивания PDF для строк логистики
   useDownloadPdfQuery,
   useDownloadSupplierPdfQuery,
+  useGetUsdRateQuery,
   useLazyDownloadPdfQuery, // Хук для скачивания PDF по запросу
   useLazyDownloadSupplierPdfQuery,
   useMeQuery,

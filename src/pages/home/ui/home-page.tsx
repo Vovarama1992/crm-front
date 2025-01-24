@@ -17,7 +17,7 @@ enum PermissionsEnum {
   PLAN = 'plan_page',
   PROCUREMENTS = 'procurements',
   SALARY_REPORTS = 'salary_reports',
-  SALES_LIST = 'contragents',
+  SALES_LIST = 'sales_list',
   SUMMARY_TABLE = 'summary_table',
   SUPPLIERS = 'suppliers',
 }
@@ -94,7 +94,10 @@ export const HomePage = () => {
             )
           }
 
-          if (link.permission === PermissionsEnum.PLAN) {
+          if (
+            link.permission === PermissionsEnum.PLAN &&
+            (roleName == 'Директор' || roleName == 'РОП' || userData?.motivationType == 'HARD')
+          ) {
             return (
               <Link
                 className={

@@ -20,12 +20,13 @@ export const PlanPage = () => {
 
   const isLoading = isUsersLoading || isDepartmentsLoading || isUserDataLoading
 
-  const [filterYear, setFilterYear] = useState<string>('')
+  const [filterYear, setFilterYear] = useState<string>('2025')
   const [filterNonSales, setFilterNonSales] = useState<boolean>(false)
-  const [filterComplexMotivation, setFilterComplexMotivation] = useState<boolean>(false)
+  const [filterComplexMotivation, setFilterComplexMotivation] = useState<boolean>(true)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [isMotivationModalOpen, setIsMotivationModalOpen] = useState(false)
   const [selectedMotivation, setSelectedMotivation] = useState<any>(null)
+  const [selectedDepartment, setSelectedDepartment] = useState<number | undefined>(undefined)
 
   const toggleHistoryModal = () => setIsHistoryModalOpen(!isHistoryModalOpen)
   const toggleMotivationModal = () => setIsMotivationModalOpen(!isMotivationModalOpen)
@@ -39,7 +40,9 @@ export const PlanPage = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      let users = usersWithMotivations
+      let users = usersWithMotivations.filter((user: WorkerDto) => user.isActive == true)
+
+      console.log('length: ' + users.length)
 
       if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
         users = users.filter(user => user.id === userData?.id)
@@ -48,7 +51,7 @@ export const PlanPage = () => {
 
         users = ropDepartment?.users.filter(user => user.department_id === ropDepartment.id) ?? []
       } else if (userRole === 'Директор') {
-        users = usersWithMotivations
+        users = usersWithMotivations.filter((user: WorkerDto) => user.isActive == true)
       } else {
         users = []
       }
@@ -69,6 +72,10 @@ export const PlanPage = () => {
         })
       }
 
+      if (selectedDepartment) {
+        users = users.filter(user => user.department_id === selectedDepartment)
+      }
+
       if (filterNonSales) {
         users = users.filter(user => !user.department_id)
       }
@@ -84,6 +91,7 @@ export const PlanPage = () => {
     filterNonSales,
     filterComplexMotivation,
     usersWithMotivations,
+    selectedDepartment,
     departments,
     isLoading,
     userRole,
@@ -149,6 +157,19 @@ export const PlanPage = () => {
           />
           <span>Сотрудники со сложной мотивацией</span>
         </label>
+
+        <select
+          className={'p-2 border rounded-md bg-white'}
+          onChange={e => setSelectedDepartment(Number(e.target.value))}
+          value={selectedDepartment}
+        >
+          <option value={undefined}>Все отделы</option>
+          {departments.map(department => (
+            <option key={department.id} value={department.id}>
+              {department.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Контейнер для таблицы с фиксированным размером и прокруткой */}
@@ -169,9 +190,11 @@ export const PlanPage = () => {
           </thead>
           <tbody>
             {filteredUsers.map((user: WorkerDto) => {
-              const sortedMotivations = [...(user.motivations ?? [])].sort(
-                (a, b) => a.threshold - b.threshold
-              )
+              const sortedMotivations = [...(user.motivations ?? [])].sort((a, b) => {
+                const levelOrder = ['min', 'medium', 'max']
+
+                return levelOrder.indexOf(a.level) - levelOrder.indexOf(b.level)
+              })
 
               return (
                 <tr className={'hover:bg-gray-50 transition-all'} key={`user-${user.id}`}>
@@ -199,7 +222,7 @@ export const PlanPage = () => {
                     <td className={'px-6 py-4 border-b'} key={index}>
                       <div className={'text-sm text-gray-600 mb-2'}>
                         Процент маржи:{' '}
-                        {motivation.marginPercent ? motivation.marginPercent * 100 : 0}%
+                        {motivation.marginPercent ? (motivation.marginPercent * 100).toFixed() : 0}%
                       </div>
                       <div
                         className={

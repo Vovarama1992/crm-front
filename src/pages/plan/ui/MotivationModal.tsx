@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 import { useUpdateMotivationMutation } from '@/entities/workers'
+import { useToast } from '@/shared/ui-shad-cn/ui/use-toast'
 
 interface UpdateMotivationModalProps {
   initialMarginPercent: number
@@ -20,29 +21,35 @@ const UpdateMotivationModal: React.FC<UpdateMotivationModalProps> = ({
   refetch,
 }) => {
   const [threshold, setThreshold] = useState(initialThreshold)
-  const [marginPercent, setMarginPercent] = useState(initialMarginPercent)
-  const [updateMotivation, { error, isLoading }] = useUpdateMotivationMutation()
+  const [marginPercent, setMarginPercent] = useState(Number(initialMarginPercent.toFixed()))
+  const [updateMotivation, { isLoading }] = useUpdateMotivationMutation()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (isOpen) {
       setThreshold(initialThreshold)
-      setMarginPercent(initialMarginPercent)
+      setMarginPercent(Number(initialMarginPercent.toFixed()))
     }
   }, [isOpen, initialThreshold, initialMarginPercent])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (marginPercent < initialMarginPercent) {
-      alert('Новый процент маржи не может быть ниже базового')
 
-      return
-    }
     try {
       await updateMotivation({ marginPercent, motivationId, threshold }).unwrap()
       refetch()
       onClose()
-    } catch (err) {
-      console.error('Error updating motivation:', error)
+      toast({
+        description: 'Мотивация успешно обновлена.',
+        title: 'Успех',
+        variant: 'default',
+      })
+    } catch (error: any) {
+      toast({
+        description: error.data?.message || 'Произошла ошибка при обновлении мотивации.',
+        title: 'Ошибка обновления',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -66,7 +73,7 @@ const UpdateMotivationModal: React.FC<UpdateMotivationModalProps> = ({
               id={'threshold'}
               min={0}
               onChange={e => setThreshold(Number(e.target.value))}
-              type={'number'}
+              type={'text'}
               value={threshold}
             />
           </div>
@@ -79,7 +86,7 @@ const UpdateMotivationModal: React.FC<UpdateMotivationModalProps> = ({
               id={'marginPercent'}
               min={0}
               onChange={e => setMarginPercent(Number(e.target.value))}
-              type={'number'}
+              type={'text'}
               value={marginPercent}
             />
           </div>

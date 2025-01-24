@@ -19,10 +19,12 @@ export const MotivationHistoryModal = ({ onClose }: { onClose: () => void }) => 
   }
 
   return (
-    <div className={'fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50'}>
-      <div className={'bg-white p-6 rounded-lg max-w-lg w-full'}>
+    <div className={'fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50'}>
+      <div className={'bg-white p-6 rounded shadow-lg w-[70vw] max-h-[80vh] flex flex-col'}>
         <Typography variant={'h2'}>История изменений мотивации</Typography>
-        <ul className={'mt-4 space-y-2'}>
+
+        {/* Контейнер с прокруткой для данных */}
+        <div className={'flex-1 overflow-y-auto mt-4'}>
           {changes && changes.length > 0 ? (
             <ul className={'space-y-4'}>
               {changes.map((change: ChangeDto) => (
@@ -37,8 +39,10 @@ export const MotivationHistoryModal = ({ onClose }: { onClose: () => void }) => 
           ) : (
             <p>История изменений пуста.</p>
           )}
-        </ul>
-        <button className={'mt-4 p-2 bg-red-500 text-white rounded'} onClick={onClose}>
+        </div>
+
+        {/* Кнопка закрытия фиксированная внизу */}
+        <button className={'mt-4 p-2 bg-red-500 text-white rounded self-center'} onClick={onClose}>
           Закрыть
         </button>
       </div>

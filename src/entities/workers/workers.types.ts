@@ -9,6 +9,7 @@ export type WorkerDto = {
   email: string
   hireDate?: string
   id: number
+  isActive: boolean
   managed_by?: number
   margin_percent: number
   middleName: string
@@ -34,6 +35,7 @@ export enum MotivationType {
 export type Motivation = {
   createdAt: string
   id: number
+  level: 'max' | 'medium' | 'min'
   marginPercent: number
   threshold: number
   updatedAt: string
