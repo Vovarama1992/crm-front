@@ -24,6 +24,7 @@ export const RootLayout = () => {
     plan_page: false,
     procurements: false,
     salary_reports: false,
+    sales_list: false,
     summary_table: false,
     suppliers: false,
   }

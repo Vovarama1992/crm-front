@@ -51,6 +51,7 @@ export type Permissions = {
   plan_page: boolean
   procurements: boolean
   salary_reports: boolean
+  sales_list: boolean
   summary_table: boolean
   suppliers: boolean
 }
