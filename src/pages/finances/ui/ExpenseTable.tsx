@@ -44,6 +44,8 @@ const ExpenseTable: React.FC<{
   const [isDeletedExpensesModalOpen, setIsDeletedExpensesModalOpen] = useState(false)
   const [expenseSum, setSum] = useState(0)
 
+  console.log(employeeExpenses)
+
   const startMonth = months[0]
   const endMonth = months[months.length - 1]
 
@@ -57,11 +59,9 @@ const ExpenseTable: React.FC<{
     setIsDeletedExpensesModalOpen(false)
   }
 
-  const [selectedYear, setSelectedYear] = useState<number>(() => {
-    const savedYear = localStorage.getItem('expensesSelectedYear')
+  const savedYear = localStorage.getItem('expensesSelectedYear')
 
-    return savedYear ? Number(savedYear) : new Date().getFullYear()
-  })
+  const selectedYear = savedYear ? Number(savedYear) : new Date().getFullYear()
 
   const isReportInSelectedRange = (report: ExpenseDto): boolean => {
     const reportDate = new Date(report.date)
