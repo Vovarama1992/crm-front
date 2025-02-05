@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 
+import { useGetChangesByEntityTypeQuery } from '@/entities/changes'
 import { useSoftDeleteExpenseMutation, useUpdateExpenseMutation } from '@/entities/deal'
-import { useGetWorkersQuery } from '@/entities/workers'
+import { useGetWorkersQuery } from '@/entities/workers' // Используем хук
+import { EntityType } from '@/entities/changes/change.types'
 
-import ExpenseChangesModal from './ExpenseChangesModal'
+import { ExpenseChangeHistoryModal } from './ExpenseChangeHistoryModal'
 
 type ExpenseReport = {
   category: string
@@ -30,6 +32,7 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
 }) => {
   const [editableReport, setEditableReport] = useState<ExpenseReport | null>(report)
   const { data: workers = [] } = useGetWorkersQuery()
+  const { data: changes = [] } = useGetChangesByEntityTypeQuery({ entityType: EntityType.EXPENSE }) // Загружаем историю изменений
   const [updateExpense] = useUpdateExpenseMutation()
   const [deleteExpense] = useSoftDeleteExpenseMutation()
   const [isHistoryModalOpen, setHistoryModalOpen] = useState(false)
@@ -50,14 +53,6 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
     }
   }
 
-  const handleChange = (field: keyof ExpenseReport, value: number | string) => {
-    setEditableReport(prev => (prev ? { ...prev, [field]: value } : null))
-  }
-
-  if (!isOpen || !editableReport) {
-    return null
-  }
-
   const handleDelete = async () => {
     if (editableReport) {
       try {
@@ -67,6 +62,14 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
         console.error('Ошибка при удалении расхода:', error)
       }
     }
+  }
+
+  const handleChange = (field: keyof ExpenseReport, value: number | string) => {
+    setEditableReport(prev => (prev ? { ...prev, [field]: value } : null))
+  }
+
+  if (!isOpen || !editableReport) {
+    return null
   }
 
   return (
@@ -137,7 +140,7 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
         </div>
         <div className={'flex justify-center space-x-1 mt-4'}>
           <button
-            className={'bg-green-500 text-white px-2 py-1 rounded '}
+            className={'bg-green-500 text-white px-2 py-1 rounded'}
             onClick={() => setHistoryModalOpen(true)}
           >
             История
@@ -154,11 +157,12 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
         </div>
       </div>
 
-      <ExpenseChangesModal
-        expenseId={editableReport.id}
-        isOpen={isHistoryModalOpen}
-        onClose={() => setHistoryModalOpen(false)}
-      />
+      {isHistoryModalOpen && (
+        <ExpenseChangeHistoryModal
+          changes={changes.filter(change => change.entityId === editableReport.id)} // Фильтрация по id расхода
+          onClose={() => setHistoryModalOpen(false)}
+        />
+      )}
     </div>
   )
 }

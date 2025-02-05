@@ -74,7 +74,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
     try {
       const margin = Number(formData.margin_percent) / 100
 
-      const { motivationType, ...updateData } = formData
+      const { demotivatedAt, motivationType, ...updateData } = formData
 
       updateData.margin_percent = margin
 
@@ -275,19 +275,26 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
 
             <div className={'flex flex-col'}>
               <label className={'block text-gray-700'}>Мотивация</label>
+
+              {existingWorker.motivationType === 'EASY' && existingWorker.demotivatedAt && (
+                <div className={'text-sm text-gray-500'}>
+                  Вернули на простую мотивацию{' '}
+                  {new Date(existingWorker.demotivatedAt).toLocaleDateString()}
+                </div>
+              )}
+
               <select
                 className={
                   'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm'
                 }
                 name={'motivationType'}
                 onChange={e => {
-                  const selectedMotivation = e.target.value
+                  const selectedMotivation = e.target.value as MotivationType
 
                   setFormData(prevData => ({
                     ...prevData,
-                    motivatedAt:
-                      selectedMotivation === MotivationType.HARD ? prevData.motivatedAt : undefined,
-                    motivationType: selectedMotivation as MotivationType,
+                    motivatedAt: selectedMotivation === 'HARD' ? prevData.motivatedAt : undefined,
+                    motivationType: selectedMotivation,
                   }))
 
                   if (selectedMotivation === 'HARD') {
@@ -300,7 +307,6 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 <option value={'EASY'}>Простая</option>
               </select>
             </div>
-
             {isMotivationModalOpen && (
               <div
                 className={'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50'}

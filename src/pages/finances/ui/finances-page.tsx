@@ -1,14 +1,25 @@
-/* eslint-disable max-lines */
 import React, { useEffect, useState } from 'react'
 
-import {
-  useGetAllExpensesQuery,
-  useGetAllUsersMonthlyTurnoverAndMarginQuery,
-} from '@/entities/deal'
-import { useGetWorkersQuery } from '@/entities/workers' // Импортируем хук для получения списка сотрудников
+import { useGetAllExpensesQuery } from '@/entities/deal'
+import { useGetAllUsersMonthlyTurnoverAndMarginQuery } from '@/entities/deal'
+import { ExpenseDto } from '@/entities/deal/deal.types'
+import { useGetUsersWithMotivationsQuery } from '@/entities/workers'
 
 import ExpenseTable from './ExpenseTable'
 import IncomeTable from './IncomeTable'
+import IncomesExpenseDiffsTable from './Incomes-Expense-Diffs-Table'
+
+type FlatReport = {
+  completionPercent: number
+  marginAmount: number
+  marginPercent: number
+  month: string
+  totalMargin: number
+  totalTurnover: number
+  userId: number
+  year: number
+  yearlyProfitPlan: number
+}
 
 const months = [
   'Январь',
@@ -25,27 +36,21 @@ const months = [
   'Декабрь',
 ]
 
-const years = [2020, 2021, 2022, 2023, 2024]
-
-type FlatReport = {
-  completionPercent: number
-  marginAmount: number
-  marginPercent: number
-  month: string
-  totalMargin: number
-  totalTurnover: number
-  userId: number
-  year: number
-  yearlyProfitPlan: number
-}
+const years = [2024, 2025, 2026]
 
 type Employee = {
+  monthlyMargin: number
+  motivations: any[]
   name: string
   reports: FlatReport[]
 }
 
+export type EmployeeExpense = {
+  expense: number
+  month: string
+}
+
 export const FinancesPage: React.FC = () => {
-  // Извлекаем значения из localStorage при загрузке
   const [selectedYear, setSelectedYear] = useState<number>(() => {
     const savedYear = localStorage.getItem('financesSelectedYear')
 
@@ -70,95 +75,98 @@ export const FinancesPage: React.FC = () => {
     return savedEndMonth ? Number(savedEndMonth) : 11
   })
 
-  const startDate = `${selectedYear}-01-01`
-  const endDate = `${selectedYear}-12-31`
+  const [employeeExpenses, setEmployeeExpenses] = useState<EmployeeExpense[]>([])
+  // Хук для получения мотиваций
+  const { data: motivateds } = useGetUsersWithMotivationsQuery()
 
-  const { data: turnoverAndMarginData } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
+  // Хук для получения данных о доходах (оборот и маржа)
+  const startDate = '2025-01-01' // Укажи свою начальную дату
+  const endDate = '2025-12-31' // Укажи свою конечную дату
+
+  const { data: monthlyTurnoverAndMarginData } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
     endDate,
     startDate,
   })
-
+  // Хук для получения данных о расходах
   const { data: expensesData } = useGetAllExpensesQuery()
-  const { data: workersData } = useGetWorkersQuery() // Получаем список всех сотрудников
 
   const [incomeData, setIncomeData] = useState<Employee[]>([])
 
   useEffect(() => {
-    if (turnoverAndMarginData && workersData) {
-      const employeeData: Employee[] = turnoverAndMarginData.map((userData: any) => {
-        const worker = workersData.find((worker: any) => worker.id === userData.userId)
-        const name = worker ? `${worker.name} ${worker.surname}` : `User ${userData.userId}`
+    if (motivateds && monthlyTurnoverAndMarginData) {
+      const employeeData = monthlyTurnoverAndMarginData.map(item => {
+        const motivation = motivateds.find(mot => mot.id === item.userId)
+
+        const reports: FlatReport[] = item.monthlyData.map((reportItem: FlatReport) => ({
+          completionPercent: (reportItem.totalMargin / (reportItem.yearlyProfitPlan || 1)) * 100,
+          marginAmount: reportItem.marginAmount ?? 0,
+          marginPercent: reportItem.marginPercent ?? 0,
+          month: months[(Number(reportItem.month) || 1) - 1], // Приведение к числу и индекс
+          totalMargin: reportItem.totalMargin ?? 0,
+          totalTurnover: reportItem.totalTurnover ?? 0,
+          userId: reportItem.userId,
+          year: reportItem.year,
+          yearlyProfitPlan: reportItem.yearlyProfitPlan ?? 0,
+        }))
 
         return {
-          name,
-          reports: userData.monthlyData.map((monthlyData: any) => ({
-            completionPercent: monthlyData.completionPercent,
-            marginAmount: monthlyData.marginAmount,
-            marginPercent: monthlyData.marginPercent,
-            month: months[monthlyData.month - 1],
-            totalMargin: monthlyData.totalMargin,
-            totalTurnover: monthlyData.totalTurnover,
-            userId: userData.userId,
-            year: monthlyData.year,
-            yearlyProfitPlan: monthlyData.yearlyProfitPlan,
-          })),
+          monthlyMargin: reports.reduce((sum, r) => sum + r.totalMargin, 0), // Только суммирование по месяцам
+          motivations: motivation?.motivations || [],
+          name: item.name || `User ${item.userId}`,
+          reports,
+          userMargin: reports.reduce((sum, r) => sum + r.marginAmount, 0),
         }
       })
+      const employeeExpensesByMonth = months.map((month, index) => ({
+        expense: employeeData.reduce((sum, employee) => {
+          return (
+            sum + (employee.reports.find(r => months.indexOf(r.month) === index)?.marginAmount ?? 0)
+          )
+        }, 0),
+        month,
+      }))
+
+      setEmployeeExpenses(employeeExpensesByMonth)
 
       setIncomeData(employeeData)
     }
-  }, [turnoverAndMarginData, workersData, selectedYear])
+  }, [motivateds, monthlyTurnoverAndMarginData])
 
-  // Сохранение значений в localStorage
-  useEffect(() => {
-    localStorage.setItem('financesSelectedYear', selectedYear.toString())
-    localStorage.setItem('financesSelectedQuarter', selectedQuarter?.toString() || '')
-    localStorage.setItem('financesStartMonthIndex', startMonthIndex.toString())
-    localStorage.setItem('financesEndMonthIndex', endMonthIndex.toString())
-  }, [selectedYear, selectedQuarter, startMonthIndex, endMonthIndex])
+  const calculateIncomeAndExpenses = () => {
+    if (!incomeData || !expensesData || !employeeExpenses) {
+      console.log('Нет данных о доходах, расходах или расходах сотрудников')
 
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(Number(event.target.value))
-  }
-
-  const handleQuarterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const quarter = Number(event.target.value)
-
-    setSelectedQuarter(quarter)
-
-    if (quarter) {
-      const quarterStartMonth = (quarter - 1) * 3
-
-      setStartMonthIndex(quarterStartMonth)
-      setEndMonthIndex(quarterStartMonth + 2)
-    } else {
-      setStartMonthIndex(0)
-      setEndMonthIndex(11)
+      return []
     }
-  }
 
-  const handleMonthChange = (event: React.ChangeEvent<HTMLSelectElement>, isStart: boolean) => {
-    const monthIndex = Number(event.target.value)
+    return months.slice(startMonthIndex, endMonthIndex + 1).map(month => {
+      const incomeForMonth = incomeData.reduce((acc, employee) => {
+        const reportForMonth = employee.reports.find(report => report.month === month)
 
-    if (isStart) {
-      setStartMonthIndex(monthIndex)
-      if (monthIndex > endMonthIndex) {
-        setEndMonthIndex(monthIndex)
+        return acc + (reportForMonth?.totalMargin ?? 0)
+      }, 0)
+
+      const expensesForMonth = (expensesData as ExpenseDto[]).reduce((acc, expense) => {
+        const expenseDate = new Date(expense.date)
+        const expenseMonthIndex = expenseDate.getMonth()
+
+        return expenseMonthIndex === months.indexOf(month) ? acc + expense.expense : acc
+      }, 0)
+
+      // Добавляем расходы сотрудников
+      const employeeExpensesForMonth =
+        employeeExpenses.find(exp => exp.month === month)?.expense ?? 0
+
+      return {
+        expenses: expensesForMonth + employeeExpensesForMonth, // Общие расходы (включая расходы сотрудников)
+        income: incomeForMonth,
+        month,
+        remaining: incomeForMonth - (expensesForMonth + employeeExpensesForMonth), // Остаток после расходов
       }
-    } else {
-      setEndMonthIndex(monthIndex)
-      if (monthIndex < startMonthIndex) {
-        setStartMonthIndex(monthIndex)
-      }
-    }
-    setSelectedQuarter('')
+    })
   }
 
-  const getSelectedMonths = () => {
-    return months.slice(startMonthIndex, endMonthIndex + 1)
-  }
-
-  const selectedMonths = getSelectedMonths()
+  const monthlySummary = calculateIncomeAndExpenses()
 
   return (
     <div className={'absolute top-[10%] left-[10%] w-[80%] h-auto'}>
@@ -168,7 +176,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'yearSelect'}
-            onChange={handleYearChange}
+            onChange={e => setSelectedYear(Number(e.target.value))}
             value={selectedYear || ''}
           >
             {years.map((year, index) => (
@@ -183,7 +191,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'quarterSelect'}
-            onChange={handleQuarterChange}
+            onChange={e => setSelectedQuarter(Number(e.target.value))}
             value={selectedQuarter || ''}
           >
             <option value={''}>Все</option>
@@ -199,7 +207,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'startMonthSelect'}
-            onChange={e => handleMonthChange(e, true)}
+            onChange={e => setStartMonthIndex(Number(e.target.value))}
             value={startMonthIndex}
           >
             {months.map((month, index) => (
@@ -214,7 +222,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'endMonthSelect'}
-            onChange={e => handleMonthChange(e, false)}
+            onChange={e => setEndMonthIndex(Number(e.target.value))}
             value={endMonthIndex}
           >
             {months.map((month, index) => (
@@ -227,12 +235,17 @@ export const FinancesPage: React.FC = () => {
       </div>
 
       <h2 className={'text-xl font-bold mt-4'}>Таблица доходов</h2>
-      <div>
-        <IncomeTable data={incomeData} months={selectedMonths} />
-      </div>
+      <IncomeTable months={months.slice(startMonthIndex, endMonthIndex + 1)} />
+
+      <h2 className={'text-xl font-bold mt-4'}>Таблица Доходов-Расходов</h2>
+      <IncomesExpenseDiffsTable data={monthlySummary} />
 
       <h2 className={'text-xl font-bold mt-4'}>Таблица расходов</h2>
-      <ExpenseTable expenses={expensesData || []} />
+      <ExpenseTable
+        employeeExpenses={employeeExpenses}
+        expenses={expensesData || []}
+        months={months.slice(startMonthIndex, endMonthIndex + 1)}
+      />
     </div>
   )
 }

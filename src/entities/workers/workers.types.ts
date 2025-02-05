@@ -7,7 +7,7 @@ export type WorkerDto = {
   department_id: number | undefined
   dobNumber: string | undefined
   email: string
-  hireDate?: string
+  hireDate: string
   id: number
   isActive: boolean
   managed_by?: number
@@ -22,9 +22,9 @@ export type WorkerDto = {
   planMargin?: number
   position?: string
   roleName: string
-  salary?: number
+  salary: number
   surname: string
-  totalMargin?: number
+  totalMargin: number
 }
 
 export enum MotivationType {

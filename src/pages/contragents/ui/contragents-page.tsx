@@ -345,7 +345,7 @@ export const ContragentsPage = () => {
         <SaleForm
           dealId={currentDeal.id}
           onClose={handleSaleFormClose}
-          userId={currentDeal.userId}
+          userId={userData?.id as number}
         />
       )}
     </div>
