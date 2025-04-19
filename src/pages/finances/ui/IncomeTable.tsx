@@ -18,6 +18,7 @@ type IncomeFlatReport = {
 type Employee = {
   name: string
   reports: IncomeFlatReport[]
+  surname: string
 }
 
 type IncomeTableProps = {
@@ -41,15 +42,8 @@ const monthIndexMap: { [key: string]: number } = {
 
 const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
   const { data: usersData, isLoading: usersLoading } = useGetUsersWithMotivationsQuery()
-
-  const startDate = '2025-01-01'
-  const endDate = '2025-12-31'
-
   const { data: monthlyData, isLoading: monthlyLoading } =
-    useGetAllUsersMonthlyTurnoverAndMarginQuery({
-      endDate,
-      startDate,
-    })
+    useGetAllUsersMonthlyTurnoverAndMarginQuery({ endDate: '2025-12-31', startDate: '2025-01-01' })
 
   const [employeeData, setEmployeeData] = useState<Employee[]>([])
 
@@ -58,36 +52,41 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
       const monthNumbers = months.map(month => monthIndexMap[month])
 
       const employees: Employee[] = usersData.map(user => {
-        const userMotivations = usersData.find(u => u.id === user.id)?.motivations || []
+        const userMotivations = user.motivations || []
+        const maxPlan = Math.max(...userMotivations.map(m => m.threshold), 0)
 
-        const reports = monthlyData
-          .filter(monthReport => monthReport.userId === user.id)
-          .flatMap(monthReport => monthReport.monthlyData)
-          .filter(monthReport => monthNumbers.includes(monthReport.month))
+        const userFromApi = monthlyData.find(m => m.userId === user.id)
+        const userTotalMargin = userFromApi?.userTotalMargin || 0
 
-        const formattedReports = reports.map(monthReport => {
-          const yearlyProfitPlan = Math.min(
-            ...userMotivations
-              .filter(motivation => motivation.threshold > user.totalMargin)
-              .map(motivation => motivation.threshold)
-          )
+        const reportsFromApi = userFromApi?.monthlyData || []
+
+        const reports: IncomeFlatReport[] = monthNumbers.map(monthNum => {
+          const found = reportsFromApi.find((r: IncomeFlatReport) => r.month === monthNum)
+
+          const totalMargin = found?.totalMargin || 0
+          const marginPercent = found?.marginPercent || 0
+          const marginAmount = found?.marginAmount || 0
+          const totalTurnover = found?.totalTurnover || 0
+          const completionPercent = found?.completionPercent || 0
 
           return {
-            completionPercent: (monthReport.totalMargin / yearlyProfitPlan) * 100,
-            marginAmount: monthReport.marginAmount,
-            marginPercent: monthReport.marginPercent,
-            month: monthReport.month,
-            totalMargin: monthReport.totalMargin,
-            totalTurnover: monthReport.totalTurnover,
-            userId: monthReport.userId,
-            year: monthReport.year,
-            yearlyProfitPlan: yearlyProfitPlan,
+            completionPercent,
+            marginAmount,
+            marginPercent,
+            month: monthNum,
+            totalMargin,
+            totalTurnover,
+            userId: user.id,
+            year: 2025,
+            yearlyProfitPlan: maxPlan,
           }
         })
 
         return {
+          completionPercent: maxPlan ? (userTotalMargin / maxPlan) * 100 : 0,
           name: user.name,
-          reports: formattedReports,
+          reports,
+          surname: user.surname,
         }
       })
 
@@ -95,16 +94,13 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
     }
   }, [usersLoading, monthlyLoading, usersData, monthlyData, months])
 
-  const calculateTotalMarginForSelectedMonths = (reports: IncomeFlatReport[], months: string[]) => {
-    const monthNumbers = months.map(month => monthIndexMap[month] || 0)
-    const filteredReports = reports.filter(report => monthNumbers.includes(report.month))
-
-    return filteredReports.reduce((total, report) => total + report.totalMargin, 0)
+  const calculateTotalMarginForSelectedMonths = (reports: IncomeFlatReport[]) => {
+    return reports.reduce((total, report) => total + report.totalMargin, 0)
   }
 
   const calculateOverallTotalMargin = () => {
     return employeeData.reduce((total, employee) => {
-      return total + calculateTotalMarginForSelectedMonths(employee.reports, months)
+      return total + calculateTotalMarginForSelectedMonths(employee.reports)
     }, 0)
   }
 
@@ -112,78 +108,71 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
     return <div>Загрузка...</div>
   }
 
-  const width = months.length * 300
+  const columnWidth = 150
+  const monthColumnWidth = 500
 
   return (
-    <div className={`w-[${width}px]`}>
-      <table>
+    <div>
+      <table
+        className={'border'}
+        style={{ width: columnWidth + months.length * monthColumnWidth + columnWidth }}
+      >
         <thead>
           <tr>
-            <th className={'border px-4 py-2 bg-gray-100'} rowSpan={2}>
+            <th className={'border px-4 py-2 bg-gray-100'} style={{ width: columnWidth }}>
               Сотрудник
             </th>
             {months.map((month, index) => (
               <th
                 className={'border px-4 py-2 bg-gray-200 border-b-2 border-black'}
-                colSpan={5}
                 key={index}
+                style={{ width: monthColumnWidth }}
               >
                 {month}
               </th>
             ))}
-            <th className={'border px-4 py-2 bg-gray-100'} rowSpan={2}>
+            <th className={'border px-4 py-2 bg-gray-100'} style={{ width: columnWidth }}>
               Доход за период
             </th>
           </tr>
           <tr>
+            <th></th>
             {months.map((_, index) => (
-              <React.Fragment key={index}>
-                <th className={'border px-4 py-2 bg-gray-100'}>Оборот</th>
-                <th className={'border px-4 py-2 bg-gray-100'}>Маржа</th>
-                <th className={'border px-4 py-2 bg-gray-100'}>Годовой план</th>
-                <th className={'border px-4 py-2 bg-gray-100'}>% Выполнения плана год</th>
-                <th className={'border px-4 py-2 bg-gray-100'}>% от Маржи</th>
-              </React.Fragment>
+              <th key={index}>
+                <div className={'grid grid-cols-5 gap-1 text-sm text-center'}>
+                  <span>Оборот</span>
+                  <span>Маржа</span>
+                  <span>План</span>
+                  <span>% План</span>
+                  <span>% от маржи</span>
+                </div>
+              </th>
             ))}
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {employeeData.map(employee => {
-            const totalMarginForSelectedMonths = calculateTotalMarginForSelectedMonths(
-              employee.reports,
-              months
-            )
-
-            return (
-              <tr key={employee.name}>
-                <td className={'border px-4 py-2'}>{employee.name}</td>
-                {months.map((month, index) => {
-                  const report = employee.reports.find(r => r.month === monthIndexMap[month])
-
-                  const revenue = report ? report.totalTurnover : 0
-                  const margin = report ? report.totalMargin : 0
-                  const yearlyProfitPlan = report ? report.yearlyProfitPlan : 0
-                  const completion_percent = report ? report.completionPercent : 0
-                  const margin_percent = report ? report.marginPercent : 0
-
-                  return (
-                    <React.Fragment key={index}>
-                      <td className={'border px-4 py-2'}>{formatCurrency(revenue)}</td>
-                      <td className={'border px-4 py-2'}>{formatCurrency(margin)}</td>
-                      <td className={'border px-4 py-2'}>{formatCurrency(yearlyProfitPlan)}</td>
-                      <td className={'border px-4 py-2'}>{completion_percent.toFixed(2)}%</td>
-                      <td className={'border px-4 py-2'}>
-                        {formatCurrency(margin_percent * margin)}
-                      </td>
-                    </React.Fragment>
-                  )
-                })}
-                <td className={'border px-4 py-2'}>{totalMarginForSelectedMonths.toFixed(2)}</td>
-              </tr>
-            )
-          })}
+          {employeeData.map((employee, idx) => (
+            <tr key={idx}>
+              <td className={'border px-4 py-2'}>{`${employee.name} ${employee.surname}`}</td>
+              {employee.reports.map((report, i) => (
+                <td className={'border px-2 py-2'} key={i}>
+                  <div className={'grid grid-cols-5 gap-1 text-sm text-center'}>
+                    <span>{formatCurrency(report.totalTurnover)}</span>
+                    <span>{formatCurrency(report.totalMargin)}</span>
+                    <span>{formatCurrency(report.yearlyProfitPlan)}</span>
+                    <span>{report.completionPercent.toFixed(3)}%</span>
+                    <span>{formatCurrency(report.marginPercent * report.totalMargin)}</span>
+                  </div>
+                </td>
+              ))}
+              <td className={'border px-4 py-2'}>
+                {calculateTotalMarginForSelectedMonths(employee.reports).toFixed(2)}
+              </td>
+            </tr>
+          ))}
           <tr>
-            <td className={'border px-4 py-2 font-bold text-right'} colSpan={months.length * 5 + 1}>
+            <td className={'border px-4 py-2 font-bold text-right'} colSpan={months.length + 1}>
               Общий доход за период
             </td>
             <td className={'border px-4 py-2 font-bold'}>

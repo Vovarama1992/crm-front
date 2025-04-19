@@ -4,30 +4,72 @@ type DiffTableProps = {
   data: { expenses: number; income: number; month: string; remaining: number }[]
 }
 
+const columnWidth = 150
+const monthColWidth = 500
+
 const IncomesExpenseDiffsTable: React.FC<DiffTableProps> = ({ data }) => {
+  const months = data.map(d => d.month)
+  const incomeRow = data.map(d => d.income)
+  const expenseRow = data.map(d => d.expenses)
+  const remainingRow = data.map(d => d.remaining)
+
+  const fromStartRow = []
+  let cumulative = 0
+
+  for (const val of remainingRow) {
+    cumulative += val
+    fromStartRow.push(cumulative)
+  }
+
   return (
-    <div className={'w-[1770px] '}>
-      <table className={'w-[1770px]'}>
-        <thead>
-          <tr>
-            <th className={'border px-4 py-2'}>Месяц</th>
-            <th className={'border px-4 py-2'}>Доходы</th>
-            <th className={'border px-4 py-2'}>Расходы</th>
-            <th className={'border px-4 py-2'}>Осталось</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, index) => (
-            <tr key={index}>
-              <td className={'border px-4 py-2'}>{row.month}</td>
-              <td className={'border px-4 py-2'}>{row.income}</td>
-              <td className={'border px-4 py-2'}>{row.expenses}</td>
-              <td className={'border px-4 py-2'}>{row.remaining}</td>
-            </tr>
+    <table className={'border'} style={{ width: columnWidth + months.length * monthColWidth }}>
+      <thead>
+        <tr>
+          <th className={'border px-4 py-2 text-left bg-white'} style={{ width: columnWidth }}>
+            {/* Отступ вместо названия столбца */}
+          </th>
+          {months.map((month, i) => (
+            <th className={'border px-4 py-2 bg-gray-100'} key={i} style={{ width: monthColWidth }}>
+              {month}
+            </th>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>Доходы</td>
+          {incomeRow.map((val, i) => (
+            <td className={'border px-4 py-2'} key={i}>
+              {val.toFixed(2)}
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>Расходы</td>
+          {expenseRow.map((val, i) => (
+            <td className={'border px-4 py-2'} key={i}>
+              {val.toFixed(2)}
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>Осталось</td>
+          {remainingRow.map((val, i) => (
+            <td className={'border px-4 py-2'} key={i}>
+              {val.toFixed(2)}
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <td className={'border px-4 py-2 font-bold'}>С начала года</td>
+          {fromStartRow.map((val, i) => (
+            <td className={'border px-4 py-2'} key={i}>
+              {val.toFixed(2)}
+            </td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
   )
 }
 

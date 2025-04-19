@@ -107,7 +107,7 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
               className={'border p-2 w-full'}
               onChange={e => handleChange('date', e.target.value)}
               type={'date'}
-              value={editableReport.date}
+              value={editableReport.date ? editableReport.date.slice(0, 10) : ''}
             />
           </div>
           <div>

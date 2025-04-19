@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import React, { useEffect, useState } from 'react'
 
 import { useGetAllExpensesQuery } from '@/entities/deal'
@@ -74,6 +75,46 @@ export const FinancesPage: React.FC = () => {
 
     return savedEndMonth ? Number(savedEndMonth) : 11
   })
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = Number(e.target.value)
+
+    setSelectedYear(value)
+    localStorage.setItem('financesSelectedYear', String(value))
+  }
+
+  const handleQuarterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value === '' ? '' : Number(e.target.value)
+
+    setSelectedQuarter(value)
+    localStorage.setItem('financesSelectedQuarter', String(value))
+
+    if (value !== '') {
+      const quarterStartMap = [0, 3, 6, 9]
+      const start = quarterStartMap[value - 1]
+      const end = start + 2
+
+      setStartMonthIndex(start)
+      setEndMonthIndex(end)
+
+      localStorage.setItem('financesStartMonthIndex', String(start))
+      localStorage.setItem('financesEndMonthIndex', String(end))
+    }
+  }
+
+  const handleStartMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = Number(e.target.value)
+
+    setStartMonthIndex(value)
+    localStorage.setItem('financesStartMonthIndex', String(value))
+  }
+
+  const handleEndMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = Number(e.target.value)
+
+    setEndMonthIndex(value)
+    localStorage.setItem('financesEndMonthIndex', String(value))
+  }
 
   const [employeeExpenses, setEmployeeExpenses] = useState<EmployeeExpense[]>([])
   // Хук для получения мотиваций
@@ -176,7 +217,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'yearSelect'}
-            onChange={e => setSelectedYear(Number(e.target.value))}
+            onChange={handleYearChange}
             value={selectedYear || ''}
           >
             {years.map((year, index) => (
@@ -191,7 +232,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'quarterSelect'}
-            onChange={e => setSelectedQuarter(Number(e.target.value))}
+            onChange={handleQuarterChange}
             value={selectedQuarter || ''}
           >
             <option value={''}>Все</option>
@@ -207,7 +248,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'startMonthSelect'}
-            onChange={e => setStartMonthIndex(Number(e.target.value))}
+            onChange={handleStartMonthChange}
             value={startMonthIndex}
           >
             {months.map((month, index) => (
@@ -222,7 +263,7 @@ export const FinancesPage: React.FC = () => {
           <select
             className={'border p-2'}
             id={'endMonthSelect'}
-            onChange={e => setEndMonthIndex(Number(e.target.value))}
+            onChange={handleEndMonthChange}
             value={endMonthIndex}
           >
             {months.map((month, index) => (
