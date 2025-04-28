@@ -5,7 +5,7 @@ type DiffTableProps = {
 }
 
 const columnWidth = 150
-const monthColWidth = 500
+const monthColWidth = 700
 
 const IncomesExpenseDiffsTable: React.FC<DiffTableProps> = ({ data }) => {
   const months = data.map(d => d.month)

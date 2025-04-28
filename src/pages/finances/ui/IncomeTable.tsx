@@ -67,7 +67,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
           const marginPercent = found?.marginPercent || 0
           const marginAmount = found?.marginAmount || 0
           const totalTurnover = found?.totalTurnover || 0
-          const completionPercent = found?.completionPercent || 0
+          const completionPercent = maxPlan ? (userTotalMargin / maxPlan) * 100 : 0
 
           return {
             completionPercent,
@@ -109,7 +109,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
   }
 
   const columnWidth = 150
-  const monthColumnWidth = 500
+  const monthColumnWidth = 700
 
   return (
     <div>
@@ -124,7 +124,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
             </th>
             {months.map((month, index) => (
               <th
-                className={'border px-4 py-2 bg-gray-200 border-b-2 border-black'}
+                className={'border px-6 py-3 bg-gray-200 text-right border-b-2 border-black'}
                 key={index}
                 style={{ width: monthColumnWidth }}
               >
@@ -139,7 +139,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
             <th></th>
             {months.map((_, index) => (
               <th key={index}>
-                <div className={'grid grid-cols-5 gap-1 text-sm text-center'}>
+                <div className={'grid grid-cols-5 gap-1 text-xs text-center'}>
                   <span>Оборот</span>
                   <span>Маржа</span>
                   <span>План</span>
@@ -156,17 +156,17 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
             <tr key={idx}>
               <td className={'border px-4 py-2'}>{`${employee.name} ${employee.surname}`}</td>
               {employee.reports.map((report, i) => (
-                <td className={'border px-2 py-2'} key={i}>
-                  <div className={'grid grid-cols-5 gap-1 text-sm text-center'}>
+                <td className={'border px-6 py-3 text-right'} key={i}>
+                  <div className={'grid grid-cols-5 gap-1 text-xs text-center'}>
                     <span>{formatCurrency(report.totalTurnover)}</span>
                     <span>{formatCurrency(report.totalMargin)}</span>
                     <span>{formatCurrency(report.yearlyProfitPlan)}</span>
-                    <span>{report.completionPercent.toFixed(3)}%</span>
+                    <span>{report.completionPercent.toFixed(5)}%</span>
                     <span>{formatCurrency(report.marginPercent * report.totalMargin)}</span>
                   </div>
                 </td>
               ))}
-              <td className={'border px-4 py-2'}>
+              <td className={'border px-6 py-3 text-right'}>
                 {calculateTotalMarginForSelectedMonths(employee.reports).toFixed(2)}
               </td>
             </tr>
@@ -175,7 +175,7 @@ const IncomeTable: React.FC<IncomeTableProps> = ({ months }) => {
             <td className={'border px-4 py-2 font-bold text-right'} colSpan={months.length + 1}>
               Общий доход за период
             </td>
-            <td className={'border px-4 py-2 font-bold'}>
+            <td className={'border px-4 py-2 font-bold text-right'}>
               {calculateOverallTotalMargin().toFixed(2)}
             </td>
           </tr>

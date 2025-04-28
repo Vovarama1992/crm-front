@@ -50,7 +50,7 @@ const ExpenseTable: React.FC<{
   const endMonth = months[months.length - 1]
 
   const columnWidth = 150
-  const monthColWidth = 500
+  const monthColWidth = 700
 
   const handleOpenDeletedExpensesModal = () => setIsDeletedExpensesModalOpen(true)
   const handleOpenRentModal = () => setIsRentModalOpen(true)
@@ -197,7 +197,7 @@ const ExpenseTable: React.FC<{
   }
 
   return (
-    <div className={'overflow-x-auto'}>
+    <div>
       <table
         className={'border'}
         style={{ width: columnWidth + months.length * monthColWidth + columnWidth }}
@@ -209,7 +209,7 @@ const ExpenseTable: React.FC<{
             </th>
             {months.map(month => (
               <th
-                className={'border px-4 py-2 bg-gray-100'}
+                className={'border px-6 py-3 bg-gray-100 text-right'}
                 key={month}
                 style={{ width: monthColWidth }}
               >
@@ -225,23 +225,29 @@ const ExpenseTable: React.FC<{
           {categories.map(category => (
             <React.Fragment key={category.category}>
               <tr
-                className={`cursor-pointer ${selectedCategory === category.category ? 'bg-gray-200' : 'bg-white'}`}
+                className={`cursor-pointer ${
+                  selectedCategory === category.category ? 'bg-gray-200' : 'bg-white'
+                }`}
                 onClick={() => handleCategoryClick(category.category)}
               >
                 <td className={'border px-4 py-2 font-bold'}>{category.category}</td>
                 {months.map((_, index) => (
-                  <td className={'border px-4 py-2'} key={index}>
+                  <td className={'border px-6 py-3 text-right'} key={index}>
                     {formatCurrency(calculateTotalForMonth(category, index))}
                   </td>
                 ))}
-                <td className={'border px-4 py-2'}></td>
+                <td className={'border px-6 py-3 text-right'}></td>
               </tr>
 
               {selectedCategory === category.category &&
                 category.subcategories.map(subcategory => (
                   <React.Fragment key={subcategory.subcategory}>
                     <tr
-                      className={`cursor-pointer ${selectedSubcategory === subcategory.subcategory ? 'bg-gray-300' : 'bg-gray-100'}`}
+                      className={`cursor-pointer ${
+                        selectedSubcategory === subcategory.subcategory
+                          ? 'bg-gray-300'
+                          : 'bg-gray-100'
+                      }`}
                       onClick={() => handleSubcategoryClick(subcategory.subcategory)}
                     >
                       <td className={'border px-4 py-2 pl-8'}>{subcategory.subcategory}</td>
@@ -251,12 +257,12 @@ const ExpenseTable: React.FC<{
                           .reduce((acc, report) => acc + report.expense, 0)
 
                         return (
-                          <td className={'border px-4 py-2'} key={index}>
+                          <td className={'border px-6 py-3 text-right'} key={index}>
                             {formatCurrency(sum)}
                           </td>
                         )
                       })}
-                      <td className={'border px-4 py-2'}>
+                      <td className={'border px-6 py-3 text-right'}>
                         {formatCurrency(subcategory.reports.reduce((acc, r) => acc + r.expense, 0))}
                       </td>
                     </tr>
@@ -270,7 +276,7 @@ const ExpenseTable: React.FC<{
                           )
 
                           return (
-                            <td className={'border px-4 py-2'} key={i}>
+                            <td className={'border px-6 py-3 text-right'} key={i}>
                               {monthReports.map(report => (
                                 <div
                                   className={'cursor-pointer'}
@@ -283,7 +289,7 @@ const ExpenseTable: React.FC<{
                             </td>
                           )
                         })}
-                        <td className={'border px-4 py-2'}></td>
+                        <td className={'border px-6 py-3 text-right'}></td>
                       </tr>
                     )}
                   </React.Fragment>

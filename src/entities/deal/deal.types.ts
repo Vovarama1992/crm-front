@@ -50,6 +50,7 @@ export type ExpenseDto = {
   name: string
   subcategory: string
   userId?: number
+  workerId?: number
 }
 
 export type CreateExpenseDto = Omit<ExpenseDto, 'id'>

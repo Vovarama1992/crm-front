@@ -8,7 +8,6 @@ import { WorkerDto, useGetDepartmentsQuery, useGetWorkersQuery } from '@/entitie
 
 interface ExtendedWorkerDto extends WorkerDto {
   calculatedSalary?: number
-  hireDate: string
   workedDays: number
 }
 
@@ -29,34 +28,7 @@ const FOTExpenseModal: React.FC<FOTExpenseModalProps> = ({ isOpen, onClose }) =>
   const { data: user } = useMeQuery()
   const userId = user?.id || undefined
 
-  function countWeekdaysBetween(startDate: Date, endDate: Date): number {
-    let count = 0
-    const current = new Date(startDate)
-
-    while (current <= endDate) {
-      const day = current.getDay()
-
-      if (day !== 0 && day !== 6) {
-        count++
-      }
-      current.setDate(current.getDate() + 1)
-    }
-
-    return count
-  }
-
   useEffect(() => {
-    function getWorkedDays(hireDate: string, expenseDate: string, workingDaysInMonth: number) {
-      const hire = new Date(hireDate)
-      const target = new Date(expenseDate)
-      const monthStart = new Date(target.getFullYear(), target.getMonth(), 1)
-      const monthEnd = new Date(target.getFullYear(), target.getMonth() + 1, 0)
-
-      const start = hire > monthStart ? hire : monthStart
-      const end = target > monthEnd ? monthEnd : target
-
-      return Math.min(countWeekdaysBetween(start, end), workingDaysInMonth)
-    }
     if (!selectedDepartmentId) {
       setWorkers([])
 
@@ -64,16 +36,6 @@ const FOTExpenseModal: React.FC<FOTExpenseModalProps> = ({ isOpen, onClose }) =>
     }
 
     const baseFilter = (w: WorkerDto) => w.salary > 0
-    const withWorkedDays = (worker: WorkerDto) => {
-      const workedDays = getWorkedDays(worker.hireDate, expenseDate, workingDaysInMonth)
-      const salaryPerDay = worker.salary / workingDaysInMonth
-
-      return {
-        ...worker,
-        calculatedSalary: +(salaryPerDay * workedDays).toFixed(2),
-        workedDays,
-      }
-    }
 
     let filteredWorkers: WorkerDto[] = []
 
@@ -87,11 +49,8 @@ const FOTExpenseModal: React.FC<FOTExpenseModalProps> = ({ isOpen, onClose }) =>
       filteredWorkers = (department?.users || []).filter(baseFilter)
     }
 
-    setWorkers(filteredWorkers.map(withWorkedDays))
-  }, [departments, allWorkersData, selectedDepartmentId, workingDaysInMonth, expenseDate])
-  useEffect(() => {
-    setWorkers(prev =>
-      prev.map(worker => {
+    setWorkers(
+      filteredWorkers.map(worker => {
         const salaryPerDay = worker.salary / workingDaysInMonth
 
         return {
@@ -101,7 +60,7 @@ const FOTExpenseModal: React.FC<FOTExpenseModalProps> = ({ isOpen, onClose }) =>
         }
       })
     )
-  }, [workingDaysInMonth])
+  }, [departments, allWorkersData, selectedDepartmentId, workingDaysInMonth])
 
   const handleChangeWorkedDays = (id: number, days: number) => {
     setWorkers(prev =>
@@ -129,30 +88,29 @@ const FOTExpenseModal: React.FC<FOTExpenseModalProps> = ({ isOpen, onClose }) =>
 
         return {
           ...worker,
-          calculatedSalary: +(salaryPerDay * days).toFixed(2),
-          workedDays: days,
+          calculatedSalary: +(salaryPerDay * worker.workedDays).toFixed(2),
         }
       })
     )
   }
 
   const handleSaveExpense = async () => {
-    let salary = 0
-
-    for (const worker of workers) {
-      salary += worker.calculatedSalary as number
-    }
-    const newExpense: CreateExpenseDto = {
-      category: 'Зарплата сотрудников',
-      date: new Date(expenseDate).toISOString(),
-      expense: salary,
-      name: 'Оклад сотрудников',
-      subcategory: 'Оклад',
-      userId,
-    }
-
     try {
-      await createExpense(newExpense)
+      const promises = workers.map(worker => {
+        const newExpense: CreateExpenseDto = {
+          category: 'Зарплата сотрудников',
+          date: new Date(expenseDate).toISOString(),
+          expense: worker.calculatedSalary || 0,
+          name: `Оклад: ${worker.name} ${worker.surname}`, // ФИО сотрудника в названии
+          subcategory: 'Оклад',
+          userId: userId, // кто создал
+          workerId: worker.id, // для кого расход
+        }
+
+        return createExpense(newExpense)
+      })
+
+      await Promise.all(promises)
       onClose()
     } catch (error) {
       console.error('Ошибка при сохранении расходов:', error)

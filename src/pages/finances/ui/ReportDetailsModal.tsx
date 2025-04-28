@@ -15,6 +15,7 @@ type ExpenseReport = {
   name: string
   subcategory: string
   userId?: number
+  workerId?: number
 }
 
 type ReportDetailsModalProps = {
@@ -101,6 +102,16 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
               value={editableReport.category}
             />
           </div>
+          {editableReport.workerId && (
+            <div>
+              <label className={'block'}>Кому предназначен расход</label>
+              <div className={'border p-2 w-full bg-gray-100'}>
+                {workers.find(worker => worker.id === editableReport.workerId)
+                  ? `${workers.find(worker => worker.id === editableReport.workerId)?.name} ${workers.find(worker => worker.id === editableReport.workerId)?.surname}`
+                  : 'Сотрудник не найден'}
+              </div>
+            </div>
+          )}
           <div>
             <label className={'block'}>Дата</label>
             <input
@@ -110,6 +121,7 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({
               value={editableReport.date ? editableReport.date.slice(0, 10) : ''}
             />
           </div>
+
           <div>
             <label className={'block'}>Сумма</label>
             <input
