@@ -135,6 +135,12 @@ const dealApi = baseApi.injectEndpoints({
       }),
     }),
 
+    getMonthlyBonuses: builder.query<Record<string, number>, void>({
+      query: () => ({
+        url: '/deals/bonuses-by-month',
+      }),
+    }),
+
     getMonthlyTurnoverAndMargin: builder.query<any[], { month: number; year: number }>({
       query: ({ month, year }) => ({
         method: 'GET',
@@ -241,17 +247,19 @@ export const {
   useGetExpenseChangesQuery,
   useGetExpensesByUserIdQuery,
 
+  useGetMonthlyBonusesQuery,
   useGetMonthlyTurnoverAndMarginQuery,
-  useGetPaymentChangesQuery,
 
   // Новые хуки для работы с продажами
 
+  useGetPaymentChangesQuery,
+
   useGetSalesByUserIdQuery,
-
   useRestoreExpenseMutation,
-  useSoftDeleteExpenseMutation,
 
+  useSoftDeleteExpenseMutation,
   useUpdateDealMutation,
+
   useUpdateExpenseMutation,
 
   useUpdatePaymentMutation,

@@ -114,10 +114,6 @@ export const SaleForm: React.FC<SaleFormProps> = ({ dealId, onClose, userId }) =
             console.log('Updated Sale after updating pdfUrl:', updateResponse)
             alert('Продажа и файл успешно загружены!')
           })
-          .catch((error: any) => {
-            console.error('Ошибка при загрузке PDF или обновлении продажи:', error)
-            alert('Продажа создана, но произошла ошибка при загрузке файла.')
-          })
       } else {
         alert('Продажа успешно создана!')
       }

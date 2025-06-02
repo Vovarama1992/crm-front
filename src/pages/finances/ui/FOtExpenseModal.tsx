@@ -96,24 +96,39 @@ const FOTExpenseModal: React.FC<FOTExpenseModalProps> = ({ isOpen, onClose }) =>
 
   const handleSaveExpense = async () => {
     try {
+      console.log('🔄 Начинаем сохранение расходов на ФОТ...')
+      console.log('📅 Дата расхода (из поля):', expenseDate)
+      console.log('🧮 Рабочие дни в месяце:', workingDaysInMonth)
+      console.log('👥 Кол-во сотрудников:', workers.length)
+
+      workers.forEach(worker => {
+        console.log(`➡️ Сотрудник: ${worker.name} ${worker.surname}`)
+        console.log(`   - Раб дней: ${worker.workedDays}`)
+        console.log(`   - Оклад: ${worker.salary}`)
+        console.log(`   - Расчётная сумма: ${worker.calculatedSalary}`)
+      })
+
       const promises = workers.map(worker => {
         const newExpense: CreateExpenseDto = {
           category: 'Зарплата сотрудников',
-          date: new Date(expenseDate).toISOString(),
+          date: `${expenseDate}T12:00:00.000Z`,
           expense: worker.calculatedSalary || 0,
-          name: `Оклад: ${worker.name} ${worker.surname}`, // ФИО сотрудника в названии
+          name: `Оклад: ${worker.name} ${worker.surname}`,
           subcategory: 'Оклад',
-          userId: userId, // кто создал
-          workerId: worker.id, // для кого расход
+          userId: userId,
+          workerId: worker.id,
         }
+
+        console.log('📤 Отправка расхода:', newExpense)
 
         return createExpense(newExpense)
       })
 
       await Promise.all(promises)
+      console.log('✅ Все расходы успешно сохранены')
       onClose()
     } catch (error) {
-      console.error('Ошибка при сохранении расходов:', error)
+      console.error('❌ Ошибка при сохранении расходов:', error)
     }
   }
 

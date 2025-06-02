@@ -243,7 +243,7 @@ export const CommonSalesPage: React.FC = () => {
             value={selectedYear}
           >
             <option value={''}>Все</option>
-            {['2020', '2021', '2022', '2023', '2024'].map((year, index) => (
+            {['2020', '2021', '2022', '2023', '2024', '2025'].map((year, index) => (
               <option key={index} value={year}>
                 {year}
               </option>

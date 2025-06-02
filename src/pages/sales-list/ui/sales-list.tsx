@@ -69,7 +69,7 @@ export const SalesListPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<string>(() => {
     const storedYear = localStorage.getItem('salesListSelectedYear')
 
-    return storedYear || '2024'
+    return storedYear || '2025'
   })
 
   const [selectedStartMonth, setSelectedStartMonth] = useState<string>(() => {

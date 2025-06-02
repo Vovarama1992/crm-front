@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 
 import { CreateExpenseDto, ExpenseDto } from '@/entities/deal/deal.types'
 import { useCreateExpenseMutation, useGetAllExpensesQuery } from '@/entities/purchase'
+import { useMeQuery } from '@/entities/session'
 
 interface RentExpenseModalProps {
   isOpen: boolean
@@ -14,6 +15,8 @@ const RentExpenseModal: React.FC<RentExpenseModalProps> = ({ isOpen, onClose }) 
 
   const { data: allExpenses } = useGetAllExpensesQuery() // Получаем все расходы
   const [createExpense] = useCreateExpenseMutation()
+  const { data: user } = useMeQuery()
+  const userId = user?.id
 
   useEffect(() => {
     if (allExpenses) {
@@ -45,10 +48,11 @@ const RentExpenseModal: React.FC<RentExpenseModalProps> = ({ isOpen, onClose }) 
       expense: expenseAmount,
       name: expenseName,
       subcategory: 'Аренда',
+      userId, // <- добавили сюда
     }
 
     createExpense(newExpense)
-    onClose() // Закрыть модалку после добавления
+    onClose()
   }
 
   return isOpen ? (

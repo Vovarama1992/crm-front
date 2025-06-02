@@ -84,7 +84,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
             <th className={'border px-4 py-2 bg-gray-100'}>ФИО</th>
             {months.map(month => (
               <th className={'border px-4 py-2 bg-gray-100'} colSpan={4} key={month}>
-                {month} 2024
+                {month} 2025
               </th>
             ))}
           </tr>
@@ -117,7 +117,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
                     {`${employee.surname} ${employee.name} ${employee.middleName}`}
                   </td>
                   {months.map(month => {
-                    const report = employee.reports.find(r => r.month === `${month} 2024`)
+                    const report = employee.reports.find(r => r.month === `${month} 2025`)
 
                     return (
                       <React.Fragment key={month}>

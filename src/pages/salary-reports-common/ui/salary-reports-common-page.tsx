@@ -56,8 +56,8 @@ export const SalaryReportsPage: React.FC = () => {
   const { data: expenses } = useGetAllPaymentsQuery()
   const { data: meData } = useMeQuery()
   const { data: margins } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
-    endDate: '2024-12-31',
-    startDate: '2024-01-01',
+    endDate: '2025-12-31',
+    startDate: '2025-01-01',
   })
   const { data: sales } = useGetAllSalesQuery()
   const { data: departments } = useGetDepartmentsQuery()
@@ -68,7 +68,7 @@ export const SalaryReportsPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(() => {
     const storedYear = localStorage.getItem('salaryReportsSelectedYear')
 
-    return storedYear ? Number(storedYear) : 2024
+    return storedYear ? Number(storedYear) : 2025
   })
   const [selectedQuarter, setSelectedQuarter] = useState<null | number>(() => {
     const storedQuarter = localStorage.getItem('salaryReportsSelectedQuarter')
