@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 
 import { useGetAllExpensesQuery } from '@/entities/deal'
 import { useGetAllUsersMonthlyTurnoverAndMarginQuery } from '@/entities/deal'
+import { useGetMonthlyBonusesQuery } from '@/entities/deal'
 import { ExpenseDto } from '@/entities/deal/deal.types'
 import { useGetUsersWithMotivationsQuery } from '@/entities/workers'
 
@@ -117,6 +118,7 @@ export const FinancesPage: React.FC = () => {
   }
 
   const [employeeExpenses, setEmployeeExpenses] = useState<EmployeeExpense[]>([])
+  const { data: bonusesData } = useGetMonthlyBonusesQuery()
   // Хук для получения мотиваций
   const { data: motivateds } = useGetUsersWithMotivationsQuery()
 
@@ -174,8 +176,8 @@ export const FinancesPage: React.FC = () => {
   }, [motivateds, monthlyTurnoverAndMarginData])
 
   const calculateIncomeAndExpenses = () => {
-    if (!incomeData || !expensesData || !employeeExpenses) {
-      console.log('Нет данных о доходах, расходах или расходах сотрудников')
+    if (!incomeData || !expensesData || !employeeExpenses || !bonusesData) {
+      console.log('Нет данных о доходах, расходах, премиях или расходах сотрудников')
 
       return []
     }
@@ -194,15 +196,16 @@ export const FinancesPage: React.FC = () => {
         return expenseMonthIndex === months.indexOf(month) ? acc + expense.expense : acc
       }, 0)
 
-      // Добавляем расходы сотрудников
       const employeeExpensesForMonth =
         employeeExpenses.find(exp => exp.month === month)?.expense ?? 0
 
+      const bonusForMonth = bonusesData[month] ?? 0
+
       return {
-        expenses: expensesForMonth + employeeExpensesForMonth, // Общие расходы (включая расходы сотрудников)
+        expenses: expensesForMonth + employeeExpensesForMonth + bonusForMonth,
         income: incomeForMonth,
         month,
-        remaining: incomeForMonth - (expensesForMonth + employeeExpensesForMonth), // Остаток после расходов
+        remaining: incomeForMonth - (expensesForMonth + employeeExpensesForMonth + bonusForMonth),
       }
     })
   }

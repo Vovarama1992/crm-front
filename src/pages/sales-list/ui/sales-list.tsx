@@ -239,7 +239,12 @@ export const SalesListPage: React.FC = () => {
   // Вычисление общей маржи, оборота и заработка
   const totalMargin = sales.reduce((acc, sale) => {
     if (sale.margin !== undefined && getSaleStage(sale.signingStage) === 'Конец') {
-      return acc + ((sale.totalSaleAmount as number) - sale.logisticsCost - sale.purchaseCost)
+      return (
+        acc +
+        (((sale.prepaymentAmount + sale.paidNow) as number) -
+          sale.logisticsCost -
+          sale.purchaseCost)
+      )
     }
 
     return acc
