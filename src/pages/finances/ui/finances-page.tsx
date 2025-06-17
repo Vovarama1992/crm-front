@@ -176,8 +176,8 @@ export const FinancesPage: React.FC = () => {
   }, [motivateds, monthlyTurnoverAndMarginData])
 
   const calculateIncomeAndExpenses = () => {
-    if (!incomeData || !expensesData || !employeeExpenses || !bonusesData) {
-      console.log('Нет данных о доходах, расходах, премиях или расходах сотрудников')
+    if (!incomeData || !expensesData || !bonusesData) {
+      console.log('Нет данных о доходах, расходах или премиях')
 
       return []
     }
@@ -196,16 +196,13 @@ export const FinancesPage: React.FC = () => {
         return expenseMonthIndex === months.indexOf(month) ? acc + expense.expense : acc
       }, 0)
 
-      const employeeExpensesForMonth =
-        employeeExpenses.find(exp => exp.month === month)?.expense ?? 0
-
       const bonusForMonth = bonusesData[month] ?? 0
 
       return {
-        expenses: expensesForMonth + employeeExpensesForMonth + bonusForMonth,
+        expenses: expensesForMonth + bonusForMonth,
         income: incomeForMonth,
         month,
-        remaining: incomeForMonth - (expensesForMonth + employeeExpensesForMonth + bonusForMonth),
+        remaining: incomeForMonth - (expensesForMonth + bonusForMonth),
       }
     })
   }
