@@ -65,7 +65,7 @@ export const SalesListPage: React.FC = () => {
     refetchRemainings()
   }
 
-  const [selectedEmployee, setSelectedEmployee] = useState<null | number>(9999)
+  const [selectedEmployee, setSelectedEmployee] = useState<null | number>(null)
   const [selectedYear, setSelectedYear] = useState<string>(() => {
     const storedYear = localStorage.getItem('salesListSelectedYear')
 
@@ -94,6 +94,7 @@ export const SalesListPage: React.FC = () => {
     const value = event.target.value === '9999' ? 9999 : Number(event.target.value)
 
     setSelectedEmployee(value)
+    localStorage.setItem('salesListSelectedEmployee', value.toString())
   }
 
   const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -128,6 +129,16 @@ export const SalesListPage: React.FC = () => {
       localStorage.setItem('salesListSelectedStartMonth', month)
     }
   }
+
+  useEffect(() => {
+  const stored = localStorage.getItem('salesListSelectedEmployee')
+  if (stored) {
+    setSelectedEmployee(Number(stored))
+  } else if (meData?.id) {
+    setSelectedEmployee(meData.id)
+    localStorage.setItem('salesListSelectedEmployee', meData.id.toString())
+  }
+}, [meData?.id])
 
   useEffect(() => {
     if (salesData) {

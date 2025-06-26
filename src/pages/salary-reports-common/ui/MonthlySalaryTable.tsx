@@ -11,6 +11,7 @@ type Report = {
   earned: number
   month: string
   paid: number
+  premia?: number
   remaining: number
   salary: number
 }
@@ -26,6 +27,7 @@ type Employee = {
 type DepartmentData = {
   department: string
   employees: Employee[]
+  id: number
 }
 
 type MonthlySalaryTableProps = {
@@ -43,6 +45,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
 
   const handleCreatePaymentClick = () => {
     const usersWithRemainingArray: {
+      department_id: number
       id: number
       middleName: string
       name: string
@@ -59,6 +62,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
         })
 
         usersWithRemainingArray.push({
+          department_id: department.id,
           id: employee.id,
           middleName: employee.middleName,
           name: employee.name,
@@ -83,7 +87,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
           <tr>
             <th className={'border px-4 py-2 bg-gray-100'}>ФИО</th>
             {months.map(month => (
-              <th className={'border px-4 py-2 bg-gray-100'} colSpan={4} key={month}>
+              <th className={'border px-4 py-2 bg-gray-100'} colSpan={5} key={month}>
                 {month} 2025
               </th>
             ))}
@@ -96,6 +100,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
                 <th className={'border px-4 py-2 bg-gray-100'}>Заработал</th>
                 <th className={'border px-4 py-2 bg-gray-100'}>Выплатил</th>
                 <th className={'border px-4 py-2 bg-gray-100'}>Осталось</th>
+                <th className={'border px-4 py-2 bg-gray-100'}>Премия</th>
               </React.Fragment>
             ))}
           </tr>
@@ -106,7 +111,7 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
               <tr>
                 <td
                   className={'bg-gray-200 font-bold border px-4 py-2'}
-                  colSpan={months.length * 4 + 1}
+                  colSpan={months.length * 5 + 1}
                 >
                   {department.department}
                 </td>
@@ -121,17 +126,15 @@ const MonthlySalaryTable: React.FC<MonthlySalaryTableProps> = ({ data, months })
 
                     return (
                       <React.Fragment key={month}>
-                        {['salary', 'earned', 'paid', 'remaining'].map(field => (
+                        {['salary', 'earned', 'paid', 'remaining', 'premia'].map(field => (
                           <td
                             className={'border px-4 py-2'}
                             key={`${employee.id}-${month}-${field}`}
                           >
                             <div className={'w-full h-full'} style={{ minWidth: '100px' }}>
                               <span className={'block w-full h-full px-2 py-1 text-sm'}>
-                                {report
-                                  ? typeof report[field as keyof Report] === 'number'
-                                    ? formatCurrency(report[field as keyof Report] as number)
-                                    : report[field as keyof Report]
+                                {report && typeof report[field as keyof Report] === 'number'
+                                  ? formatCurrency(report[field as keyof Report] as number)
                                   : '-'}
                               </span>
                             </div>

@@ -19,3 +19,12 @@ export type SalaryDto = {
 export type CreateSalaryDto = Omit<SalaryDto, 'id' | 'user'>
 
 export type UpdateSalaryDto = Partial<CreateSalaryDto>
+
+// Premia
+export type PremiaDto = {
+  amount: number
+  id: number
+  month: string
+  userId: number
+  year: number
+}

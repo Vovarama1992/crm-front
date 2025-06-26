@@ -1,4 +1,4 @@
-import type { CreateSalaryDto, SalaryDto, UpdateSalaryDto } from './salary.types'
+import type { CreateSalaryDto, PremiaDto, SalaryDto, UpdateSalaryDto } from './salary.types'
 
 import { baseApi } from '@/shared/api'
 
@@ -11,12 +11,20 @@ const salaryApi = baseApi.injectEndpoints({
         url: '/salaries',
       }),
     }),
+    // Только для просмотра премий
+    getPremiiByYear: builder.query<PremiaDto[], number>({
+      query: year => ({
+        method: 'GET',
+        url: `/premii?year=${year}`,
+      }),
+    }),
     getUserSalaries: builder.query<SalaryDto[], number>({
       query: userId => ({
         method: 'GET',
         url: `/salaries/${userId}`,
       }),
     }),
+
     updateSalary: builder.mutation<SalaryDto, { data: UpdateSalaryDto; id: number }>({
       query: ({ data, id }) => ({
         body: data,
@@ -30,6 +38,7 @@ const salaryApi = baseApi.injectEndpoints({
 export const {
   endpoints: salaryEndpoints,
   useCreateSalaryMutation,
+  useGetPremiiByYearQuery,
   useGetUserSalariesQuery,
   useUpdateSalaryMutation,
   util: salaryUtil,

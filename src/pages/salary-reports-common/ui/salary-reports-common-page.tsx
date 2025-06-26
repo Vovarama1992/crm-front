@@ -2,13 +2,13 @@
 import React, { useEffect, useState } from 'react'
 
 import {
-  useGetAllPaymentsQuery,
+  useGetAllExpensesQuery,
   useGetAllUsersMonthlyTurnoverAndMarginQuery,
 } from '@/entities/deal'
+import { useGetPremiiByYearQuery } from '@/entities/salary'
 import { useGetAllSalesQuery } from '@/entities/sale'
 import { useMeQuery } from '@/entities/session'
-import { useGetActiveQuery } from '@/entities/workers'
-import { useGetDepartmentsQuery } from '@/entities/workers'
+import { useGetActiveQuery, useGetDepartmentsQuery } from '@/entities/workers'
 import { WorkerDto } from '@/entities/workers'
 
 import MonthlySalaryTable from './MonthlySalaryTable'
@@ -34,12 +34,13 @@ type Report = {
   earned: number
   month: string
   paid: number
+  premia?: number
   remaining: number
   salary: number
 }
 
 type Employee = {
-  id: number // Добавляем поле id
+  id: number
   middleName: string
   name: string
   reports: Report[]
@@ -49,11 +50,12 @@ type Employee = {
 type DepartmentData = {
   department: string
   employees: Employee[]
+  id: number
 }
 
 export const SalaryReportsPage: React.FC = () => {
   const { data: users } = useGetActiveQuery()
-  const { data: expenses } = useGetAllPaymentsQuery()
+  const { data: expenses } = useGetAllExpensesQuery()
   const { data: meData } = useMeQuery()
   const { data: margins } = useGetAllUsersMonthlyTurnoverAndMarginQuery({
     endDate: '2025-12-31',
@@ -61,62 +63,64 @@ export const SalaryReportsPage: React.FC = () => {
   })
   const { data: sales } = useGetAllSalesQuery()
   const { data: departments } = useGetDepartmentsQuery()
-
-  const [data, setData] = useState<DepartmentData[]>([])
-
-  // Инициализация фильтров из localStorage
   const [selectedYear, setSelectedYear] = useState<number>(() => {
     const storedYear = localStorage.getItem('salaryReportsSelectedYear')
 
     return storedYear ? Number(storedYear) : 2025
   })
+  const { data: allPremii } = useGetPremiiByYearQuery(selectedYear)
+
+  const [data, setData] = useState<DepartmentData[]>([])
+
   const [selectedQuarter, setSelectedQuarter] = useState<null | number>(() => {
     const storedQuarter = localStorage.getItem('salaryReportsSelectedQuarter')
 
     return storedQuarter ? Number(storedQuarter) : null
   })
+
   const [startMonthIndex, setStartMonthIndex] = useState<number>(() => {
-    const storedStartMonthIndex = localStorage.getItem('salaryReportsStartMonthIndex')
+    const stored = localStorage.getItem('salaryReportsStartMonthIndex')
 
-    return storedStartMonthIndex ? Number(storedStartMonthIndex) : 0
+    return stored ? Number(stored) : 0
   })
-  const [endMonthIndex, setEndMonthIndex] = useState<number>(() => {
-    const storedEndMonthIndex = localStorage.getItem('salaryReportsEndMonthIndex')
 
-    return storedEndMonthIndex ? Number(storedEndMonthIndex) : 2
+  const [endMonthIndex, setEndMonthIndex] = useState<number>(() => {
+    const stored = localStorage.getItem('salaryReportsEndMonthIndex')
+
+    return stored ? Number(stored) : 2
   })
 
   useEffect(() => {
-    if (!users || !margins || !expenses || !departments || !sales) {
+    if (!users || !margins || !expenses || !departments || !sales || !allPremii) {
       return
     }
 
-    const departmentData: DepartmentData[] = departments.map(dept => ({
-      department: dept.name,
+    const departmentData: DepartmentData[] = departments.map(d => ({
+      department: d.name,
       employees: [],
+      id: d.id,
     }))
 
-    const filtered = (() => {
-      if (meData?.roleName === 'Директор' || meData?.roleName === 'Бухгалтер') {
-        // Директор и бухгалтер видят всех
+    const visibleUsers = (() => {
+      if (['Бухгалтер', 'Директор'].includes(meData?.roleName ?? '')) {
         return users
-      } else if (meData?.roleName === 'РОП') {
-        // РОП видит только сотрудников своего отдела
-        return users.filter((user: WorkerDto) => user.department_id === meData?.department_id)
-      } else {
-        // Остальные видят только себя
-        return users.filter((user: WorkerDto) => user.id === meData?.id)
       }
+      if (meData?.roleName === 'РОП') {
+        return users.filter((u: WorkerDto) => u.department_id === meData?.department_id)
+      }
+
+      return users.filter((u: WorkerDto) => u.id === meData?.id)
     })()
 
-    filtered.forEach(user => {
-      const departmentName =
-        departments.find(dept => dept.id === user.department_id)?.name || 'Без отдела'
+    visibleUsers.forEach(user => {
+      const dept = departments.find(d => d.id === user.department_id)
+      const departmentName = dept?.name || 'Без отдела'
+      const departmentId = dept?.id ?? -1
 
-      let department = departmentData.find(d => d.department === departmentName)
+      let department = departmentData.find(d => d.id === departmentId)
 
       if (!department) {
-        department = { department: departmentName, employees: [] }
+        department = { department: departmentName, employees: [], id: departmentId }
         departmentData.push(department)
       }
 
@@ -130,68 +134,70 @@ export const SalaryReportsPage: React.FC = () => {
 
       let previousRemaining = 0
 
-      months.forEach((month, index) => {
-        const currentYear = selectedYear
+      months.forEach((month, idx) => {
+        const year = selectedYear
 
-        // Определяем первый и последний дни месяца
-        const firstDayOfMonth = new Date(currentYear, index, 1)
-        const lastDayOfMonth = new Date(currentYear, index + 1, 0) // последний день месяца
+        const salary = expenses
+          .filter(
+            e =>
+              e.workerId === user.id &&
+              e.subcategory === 'Оклад' &&
+              new Date(e.date).getMonth() === idx &&
+              new Date(e.date).getFullYear() === year
+          )
+          .reduce((s, e) => s + e.expense, 0)
 
-        // Проверка на дату приема на работу
-        const hireDate = user.hireDate ? new Date(user.hireDate) : null
-
-        let salary = 0
-
-        if (hireDate && hireDate <= lastDayOfMonth) {
-          // Если пользователь был принят на работу в текущем месяце или ранее
-          const daysInMonth = lastDayOfMonth.getDate()
-          const workingDays =
-            hireDate > firstDayOfMonth ? daysInMonth - hireDate.getDate() + 1 : daysInMonth
-
-          // Пропорциональный расчет оклада
-          salary = (user.salary || 0) * (workingDays / daysInMonth)
-        }
-
-        // Данные о заработке (маржа) за месяц
-        const marginData = margins.find(m => m.userId === user.id)
-        const margin = user?.margin_percent || 0.1
+        const mData = margins.find(m => m.userId === user.id)
+        const percent = user.margin_percent ?? 0
         const earnings =
-          marginData?.monthlyData.find((m: any) => m.month === index + 1)?.totalMargin * margin || 0
+          (mData?.monthlyData.find((m: any) => m.month === idx + 1)?.totalMargin ?? 0) * percent
 
-        // Выплаты за месяц
         const paid = expenses
           .filter(
-            exp =>
-              exp.userId === user.id &&
-              new Date(exp.date).getMonth() === index &&
-              new Date(exp.date).getFullYear() === currentYear
+            e =>
+              e.userId === user.id &&
+              new Date(e.date).getMonth() === idx &&
+              new Date(e.date).getFullYear() === year
           )
-          .reduce((sum, exp) => sum + exp.amount, 0)
+          .reduce((s, e) => s + e.expense, 0)
 
-        // Рассчитываем остаток с учетом остатка с прошлого месяца
+        const premia =
+          allPremii.find(p => p.userId === user.id && p.month === month && p.year === year)
+            ?.amount ?? 0
+
         const remaining = salary + earnings - paid + previousRemaining
 
-        // Заполняем отчет для текущего месяца
+        previousRemaining = remaining
+
         employee.reports.push({
           earned: earnings,
-          month: `${month} ${currentYear}`,
-          paid: paid,
-          remaining: remaining,
-          salary: salary,
+          month: `${month} ${year}`,
+          paid,
+          premia,
+          remaining,
+          salary,
         })
-
-        // Обновляем остаток для следующего месяца
-        previousRemaining = remaining
       })
 
       department.employees.push(employee)
     })
 
     setData(departmentData)
-  }, [users, margins, expenses, departments, sales, selectedYear])
+  }, [
+    users,
+    margins,
+    expenses,
+    departments,
+    sales,
+    allPremii,
+    selectedYear,
+    meData?.roleName,
+    meData?.department_id,
+    meData?.id,
+  ])
 
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const year = Number(event.target.value)
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const year = Number(e.target.value)
 
     setSelectedYear(year)
     localStorage.setItem('salaryReportsSelectedYear', String(year))
@@ -199,24 +205,22 @@ export const SalaryReportsPage: React.FC = () => {
     localStorage.removeItem('salaryReportsSelectedQuarter')
   }
 
-  const handleQuarterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const quarter = Number(event.target.value)
+  const handleQuarterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const quarter = Number(e.target.value)
 
     setSelectedQuarter(quarter)
     localStorage.setItem('salaryReportsSelectedQuarter', String(quarter))
+    const newStart = (quarter - 1) * 3
+    const newEnd = quarter * 3 - 1
 
-    const newStartMonthIndex = (quarter - 1) * 3
-    const newEndMonthIndex = quarter * 3 - 1
-
-    setStartMonthIndex(newStartMonthIndex)
-    setEndMonthIndex(newEndMonthIndex)
-
-    localStorage.setItem('salaryReportsStartMonthIndex', String(newStartMonthIndex))
-    localStorage.setItem('salaryReportsEndMonthIndex', String(newEndMonthIndex))
+    setStartMonthIndex(newStart)
+    setEndMonthIndex(newEnd)
+    localStorage.setItem('salaryReportsStartMonthIndex', String(newStart))
+    localStorage.setItem('salaryReportsEndMonthIndex', String(newEnd))
   }
 
-  const handleMonthChange = (event: React.ChangeEvent<HTMLSelectElement>, isStart: boolean) => {
-    const value = Number(event.target.value)
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>, isStart: boolean) => {
+    const value = Number(e.target.value)
 
     if (isStart) {
       setStartMonthIndex(value)
@@ -238,18 +242,19 @@ export const SalaryReportsPage: React.FC = () => {
   }
 
   const filteredData = data.map(department => ({
-    ...department,
+    department: department.department,
     employees: department.employees.map(employee => ({
       ...employee,
       reports: employee.reports.filter(report => {
         const [reportMonth, reportYear] = report.month.split(' ')
         const monthIndex = months.indexOf(reportMonth)
-        const yearMatch = selectedYear ? Number(reportYear) === selectedYear : true
+        const yearMatch = Number(reportYear) === selectedYear
         const intervalMatch = monthIndex >= startMonthIndex && monthIndex <= endMonthIndex
 
         return yearMatch && intervalMatch
       }),
     })),
+    id: department.id,
   }))
 
   const selectedMonths = months.slice(startMonthIndex, endMonthIndex + 1)
@@ -260,8 +265,8 @@ export const SalaryReportsPage: React.FC = () => {
         <div className={'ml-[300px] flex flex-col mr-4'}>
           <label htmlFor={'yearSelect'}>Выберите год: </label>
           <select id={'yearSelect'} onChange={handleYearChange} value={selectedYear}>
-            {years.map((year, index) => (
-              <option key={index} value={year}>
+            {years.map(year => (
+              <option key={year} value={year}>
                 {year}
               </option>
             ))}
@@ -271,8 +276,8 @@ export const SalaryReportsPage: React.FC = () => {
           <label htmlFor={'quarterSelect'}>Выберите квартал: </label>
           <select id={'quarterSelect'} onChange={handleQuarterChange} value={selectedQuarter || ''}>
             <option value={''}>Все</option>
-            {[1, 2, 3, 4].map((quarter, index) => (
-              <option key={index} value={quarter}>
+            {[1, 2, 3, 4].map(quarter => (
+              <option key={quarter} value={quarter}>
                 {`Квартал ${quarter}`}
               </option>
             ))}

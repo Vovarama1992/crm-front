@@ -394,6 +394,7 @@ const EditWorkerForm: React.FC<EditWorkerFormProps> = ({ existingWorker, onClose
                 <option value={''}>Выберите роль</option>
                 <option value={'Менеджер'}>Менеджер</option>
                 <option value={'РОП'}>РОП</option>
+                <option value={'РОП'}>РОЗ</option>
                 <option value={'Директор'}>Директор</option>
                 <option value={'Логист'}>Логист</option>
                 <option value={'Закупщик'}>Закупщик</option>
