@@ -38,71 +38,64 @@ export const PlanPage = () => {
 
   const [filteredUsers, setFilteredUsers] = useState<WorkerDto[]>([])
 
- useEffect(() => {
-  if (!isLoading) {
-    let users = usersWithMotivations.filter((user: WorkerDto) => user.isActive)
+  useEffect(() => {
+    if (!isLoading) {
+      let users = usersWithMotivations.filter((user: WorkerDto) => user.isActive)
 
-    const ropDepartment = departments.find(d => d.ropId === userData?.id)
+      const ropDepartment = departments.find(d => d.ropId === userData?.id)
 
-    if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
-      users = users.filter(user => user.id === userData?.id)
-    } else if (userRole === 'РОП') {
-      users = usersWithMotivations.filter(
-        user =>
-          (user.department_id === ropDepartment?.id || user.id === userData?.id) &&
-          user.isActive
-      )
-    } else if (userRole === 'Директор') {
-      users = usersWithMotivations.filter(
-  user =>
-    (user.department_id === ropDepartment?.id || user.id === userData?.id) &&
-    user.isActive
-)
-    } else {
-      users = []
-    }
-
-    if (filterYear) {
-      users = users.filter(user => {
-        const demotivatedYear = user.demotivatedAt
-          ? new Date(user.demotivatedAt).getFullYear()
-          : null
-        const motivatedYear = user.motivatedAt
-          ? new Date(user.motivatedAt).getFullYear()
-          : null
-
-        return (
-          !(demotivatedYear && demotivatedYear < Number(filterYear)) &&
-          !(motivatedYear && motivatedYear > Number(filterYear))
+      if (userRole === 'Менеджер' || userRole === 'Логист' || userRole === 'Закупщик') {
+        users = users.filter(user => user.id === userData?.id)
+      } else if (userRole === 'РОП') {
+        users = usersWithMotivations.filter(
+          user =>
+            (user.department_id === ropDepartment?.id || user.id === userData?.id) && user.isActive
         )
-      })
-    }
+      } else if (userRole === 'Директор') {
+        users = usersWithMotivations.filter(user => user.isActive)
+      } else {
+        users = []
+      }
 
-    if (selectedDepartment) {
-      users = users.filter(user => user.department_id === selectedDepartment)
-    }
+      if (filterYear) {
+        users = users.filter(user => {
+          const demotivatedYear = user.demotivatedAt
+            ? new Date(user.demotivatedAt).getFullYear()
+            : null
+          const motivatedYear = user.motivatedAt ? new Date(user.motivatedAt).getFullYear() : null
 
-    if (filterNonSales) {
-      users = users.filter(user => !user.department_id)
-    }
+          return (
+            !(demotivatedYear && demotivatedYear < Number(filterYear)) &&
+            !(motivatedYear && motivatedYear > Number(filterYear))
+          )
+        })
+      }
 
-    if (filterComplexMotivation) {
-      users = users.filter(user => user.motivationType === 'HARD')
-    }
+      if (selectedDepartment) {
+        users = users.filter(user => user.department_id === selectedDepartment)
+      }
 
-    setFilteredUsers(users)
-  }
-}, [
-  filterYear,
-  filterNonSales,
-  filterComplexMotivation,
-  usersWithMotivations,
-  selectedDepartment,
-  departments,
-  isLoading,
-  userRole,
-  userData?.id,
-])
+      if (filterNonSales) {
+        users = users.filter(user => !user.department_id)
+      }
+
+      if (filterComplexMotivation) {
+        users = users.filter(user => user.motivationType === 'HARD')
+      }
+
+      setFilteredUsers(users)
+    }
+  }, [
+    filterYear,
+    filterNonSales,
+    filterComplexMotivation,
+    usersWithMotivations,
+    selectedDepartment,
+    departments,
+    isLoading,
+    userRole,
+    userData?.id,
+  ])
   const handleMotivationClick = (motivation: any) => {
     if (userData?.roleName !== 'Директор') {
       return null
